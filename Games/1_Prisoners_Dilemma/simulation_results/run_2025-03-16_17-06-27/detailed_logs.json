@@ -1,0 +1,352 @@
+[
+    {
+        "Generation":1,
+        "Pair":"Agent_3-Agent_1",
+        "Actions":"C-C",
+        "Payoffs":"3-3",
+        "Strategy_A":{
+            "strategy_rules":[
+                "If the opponent cooperated in the last round, cooperate this round.",
+                "If the opponent defected in the last round, calculate the total cooperation rate. If it is above the retaliation threshold, cooperate; otherwise, defect.",
+                "If a defection from the opponent occurs after a long streak of cooperation, treat it as a possible error and cooperate again.",
+                "Gradually increase defection if the opponent's cooperation rate drops below the retaliation threshold for three consecutive rounds.",
+                "Reset cooperation if the opponent returns to cooperation for at least two consecutive rounds after a defection."
+            ],
+            "forgiveness_factor":0.25,
+            "retaliation_threshold":0.75,
+            "adaptability":0.5,
+            "rationale":"This strategy aims to foster long-term cooperation by initially responding to cooperation with cooperation, while also including mechanisms for error correction and adapting to changes in the opponent's behavior. Forgiveness allows the strategy to maintain a cooperative relationship despite occasional defections, which might be errors. The adaptability factor ensures the strategy can dynamically adjust to the opponent's overall behavior, switching between cooperative and defensive modes based on observed patterns."
+        },
+        "Strategy_B":{
+            "strategy_rules":[
+                "If the opponent cooperated in the previous turn, cooperate.",
+                "If the opponent defected in the previous turn, check the total defections by the opponent; if less than retaliation_threshold, cooperate; otherwise, defect.",
+                "If a defection by the opponent is followed by a cooperation from them, reset the defection count (forgiveness).",
+                "Adjust retaliation_threshold based on the percentage of opponent's cooperation over the last 10 turns. Increase threshold if cooperation is above 60%, decrease if below 40%."
+            ],
+            "forgiveness_factor":0.8,
+            "retaliation_threshold":0.3,
+            "adaptability":0.7,
+            "rationale":"This strategy builds a long-term relationship by focusing on cooperation after minor disputes and adapts based on opponent behavior, allowing for flexibility and error recovery."
+        },
+        "Reasoning_A":"Random: choosing action at random",
+        "Reasoning_B":"Contrite Tit-for-Tat: default cooperation",
+        "Score_A":3,
+        "Score_B":3
+    },
+    {
+        "Generation":1,
+        "Pair":"Agent_5-Agent_0",
+        "Actions":"C-D",
+        "Payoffs":"0-5",
+        "Strategy_A":{
+            "strategy_rules":[
+                "If opponent defected less than retaliation_threshold times, cooperate",
+                "If opponent cooperated last two turns, cooperate",
+                "If opponent defected last turn and total defections exceed retaliation_threshold, defect",
+                "If error detected in previous opponent moves (i.e., unexpected move given game history), revert to cooperation unless it happens twice consecutively",
+                "Increase cooperation by 10% when opponent's cooperation rate increases by 10% in the last 5 turns",
+                "Decrease cooperation by 20% if opponent's defection rate increases by 20% in the last 5 turns",
+                "After 50 turns, if average cooperation rate of opponent is above 70%, always cooperate"
+            ],
+            "forgiveness_factor":0.2,
+            "retaliation_threshold":0.3,
+            "adaptability":0.7,
+            "rationale":"This strategy builds long-term relationships through adaptive cooperation and controlled retaliation, fostering collaboration while maintaining robust defenses against exploitation. Forgiveness allows recovery from errors or unexpected behaviors, enhancing stability in the relationship."
+        },
+        "Strategy_B":{
+            "strategy_rules":[
+                "If opponent cooperated in the last two rounds, then cooperate.",
+                "If opponent defected in the last round, assess total defection frequency. If below retaliation threshold, cooperate; otherwise, defect.",
+                "If an error is suspected due to a sudden unexpected defection after a long cooperation, cooperate once to test opponent's intention.",
+                "Adjust future cooperation level based on the ratio of opponent's cooperation to defection, aiming to match but not exceed their cooperation level."
+            ],
+            "forgiveness_factor":0.3,
+            "retaliation_threshold":0.5,
+            "adaptability":0.7,
+            "rationale":"This strategy aims to build long-term cooperation by rewarding cooperative behavior and cautiously punishing defections, but with room for forgiveness. It allows for adaptive responses based on the opponent's behavior, maintaining a balance between cooperation and necessary defection to discourage exploitation."
+        },
+        "Reasoning_A":"Random: choosing action at random",
+        "Reasoning_B":"Suspicious Tit-for-Tat: starting with defection",
+        "Score_A":0,
+        "Score_B":5
+    },
+    {
+        "Generation":1,
+        "Pair":"Agent_2-Agent_4",
+        "Actions":"D-D",
+        "Payoffs":"1-1",
+        "Strategy_A":{
+            "strategy_rules":[
+                "If opponent cooperates in first round, cooperate in next round.",
+                "If opponent defects, defect with a probability equal to the retaliation_threshold.",
+                "After opponent defects, if they cooperate twice consecutively, cooperate in the next round with a probability equal to forgiveness_factor.",
+                "Increase cooperation probability by adaptability factor after every 10 rounds of mutual cooperation.",
+                "Reset cooperation probability to initial state if opponent defects twice in a row."
+            ],
+            "forgiveness_factor":0.75,
+            "retaliation_threshold":0.5,
+            "adaptability":0.1,
+            "rationale":"This strategy aims to build trust through consistent cooperation, allows for forgiveness of occasional defections, and adapts to the opponent's behavior by increasing cooperation in presence of sustained mutual cooperation, thus enhancing relationship building. Retaliation is moderated to prevent exploitation."
+        },
+        "Strategy_B":{
+            "strategy_rules":[
+                {
+                    "condition":"first_round",
+                    "action":"cooperate"
+                },
+                {
+                    "condition":"opponent_cooperated_last_round",
+                    "action":"cooperate"
+                },
+                {
+                    "condition":"opponent_defected_last_round",
+                    "action":"defect"
+                },
+                {
+                    "condition":"opponent_defection_percentage_above_60",
+                    "action":"defect"
+                },
+                {
+                    "condition":"last_three_rounds_all_cooperation",
+                    "action":"cooperate"
+                },
+                {
+                    "condition":"opponent_cooperation_percentage_above_70",
+                    "action":"cooperate"
+                },
+                {
+                    "condition":"recent_defection_after_cooperation_series",
+                    "action":"defect"
+                },
+                {
+                    "condition":"close_to_end_game_high_cooperation",
+                    "action":"cooperate"
+                }
+            ],
+            "forgiveness_factor":0.3,
+            "retaliation_threshold":0.6,
+            "adaptability":0.7,
+            "rationale":"The strategy aims to foster long-term cooperation but adapts to the opponent's behavior by using defection in response to frequent or recent defections. Forgiveness is integrated to allow recovery from misunderstandings or errors, promoting a return to cooperative interactions when preceded by a positive trend."
+        },
+        "Reasoning_A":"Suspicious Tit-for-Tat: starting with defection",
+        "Reasoning_B":"Always Defect strategy",
+        "Score_A":1,
+        "Score_B":1
+    },
+    {
+        "Generation":2,
+        "Pair":"Agent_3-Agent_1",
+        "Actions":"D-C",
+        "Payoffs":"5-0",
+        "Strategy_A":{
+            "strategy_rules":[
+                "If the opponent cooperated in the last round, cooperate this round.",
+                "If the opponent defected in the last round, calculate the total cooperation rate. If it is above the retaliation threshold, cooperate; otherwise, defect.",
+                "If a defection from the opponent occurs after a long streak of cooperation, treat it as a possible error and cooperate again.",
+                "Gradually increase defection if the opponent's cooperation rate drops below the retaliation threshold for three consecutive rounds.",
+                "Reset cooperation if the opponent returns to cooperation for at least two consecutive rounds after a defection."
+            ],
+            "forgiveness_factor":0.25,
+            "retaliation_threshold":0.75,
+            "adaptability":0.5,
+            "rationale":"This strategy aims to foster long-term cooperation by initially responding to cooperation with cooperation, while also including mechanisms for error correction and adapting to changes in the opponent's behavior. Forgiveness allows the strategy to maintain a cooperative relationship despite occasional defections, which might be errors. The adaptability factor ensures the strategy can dynamically adjust to the opponent's overall behavior, switching between cooperative and defensive modes based on observed patterns."
+        },
+        "Strategy_B":{
+            "strategy_rules":[
+                "If opponent's cooperation rate > 0.8, then cooperate",
+                "If opponent's cooperation rate < 0.2, then defect",
+                "If my last move was an unintended defection, then cooperate twice",
+                "If opponent defected after my cooperation, retaliate once then return to cooperation if opponent cooperates again",
+                "Adjust opponent\u2019s cooperation rate calculation after every 10 rounds to respond to changes"
+            ],
+            "forgiveness_factor":0.5,
+            "retaliation_threshold":0.3,
+            "adaptability":0.7,
+            "rationale":"This strategy aims to build a robust long-term relationship by adapting its behavior based on the opponent's cooperation rate, forgiving occasional defections to correct for potential errors, and adjusting responsiveness based on game progress and opponent's adjustments."
+        },
+        "Reasoning_A":"Random: choosing action at random",
+        "Reasoning_B":"Always Cooperate strategy",
+        "Score_A":5,
+        "Score_B":0
+    },
+    {
+        "Generation":2,
+        "Pair":"Agent_1-Agent_2",
+        "Actions":"C-D",
+        "Payoffs":"0-5",
+        "Strategy_A":{
+            "strategy_rules":[
+                "If the opponent cooperated in the previous turn, cooperate.",
+                "If the opponent defected in the previous turn, check the total defections by the opponent; if less than retaliation_threshold, cooperate; otherwise, defect.",
+                "If a defection by the opponent is followed by a cooperation from them, reset the defection count (forgiveness).",
+                "Adjust retaliation_threshold based on the percentage of opponent's cooperation over the last 10 turns. Increase threshold if cooperation is above 60%, decrease if below 40%."
+            ],
+            "forgiveness_factor":0.8,
+            "retaliation_threshold":0.3,
+            "adaptability":0.7,
+            "rationale":"This strategy builds a long-term relationship by focusing on cooperation after minor disputes and adapts based on opponent behavior, allowing for flexibility and error recovery."
+        },
+        "Strategy_B":{
+            "strategy_rules":[
+                "If opponent's cooperation rate > 0.7, cooperate",
+                "If opponent defected in the last move and previous cooperation rate > 0.5, defect",
+                "If two consecutive defections by opponent, defect",
+                "If opponent defected due to a possible error (random defection in a pattern of cooperations), cooperate",
+                "If our defection rate > 0.5, switch to cooperation in the next move"
+            ],
+            "forgiveness_factor":0.3,
+            "retaliation_threshold":0.5,
+            "adaptability":0.7,
+            "rationale":"This strategy builds long-term relationships by favoring cooperation but includes adaptive responses to opponent's behavior to correct for errors and occasional defections. Forgiveness is limited to encourage cooperation unless consistent defection is observed."
+        },
+        "Reasoning_A":"Contrite Tit-for-Tat: mirroring opponent's last move",
+        "Reasoning_B":"Suspicious Tit-for-Tat: starting with defection",
+        "Score_A":0,
+        "Score_B":5
+    },
+    {
+        "Generation":2,
+        "Pair":"Agent_0-Agent_0",
+        "Actions":"D-C",
+        "Payoffs":"5-0",
+        "Strategy_A":{
+            "strategy_rules":[
+                "If opponent cooperated in the last round, cooperate.",
+                "If opponent defected in the last round but overall cooperation rate is above 60%, cooperate with a probability equal to the forgiveness factor.",
+                "If opponent defected in the last two rounds consecutively, defect.",
+                "If the overall defection rate of the opponent exceeds the retaliation threshold, switch to always defecting.",
+                "If total rounds played are less than 10, cooperate to build initial trust unless opponent defects more than 50% of the time."
+            ],
+            "forgiveness_factor":0.75,
+            "retaliation_threshold":0.5,
+            "adaptability":0.8,
+            "rationale":"This strategy aims to build long-term relationships by starting cooperatively and maintaining cooperation if the opponent's defections are infrequent or isolated. Forgiveness allows recovery from errors or misjudgments, while adaptability ensures the strategy adjusts based on the opponent's behavior, resisting exploitation by consistently uncooperative opponents."
+        },
+        "Strategy_B":{
+            "strategy_rules":[
+                "If opponent cooperated in the last two rounds, then cooperate.",
+                "If opponent defected in the last round, assess total defection frequency. If below retaliation threshold, cooperate; otherwise, defect.",
+                "If an error is suspected due to a sudden unexpected defection after a long cooperation, cooperate once to test opponent's intention.",
+                "Adjust future cooperation level based on the ratio of opponent's cooperation to defection, aiming to match but not exceed their cooperation level."
+            ],
+            "forgiveness_factor":0.3,
+            "retaliation_threshold":0.5,
+            "adaptability":0.7,
+            "rationale":"This strategy aims to build long-term cooperation by rewarding cooperative behavior and cautiously punishing defections, but with room for forgiveness. It allows for adaptive responses based on the opponent's behavior, maintaining a balance between cooperation and necessary defection to discourage exploitation."
+        },
+        "Reasoning_A":"Always Defect strategy",
+        "Reasoning_B":"Suspicious Tit-for-Tat: mirroring opponent's move after initial defection",
+        "Score_A":5,
+        "Score_B":0
+    },
+    {
+        "Generation":3,
+        "Pair":"Agent_2-Agent_3",
+        "Actions":"C-C",
+        "Payoffs":"3-3",
+        "Strategy_A":{
+            "strategy_rules":[
+                "If opponent's cooperation rate > 0.7, cooperate",
+                "If opponent defected in the last move and previous cooperation rate > 0.5, defect",
+                "If two consecutive defections by opponent, defect",
+                "If opponent defected due to a possible error (random defection in a pattern of cooperations), cooperate",
+                "If our defection rate > 0.5, switch to cooperation in the next move"
+            ],
+            "forgiveness_factor":0.3,
+            "retaliation_threshold":0.5,
+            "adaptability":0.7,
+            "rationale":"This strategy builds long-term relationships by favoring cooperation but includes adaptive responses to opponent's behavior to correct for errors and occasional defections. Forgiveness is limited to encourage cooperation unless consistent defection is observed."
+        },
+        "Strategy_B":{
+            "strategy_rules":[
+                "If the opponent cooperated in the last round, cooperate this round.",
+                "If the opponent defected in the last round, calculate the total cooperation rate. If it is above the retaliation threshold, cooperate; otherwise, defect.",
+                "If a defection from the opponent occurs after a long streak of cooperation, treat it as a possible error and cooperate again.",
+                "Gradually increase defection if the opponent's cooperation rate drops below the retaliation threshold for three consecutive rounds.",
+                "Reset cooperation if the opponent returns to cooperation for at least two consecutive rounds after a defection."
+            ],
+            "forgiveness_factor":0.25,
+            "retaliation_threshold":0.75,
+            "adaptability":0.5,
+            "rationale":"This strategy aims to foster long-term cooperation by initially responding to cooperation with cooperation, while also including mechanisms for error correction and adapting to changes in the opponent's behavior. Forgiveness allows the strategy to maintain a cooperative relationship despite occasional defections, which might be errors. The adaptability factor ensures the strategy can dynamically adjust to the opponent's overall behavior, switching between cooperative and defensive modes based on observed patterns."
+        },
+        "Reasoning_A":"Suspicious Tit-for-Tat: mirroring opponent's move after initial defection",
+        "Reasoning_B":"Random: choosing action at random",
+        "Score_A":3,
+        "Score_B":3
+    },
+    {
+        "Generation":3,
+        "Pair":"Agent_0-Agent_2",
+        "Actions":"D-C",
+        "Payoffs":"5-0",
+        "Strategy_A":{
+            "strategy_rules":[
+                "If opponent cooperated in the last round, cooperate.",
+                "If opponent defected in the last round but overall cooperation rate is above 60%, cooperate with a probability equal to the forgiveness factor.",
+                "If opponent defected in the last two rounds consecutively, defect.",
+                "If the overall defection rate of the opponent exceeds the retaliation threshold, switch to always defecting.",
+                "If total rounds played are less than 10, cooperate to build initial trust unless opponent defects more than 50% of the time."
+            ],
+            "forgiveness_factor":0.75,
+            "retaliation_threshold":0.5,
+            "adaptability":0.8,
+            "rationale":"This strategy aims to build long-term relationships by starting cooperatively and maintaining cooperation if the opponent's defections are infrequent or isolated. Forgiveness allows recovery from errors or misjudgments, while adaptability ensures the strategy adjusts based on the opponent's behavior, resisting exploitation by consistently uncooperative opponents."
+        },
+        "Strategy_B":{
+            "strategy_rules":[
+                "Start with cooperation",
+                "If opponent cooperated in the last round, cooperate",
+                "If opponent defected in the last round, defect with a probability equal to the retaliation_threshold",
+                "If opponent defected but overall cooperation rate is higher than 75%, cooperate with a probability equal to the forgiveness_factor",
+                "Adjust retaliation_threshold based on opponent's defection frequency every 10 rounds",
+                "Adjust forgiveness_factor based on overall game success rate every 15 rounds"
+            ],
+            "forgiveness_factor":0.3,
+            "retaliation_threshold":0.5,
+            "adaptability":0.7,
+            "rationale":"This strategy starts cooperative but adapts based on the opponent's behavior and overall game dynamics. It includes mechanisms for error correction by forgiving occasional defections if the opponent mostly cooperates. It also adjusts its retaliation level based on the frequency of the opponent's defections, promoting a balance between responsiveness and stability in long-term relationships."
+        },
+        "Reasoning_A":"Always Defect strategy",
+        "Reasoning_B":"Win-Stay, Lose-Shift: default cooperation",
+        "Score_A":5,
+        "Score_B":0
+    },
+    {
+        "Generation":3,
+        "Pair":"Agent_1-Agent_0",
+        "Actions":"D-C",
+        "Payoffs":"5-0",
+        "Strategy_A":{
+            "strategy_rules":[
+                "If opponent cooperates, cooperate next round",
+                "If opponent defects for the first time, retaliate by defecting once then cooperate in the next round",
+                "If opponent defects and total defections by opponent exceed retaliation_threshold, continue to defect until opponent cooperates twice consecutively",
+                "If opponent cooperates at least three times after a period of defection, reset retaliation counter and cooperate",
+                "Periodically cooperate unconditionally to test opponent's response pattern"
+            ],
+            "forgiveness_factor":0.3,
+            "retaliation_threshold":0.4,
+            "adaptability":0.7,
+            "rationale":"This strategy builds long-term relationships by being forgiving and resetting defection counters following evidence of cooperative intent. It includes error correction by allowing occasional unconditional cooperation to reassess the opponent's strategy. Adaptability is facilitated through varying responses based on opponent's past behavior, and the strategy can shift between cooperation and defection based on the opponent's actions."
+        },
+        "Strategy_B":{
+            "strategy_rules":[
+                "If the opponent cooperates twice in a row, cooperate.",
+                "If the opponent defects after cooperating, defect once then cooperate to test changes in opponent's strategy.",
+                "If the opponent defects twice in a row, defect until they cooperate again, then cooperate once to test their response.",
+                "If an unexpected defect occurs (i.e., after consistent cooperation), attribute to possible error and cooperate once before deciding next action based on opponent's response.",
+                "Adjust the strategy based on the opponent's last 10 moves, increasing cooperation with those who mostly cooperate and increasing defection with consistent defectors."
+            ],
+            "forgiveness_factor":0.7,
+            "retaliation_threshold":0.5,
+            "adaptability":0.8,
+            "rationale":"This strategy builds long-term relationships by rewarding cooperation and cautiously punishing defection. The forgiveness factor allows recovery from potential miscommunication or errors, promoting stability and trust. Adaptability ensures the strategy remains effective against various opponent behaviors by analyzing recent interactions and adjusting accordingly."
+        },
+        "Reasoning_A":"Always Defect strategy",
+        "Reasoning_B":"Grim Trigger: continuing cooperation",
+        "Score_A":5,
+        "Score_B":0
+    }
+]

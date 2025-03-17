@@ -48,11 +48,15 @@ Each agent:
 
 #%%
 class EnhancedAgent:
-    def __init__(self, name):
+    def __init__(self, name, model="gpt-4-turbo"):
         self.name = name
+        self.model = model  # Track model architecture
         self.total_score = 0
-        self.history = []  # Log of (opponent, own_action, opp_action, own_payoff)
-        self.strategy_matrix = None  # Will be set asynchronously
+        self.history = []
+        self.strategy_matrix = None
+        self.strategy_evolution = []  # Track strategy changes over generations
+        self.cooperation_rate = 0.0
+        self.reciprocity_index = 0.0  # Measure tit-for-tat behavior
 
     async def initialize(self):
         """Asynchronously initialize the agent's strategy matrix"""
@@ -60,55 +64,99 @@ class EnhancedAgent:
         return self
 
     async def generate_strategy_matrix(self):
-        prompt = """
-You are defining a strategy for repeatedly playing the Iterated Prisoner's Dilemma.
-Output a concise strategy matrix that clearly states your action (C or D) based on:
-1. Your previous action
-2. Your opponent's previous action
-Format example:
-CC: C
-CD: D
-DC: C
-DD: D
+        prompt = """System: You are developing a novel strategy for the Iterated Prisoner's Dilemma. 
+        Create a unique approach that considers:
+        - Long-term relationship building
+        - Error correction mechanisms
+        - Adaptive response patterns
+        - Potential for both cooperation and defection
+        
+        Format: JSON structure with:
+        {
+            "strategy_rules": [list of conditional statements],
+            "forgiveness_factor": 0-1,
+            "retaliation_threshold": 0-1,
+            "adaptability": 0-1,
+            "rationale": "str"
+        }"""
+        
+        for _ in range(3):  # Retry up to 3 times
+            try:
+                response = await async_client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "system", "content": "You are a game theory expert creating novel IPD strategies. Respond ONLY with valid JSON."},
+                             {"role": "user", "content": prompt}],
+                    temperature=0.8,
+                    response_format={"type": "json_object"},
+                    max_tokens=300
+                )
+                json_str = response.choices[0].message.content.strip()
+                # Basic JSON validation
+                if not json_str.startswith('{') or not json_str.endswith('}'):
+                    raise json.JSONDecodeError("Missing braces", json_str, 0)
+                strategy = json.loads(json_str)
+                # Validate required fields
+                if all(k in strategy for k in ["strategy_rules", "forgiveness_factor", 
+                                             "retaliation_threshold", "adaptability"]):
+                    return strategy
+            except (json.JSONDecodeError, KeyError) as e:
+                print(f"Retrying strategy generation due to error: {str(e)}")
+                continue
+        
+        # Fallback strategy if all retries fail
+        return {
+            "strategy_rules": ["CC: C", "CD: D", "DC: D", "DD: C"],
+            "forgiveness_factor": 0.5,
+            "retaliation_threshold": 0.5,
+            "adaptability": 0.5,
+            "rationale": "Default fallback strategy"
+        }
 
-Additionally, provide one brief sentence describing your overall reasoning.
-Do NOT reference any classic strategies by name.
-"""
-        response = await async_client.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.9,
-            max_tokens=100
-        )
-        return response.choices[0].message.content.strip()
-
-    async def decide_action(self, opponent_name):
-        history_summary = "\n".join(
-            [f"Round {idx+1}: Opponent: {opp}, You: {self_act}, Opponent action: {opp_act}, Your payoff: {payoff}"
-             for idx, (opp, self_act, opp_act, payoff) in enumerate(self.history[-3:])]
-        ) or "No previous rounds."
-
-        decision_prompt = f"""
-You are playing the Iterated Prisoner's Dilemma against '{opponent_name}'.
-Your strategy matrix is:
-{self.strategy_matrix}
-
-Recent interaction history:
-{history_summary}
-
-Based on this information, decide your next action. 
-Respond with a single character (C or D) and a brief explanatory sentence.
-"""
-        response = await async_client.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[{"role": "user", "content": decision_prompt}],
-            temperature=0.7,
-            max_tokens=20
-        )
-        content = response.choices[0].message.content.strip()
-        action = content[0].upper() if content and content[0].upper() in ['C', 'D'] else random.choice(['C', 'D'])
-        reasoning = content[2:].strip() if len(content) > 2 else "No clear reasoning provided."
-        return action, reasoning
+    async def decide_action(self, opponent):
+        analysis_prompt = f"""Analyze this Prisoner's Dilemma interaction history with {opponent.name}:
+        Previous Rounds: {str(self.history[-3:]) if len(self.history) > 0 else 'None'}
+        
+        Your Strategy: {json.dumps(self.strategy_matrix)}
+        Opponent's Model: {opponent.model}
+        Opponent's Cooperation Rate: {opponent.cooperation_rate:.2f}
+        
+        Output MUST be valid JSON with:
+        {{
+            "action": "C/D",
+            "confidence": 0-1,
+            "rationale": "str",
+            "expected_opponent_action": "C/D",
+            "risk_assessment": "str"
+        }}"""
+        
+        for _ in range(3):  # Retry up to 3 times
+            try:
+                response = await async_client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "system", "content": "You are an AI game theorist. Respond ONLY with valid JSON."},
+                             {"role": "user", "content": analysis_prompt}],
+                    temperature=0.4,
+                    response_format={"type": "json_object"},
+                    max_tokens=150
+                )
+                json_str = response.choices[0].message.content.strip()
+                decision = json.loads(json_str)
+                action = decision.get("action", "C").upper()
+                if action not in ["C", "D"]:
+                    action = random.choice(["C", "D"])
+                return decision
+            except (json.JSONDecodeError, KeyError) as e:
+                print(f"Retrying decision due to error: {str(e)}")
+                continue
+        
+        # Fallback to random choice if all retries fail
+        return {
+            "action": random.choice(["C", "D"]),
+            "confidence": 0.5,
+            "rationale": "Fallback decision",
+            "expected_opponent_action": "C",
+            "risk_assessment": "Unknown"
+        }
 
     def log_interaction(self, opponent, own_action, opp_action, payoff):
         self.history.append((opponent, own_action, opp_action, payoff))
@@ -137,11 +185,21 @@ async def create_enhanced_agents(n=4) -> List[EnhancedAgent]:
 
 async def simulate_interaction(agent_a: EnhancedAgent, agent_b: EnhancedAgent) -> Dict:
     """Simulate an interaction between two agents asynchronously"""
-    # Get actions concurrently
-    (action_a, reasoning_a), (action_b, reasoning_b) = await asyncio.gather(
-        agent_a.decide_action(agent_b.name),
-        agent_b.decide_action(agent_a.name)
+    # Get decisions concurrently
+    decision_a, decision_b = await asyncio.gather(
+        agent_a.decide_action(agent_b),
+        agent_b.decide_action(agent_a)
     )
+    
+    # Extract and normalize actions
+    def normalize_action(decision):
+        action = str(decision.get("action", "C")).upper()
+        # Take first character and ensure validity
+        action = action[0] if action else "C"
+        return "C" if action == "C" else "D"
+    
+    action_a = normalize_action(decision_a)
+    action_b = normalize_action(decision_b)
     
     payoff_a, payoff_b = payoff_matrix[(action_a, action_b)]
     agent_a.total_score += payoff_a
@@ -155,8 +213,8 @@ async def simulate_interaction(agent_a: EnhancedAgent, agent_b: EnhancedAgent) -
         "Payoffs": f"{payoff_a}-{payoff_b}",
         "Strategy_A": agent_a.strategy_matrix,
         "Strategy_B": agent_b.strategy_matrix,
-        "Reasoning_A": reasoning_a,
-        "Reasoning_B": reasoning_b,
+        "Reasoning_A": decision_a.get("rationale", ""),
+        "Reasoning_B": decision_b.get("rationale", ""),
         "Score_A": agent_a.total_score,
         "Score_B": agent_b.total_score
     }
@@ -172,7 +230,7 @@ The main simulation function runs multiple generations of agents, with each gene
 """
 
 #%%
-async def run_llm_driven_simulation(num_agents=4, num_generations=5):
+async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gpt-4-turbo"]):
     # Create timestamped results folder
     results_folder = os.path.join(os.path.dirname(__file__), "simulation_results")
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -198,22 +256,53 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5):
         interaction_results = await asyncio.gather(*interaction_tasks)
         
         # Process results
+        gen_metrics = {
+            "mutual_cooperation": 0,
+            "mutual_defection": 0,
+            "temptation_payoffs": 0,
+            "sucker_payoffs": 0,
+            "total_payoffs": 0
+        }
+        
         for result in interaction_results:
             detailed_logs.append({
                 "Generation": gen+1,
                 **result
             })
             print(f"{result['Pair']}: {result['Actions']}, Payoffs: {result['Payoffs']}")
+            
+            # Update generation metrics
+            actions = result['Actions'].split('-')
+            payoffs = [int(p) for p in result['Payoffs'].split('-')]
+            gen_metrics["total_payoffs"] += sum(payoffs)
+            
+            if actions == ['C', 'C']:
+                gen_metrics["mutual_cooperation"] += 1
+            elif actions == ['D', 'D']:
+                gen_metrics["mutual_defection"] += 1
+            elif 'D' in actions and 'C' in actions:
+                if actions[0] == 'D': 
+                    gen_metrics["temptation_payoffs"] += 1
+                else: 
+                    gen_metrics["sucker_payoffs"] += 1
 
         all_detailed_logs.extend(detailed_logs)
 
-        # Log generation summary
-        avg_score = sum(a.total_score for a in agents) / len(agents)
+        # Calculate generation-level metrics
+        total_possible = 3 * len(interaction_results) * 2  # Max 3 points per player per interaction
+        pareto_eff = gen_metrics["total_payoffs"] / total_possible if total_possible > 0 else 0
+        nash_dev = 1 - (gen_metrics["mutual_defection"] / len(interaction_results)) if len(interaction_results) > 0 else 0
+        strat_diversity = len(set(hash(json.dumps(a.strategy_matrix)) for a in agents))
+
+        # Log generation summary with metrics
+        avg_score = sum(a.total_score for a in agents) / len(agents) if len(agents) > 0 else 0
         generation_summary.append({
             "Generation": gen+1,
             "Average_Score": avg_score,
-            "Strategies": [a.strategy_matrix for a in agents],
-            "Total_Scores": [a.total_score for a in agents]
+            "Pareto_Efficiency": pareto_eff,
+            "Nash_Deviation": nash_dev,
+            "Strategy_Diversity": strat_diversity,
+            **gen_metrics
         })
 
         # Evolution: select top agents and generate new ones.
@@ -236,7 +325,8 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5):
             "DC": payoff_matrix[('D', 'C')],
             "DD": payoff_matrix[('D', 'D')]
         },
-        "timestamp": current_time
+        "timestamp": current_time,
+        "models": models
     }
     with open(os.path.join(run_folder, "parameters.json"), 'w') as f:
         json.dump(params, f, indent=4)
@@ -262,6 +352,35 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5):
     plt.grid(True)
     plt.savefig(os.path.join(run_folder, "cooperation_over_generations.png"))
     plt.close()
+
+    # Update the visualization function
+    def create_research_visualizations():
+        plt.figure(figsize=(12, 8))
+        plt.subplot(2,2,1)
+        plt.plot([m["Strategy_Diversity"] for m in generation_summary], marker='o')
+        plt.title("Strategy Diversity Over Generations")
+        
+        plt.subplot(2,2,2)
+        plt.bar(["Mutual C", "Mutual D", "Temptation", "Sucker"], 
+               [generation_summary[-1]["mutual_cooperation"],
+                generation_summary[-1]["mutual_defection"],
+                generation_summary[-1]["temptation_payoffs"],
+                generation_summary[-1]["sucker_payoffs"]])
+        plt.title("Final Generation Outcome Distribution")
+        
+        plt.subplot(2,2,3)
+        plt.plot([m["Pareto_Efficiency"] for m in generation_summary], color='green')
+        plt.title("Pareto Efficiency Progress")
+        
+        plt.subplot(2,2,4)
+        plt.scatter([m["Nash_Deviation"] for m in generation_summary],
+                  [m["Average_Score"] for m in generation_summary])
+        plt.title("Nash Deviation vs Average Score")
+        
+        plt.tight_layout()
+        plt.savefig(os.path.join(run_folder, "research_metrics.png"))
+
+    create_research_visualizations()
 
     print(f"\nSimulation completed. Results saved in: {run_folder}")
     return generation_summary, all_detailed_logs
