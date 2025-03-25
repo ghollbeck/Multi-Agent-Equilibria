@@ -1,0 +1,1288 @@
+# %% [markdown]
+# # Optimized LLM-driven Decision Making for Iterated Prisoner's Dilemma
+# 
+# 
+# 
+# This notebook implements an LLM-driven simulation of the Iterated Prisoner's Dilemma using OpenAI's API. 
+# 
+# The simulation features:
+# 
+# - Dynamic strategy generation using GPT-4
+# 
+# - Evolutionary agent selection
+# 
+# - Asynchronous execution for improved performance
+# 
+# - Detailed logging and visualization
+
+# %% [markdown]
+# ## Setup and Imports
+# 
+# First, we'll import the necessary libraries and set up our OpenAI client.
+
+# %%
+#%% 
+from openai import OpenAI, AsyncOpenAI
+import os
+import random
+import pandas as pd
+import json
+import matplotlib.pyplot as plt
+import datetime
+from dotenv import load_dotenv
+import asyncio
+from typing import List, Tuple, Dict
+import aiohttp
+import sys
+from dataclasses import dataclass, field, asdict
+import numpy as np
+
+import concurrent.futures
+from functools import partial
+import time
+from tqdm import tqdm
+
+
+
+# Load environment variables and setup OpenAI client
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=api_key)
+async_client = AsyncOpenAI(api_key=api_key)
+
+# =============================================================================
+# Comprehensive List of Iterated Prisoner's Dilemma (IPD) Strategies
+# (Arranged from Most Social/Collaborative to Most Antisocial)
+# =============================================================================
+# Each tuple contains (strategy_key, description)
+PD_STRATEGIES_SORTED = [
+    ("generous_tit_for_tat", "Generous Tit-for-Tat: Highly cooperative and forgiving, it promotes long-term mutual cooperation by occasionally overlooking defections.", 0.85),
+    ("tit_for_tat", "Tit-for-Tat: Begins with cooperation and reciprocates the opponent's previous move, fostering reciprocal behavior.", 0.70),
+    ("win_stay_lose_shift", "Win-Stay, Lose-Shift (Pavlov): Repeats a move if it yielded a favorable payoff, adapting quickly to both cooperation and defection.", 0.65),
+    ("contrite_tit_for_tat", "Contrite Tit-for-Tat: Similar to Tit-for-Tat but offers forgiveness for accidental defections, thereby restoring cooperation.", 0.75),
+    ("always_cooperate", "Always Cooperate: Consistently cooperates regardless of the opponent's actions—very social but vulnerable to exploitation.", 1.0),
+    ("grim_trigger", "Grim Trigger: Cooperates until the first defection, then defects forever, enforcing strict punishment against betrayal.", 0.40),
+    ("suspicious_tit_for_tat", "Suspicious Tit-for-Tat: Starts with defection to test the opponent before potentially cooperating, less immediately cooperative.", 0.35),
+    ("always_defect", "Always Defect: Consistently defects, maximizing short-term gain at the expense of long-term cooperation.", 0.0),
+    # ("random", "Random: Chooses actions randomly, providing unpredictable behavior.", 0.5),
+    # ("soft_majority", "Soft Majority: Cooperates unless the opponent has defected more times than cooperated.", 0.6),
+    # ("hard_majority", "Hard Majority: Defects unless the opponent has cooperated more times than defected.", 0.4),
+    # ("prober", "Prober: Defects initially to test the opponent, then mimics the opponent's last move.", 0.45),
+    # ("soft_grim", "Soft Grim: Similar to Grim Trigger but allows for a single forgiveness after defection.", 0.55),
+    # ("hard_tit_for_tat", "Hard Tit-for-Tat: Similar to Tit-for-Tat but retaliates with multiple defections after a defection.", 0.3),
+    # ("soft_tit_for_tat", "Soft Tit-for-Tat: Similar to Tit-for-Tat but occasionally cooperates after a defection.", 0.7),
+    # ("adaptive", "Adaptive: Adjusts strategy based on the opponent's behavior over time.", 0.6),
+    # ("pavlov", "Pavlov: Repeats the last move if it was rewarded, otherwise switches.", 0.65),
+    # ("reverse_tit_for_tat", "Reverse Tit-for-Tat: Defects if the opponent cooperated last, cooperates if the opponent defected.", 0.25),
+    # ("bully", "Bully: Starts with defection and continues to defect unless the opponent retaliates.", 0.2),
+    # ("peace_maker", "Peace Maker: Cooperates for a set number of rounds before switching to a more retaliatory strategy.", 0.75)
+]
+
+
+# =============================================================================
+# Data Classes for Structured Logging
+# =============================================================================
+@dataclass
+class InteractionData:
+    generation: int
+    pair: str
+    round_actions: str
+    payoffs: str
+    reasoning_A: str
+    reasoning_B: str
+    score_A: int
+    score_B: int
+
+@dataclass
+class SimulationData:
+    hyperparameters: dict
+    interactions: List[InteractionData] = field(default_factory=list)
+    equilibrium_metrics: dict = field(default_factory=dict)
+
+    def add_interaction(self, interaction: InteractionData):
+        self.interactions.append(interaction)
+
+    def add_equilibrium_data(self, generation, nash_deviation, best_response_diff):
+        self.equilibrium_metrics[generation] = {
+            'nash_deviation': nash_deviation,
+            'best_response_diff': best_response_diff
+        }
+
+    def to_dict(self):
+        return {
+            'hyperparameters': self.hyperparameters,
+            'interactions': [asdict(inter) for inter in self.interactions],
+            'equilibrium_metrics': self.equilibrium_metrics
+        }
+
+# %% [markdown]
+# ## Agent Implementation
+# 
+# The EnhancedAgent class represents a player in the Prisoner's Dilemma game.
+# 
+# Each agent:
+# 
+# - Has a unique strategy matrix generated by GPT-4
+# 
+# - Maintains a history of interactions
+# 
+# - Makes decisions based on past interactions and current game state
+
+# %%
+#%% 
+class EnhancedAgent:
+    def __init__(self, name, model="gpt-4o-mini", 
+                 strategy_tactic="tit_for_tat", 
+                 cooperation_bias=0.5,      # Bias toward cooperation (0 to 1)
+                 risk_aversion=0.5,         # Tendency to avoid risky moves (0 to 1)
+                 game_theoretic_prior=None  # Additional prior parameters as a dict
+                ):
+        self.name = name
+        self.model = model  # Track model architecture
+        self.strategy_tactic = strategy_tactic  # Must be one of the keys in PD_STRATEGIES
+        self.cooperation_bias = cooperation_bias
+        self.risk_aversion = risk_aversion
+        self.game_theoretic_prior = game_theoretic_prior if game_theoretic_prior is not None else {}
+        
+        self.total_score = 0
+        self.history = []  # Each entry: (opponent_name, own_action, opp_action, payoff)
+        self.strategy_matrix = None
+        self.strategy_evolution = []  # Track strategy changes over generations
+        self.cooperation_rate = 0.0
+        self.reciprocity_index = 0.0  # Measure tit-for-tat behavior
+        self.fixed_opponent = None  # (Optional) store fixed opponent name for reference
+
+    async def initialize(self):
+        """Asynchronously initialize the agent's strategy matrix."""
+        self.strategy_matrix = await self.generate_strategy_matrix()
+        return self
+
+    async def generate_strategy_matrix(self):
+
+
+
+        # prompt = """System: You are developing a novel strategy for the Iterated Prisoner's Dilemma. 
+        #             Create a unique approach that considers:
+        #             - Long-term relationship building
+        #             - Error correction mechanisms
+        #             - Adaptive response patterns
+        #             - Potential for both cooperation and defection
+
+        #             Format: JSON structure with:
+        #             {
+        #                 "strategy_rules": [list of conditional statements],
+        #                 "forgiveness_factor": 0-1,
+        #                 "retaliation_threshold": 0-1,
+        #                 "adaptability": 0-1,
+        #                 "rationale": "str"
+        #             }"""
+        
+
+        def generate_strategy_prompt():
+            # List available strategies
+            available_strategies = [desc for _, desc, _ in PD_STRATEGIES_SORTED]
+            strategies_text = "\n".join(f"- {strategy}" for strategy in available_strategies)
+
+            # Construct the prompt
+            prompt = f"""
+            You are tasked with developing a novel strategy for a strategic decision-making game. 
+            In this game, you interact with another player over multiple rounds, and your objective is to maximize your total score over the long run. 
+            You have two possible actions in each round: "Cooperate" or "Defect".
+
+            Considerations for Strategy Development:
+            - Focus on building long-term beneficial relationships with the other player.
+            - Implement mechanisms to correct errors in decision-making.
+            - Develop adaptive response patterns based on the other player's behavior.
+            - Balance the potential for both cooperation and defection to optimize your score.
+
+            Available Strategies:
+            {strategies_text}
+
+            Guidelines:
+            - Do not use any pre-existing theories or strategies from your training data.
+            - Base your strategy purely on your own behavior and observations to maximize your score over time.
+
+            Output Format:
+            Your strategy should be structured in JSON format as follows:
+
+            {{
+                "strategy_rules": [list of conditional statements],
+                "forgiveness_factor": 0-1,
+                "retaliation_threshold": 0-1,
+                "adaptability": 0-1,
+                "rationale": "str"
+            }}
+            """
+            return prompt
+        
+
+        
+        prompt  = generate_strategy_prompt()
+
+
+
+
+
+
+        
+        
+        for _ in range(3):  # Retry up to 3 times
+            try:
+                response = await async_client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "system", "content": "You are a game theory expert creating novel IPD strategies. Respond ONLY with valid JSON."},
+                              {"role": "user", "content": prompt}],
+                    temperature=0.8,
+                    response_format={"type": "json_object"},
+                    max_tokens=300
+                )
+                json_str = response.choices[0].message.content.strip()
+                if not json_str.startswith('{') or not json_str.endswith('}'):
+                    raise json.JSONDecodeError("Missing braces", json_str, 0)
+                strategy = json.loads(json_str)
+                if all(k in strategy for k in ["strategy_rules", "forgiveness_factor", "retaliation_threshold", "adaptability"]):
+                    return strategy
+            except (json.JSONDecodeError, KeyError) as e:
+                print(f"Retrying strategy generation due to error: {str(e)}")
+                continue
+        
+        return {
+            "strategy_rules": ["CC: C", "CD: D", "DC: D", "DD: C"],
+            "forgiveness_factor": 0.5,
+            "retaliation_threshold": 0.5,
+            "adaptability": 0.5,
+            "rationale": "Default fallback strategy"
+        }
+
+
+
+
+
+    def decide_action_explicit(self, opponent) -> Dict:
+        """
+        Implements an explicit decision based on the chosen strategy tactic.
+        Returns a dict with keys: action, confidence, rationale, expected_opponent_action, risk_assessment.
+        """
+        if self.strategy_tactic == "always_cooperate":
+            return {"action": "C", "confidence": 1.0, "rationale": "Always Cooperate strategy", "expected_opponent_action": "C", "risk_assessment": "Low"}
+        elif self.strategy_tactic == "always_defect":
+            return {"action": "D", "confidence": 1.0, "rationale": "Always Defect strategy", "expected_opponent_action": "D", "risk_assessment": "Low"}
+        elif self.strategy_tactic == "tit_for_tat":
+            if self.history:
+                last_opponent_action = self.history[-1][2]
+                return {"action": last_opponent_action, "confidence": 1.0, "rationale": "Tit-for-Tat: mirroring opponent's last move", "expected_opponent_action": last_opponent_action, "risk_assessment": "Medium"}
+            else:
+                return {"action": "C", "confidence": 1.0, "rationale": "Tit-for-Tat: starting with cooperation", "expected_opponent_action": "C", "risk_assessment": "Low"}
+        elif self.strategy_tactic == "grim_trigger":
+            if any(interaction[2] == "D" for interaction in self.history):
+                return {"action": "D", "confidence": 1.0, "rationale": "Grim Trigger: defecting after observed defection", "expected_opponent_action": "D", "risk_assessment": "High"}
+            else:
+                return {"action": "C", "confidence": 1.0, "rationale": "Grim Trigger: continuing cooperation", "expected_opponent_action": "C", "risk_assessment": "Low"}
+        elif self.strategy_tactic == "win_stay_lose_shift":
+            if self.history:
+                last_payoff = self.history[-1][3]
+                last_move = self.history[-1][1]
+                if last_payoff >= 3:
+                    return {"action": last_move, "confidence": 1.0, "rationale": "Win-Stay, Lose-Shift: repeating successful move", "expected_opponent_action": "C", "risk_assessment": "Low"}
+                else:
+                    new_move = "D" if last_move == "C" else "C"
+                    return {"action": new_move, "confidence": 1.0, "rationale": "Win-Stay, Lose-Shift: switching due to low payoff", "expected_opponent_action": "C", "risk_assessment": "Medium"}
+            else:
+                return {"action": "C", "confidence": 1.0, "rationale": "Win-Stay, Lose-Shift: default cooperation", "expected_opponent_action": "C", "risk_assessment": "Low"}
+        elif self.strategy_tactic == "generous_tit_for_tat":
+            if self.history:
+                last_opponent_action = self.history[-1][2]
+                if last_opponent_action == "D" and random.random() < self.cooperation_bias:
+                    return {"action": "C", "confidence": 1.0, "rationale": "Generous Tit-for-Tat: forgiving defection", "expected_opponent_action": "C", "risk_assessment": "Medium"}
+                else:
+                    return {"action": last_opponent_action, "confidence": 1.0, "rationale": "Generous Tit-for-Tat: mirroring last move", "expected_opponent_action": last_opponent_action, "risk_assessment": "Medium"}
+            else:
+                return {"action": "C", "confidence": 1.0, "rationale": "Generous Tit-for-Tat: default cooperation", "expected_opponent_action": "C", "risk_assessment": "Low"}
+        elif self.strategy_tactic == "suspicious_tit_for_tat":
+            if self.history:
+                last_opponent_action = self.history[-1][2]
+                return {"action": last_opponent_action, "confidence": 1.0, "rationale": "Suspicious Tit-for-Tat: mirroring opponent's move", "expected_opponent_action": last_opponent_action, "risk_assessment": "High"}
+            else:
+                return {"action": "D", "confidence": 1.0, "rationale": "Suspicious Tit-for-Tat: starting with defection", "expected_opponent_action": "D", "risk_assessment": "High"}
+        elif self.strategy_tactic == "contrite_tit_for_tat":
+            if self.history:
+                last_self_move = self.history[-1][1]
+                last_opponent_move = self.history[-1][2]
+                if last_opponent_move == "D" and last_self_move == "D":
+                    return {"action": "C", "confidence": 1.0, "rationale": "Contrite Tit-for-Tat: apologizing for unintended defection", "expected_opponent_action": "C", "risk_assessment": "Medium"}
+                else:
+                    return {"action": last_opponent_move, "confidence": 1.0, "rationale": "Contrite Tit-for-Tat: mirroring opponent's last move", "expected_opponent_action": last_opponent_move, "risk_assessment": "Medium"}
+            else:
+                return {"action": "C", "confidence": 1.0, "rationale": "Contrite Tit-for-Tat: default cooperation", "expected_opponent_action": "C", "risk_assessment": "Low"}
+        elif self.strategy_tactic == "always_defect":
+            return {"action": "D", "confidence": 1.0, "rationale": "Always Defect strategy", "expected_opponent_action": "D", "risk_assessment": "Low"}
+        elif self.strategy_tactic == "always_cooperate":
+            return {"action": "C", "confidence": 1.0, "rationale": "Always Cooperate strategy", "expected_opponent_action": "C", "risk_assessment": "Low"}
+        # elif self.strategy_tactic == "random":
+        #     action = random.choice(["C", "D"])
+        #     return {"action": action, "confidence": 1.0, "rationale": "Random strategy: unpredictable decision", "expected_opponent_action": "C", "risk_assessment": "Variable"}
+        else:
+            return None
+
+    async def decide_action(self, opponent):
+        """
+        Determine an action using an explicit tactic if available.
+        Otherwise, fallback to the LLM-based decision approach.
+        Only the last three rounds are provided as context (partial visibility).
+        """
+        explicit_decision = self.decide_action_explicit(opponent)
+        if explicit_decision is not None:
+            return explicit_decision
+
+        # Convert histories to a readable format
+        own_history_str = "\n".join([f"Round {i+1}: {entry}" for i, entry in enumerate(self.history)])
+        opponent_history_str = "\n".join([f"Round {i+1}: {entry}" for i, entry in enumerate(opponent.history)])
+
+        analysis_prompt = f"""Analyze this interaction history with {opponent.name}:
+Your Entire History:
+{own_history_str}
+
+Opponent's Entire History:
+{opponent_history_str}
+
+Your Strategy: {json.dumps(self.strategy_matrix)}
+Opponent's Model: {opponent.model}
+Opponent's Cooperation Rate: {opponent.cooperation_rate:.2f}
+
+Output MUST be valid JSON with:
+{{
+    "action": "C/D",
+    "confidence": 0-1,
+    "rationale": "str",
+    "expected_opponent_action": "C/D",
+    "risk_assessment": "str"
+}}"""
+        
+        for _ in range(3):
+            try:
+                response = await async_client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "system", "content": "You are an AI game theorist. Respond ONLY with valid JSON."},
+                              {"role": "user", "content": analysis_prompt}],
+                    temperature=0.4,
+                    response_format={"type": "json_object"},
+                    max_tokens=150
+                )
+                json_str = response.choices[0].message.content.strip()
+                decision = json.loads(json_str)
+                action = decision.get("action", "C").upper()
+                if action not in ["C", "D"]:
+                    print(f"Retrying decision due to error: {str(e)}")
+                    continue
+
+                return decision
+            except (json.JSONDecodeError, KeyError) as e:
+                print(f"Retrying decision due to error: {str(e)}")
+                continue
+        
+        return {
+            "action": "random",
+            "confidence": 0.5,
+            "rationale": "Fallback decision",
+            "expected_opponent_action": "C",
+            "risk_assessment": "Unknown"
+        }
+
+    def log_interaction(self, opponent, own_action, opp_action, payoff):
+        self.history.append((opponent, own_action, opp_action, payoff))
+
+    async def update_strategy(self):
+        """
+        Update the agent's strategy based on its past interactions with its fixed opponent.
+        """
+        # Use only interactions with the fixed opponent if available
+        if self.fixed_opponent is not None:
+            relevant_history = [entry for entry in self.history if entry[0] == self.fixed_opponent]
+        else:
+            relevant_history = self.history
+        history_str = "\n".join([f"Round {i+1}: {entry}" for i, entry in enumerate(relevant_history)])
+        # Build a list of allowed strategy keys as defined in the script
+        allowed_strategy_keys = [key for key, _, _ in PD_STRATEGIES_SORTED]
+        allowed_strategy_text = ", ".join(allowed_strategy_keys)
+        update_prompt = f"""
+        Based on your current strategy {json.dumps(self.strategy_matrix)} and the following interaction history with your opponent:
+        {history_str}
+        
+        Please update your strategy to maximize your long-term score.
+        You must choose exactly one of the following predefined strategies:
+        {allowed_strategy_text}
+
+        Return only valid JSON with the keys:
+        {{
+            "strategy_rules": [list of conditional statements],
+            "forgiveness_factor": 0-1,
+            "retaliation_threshold": 0-1,
+            "adaptability": 0-1,
+            "rationale": "str"
+        }}
+
+        Ensure that the "rationale" value is exactly one of the following: {allowed_strategy_text}.
+        """
+        for _ in range(3):
+            try:
+                response = await async_client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "system", "content": "You are an AI game theorist updating a strategy."},
+                              {"role": "user", "content": update_prompt}],
+                    temperature=0.8,
+                    response_format={"type": "json_object"},
+                    max_tokens=300
+                )
+                json_str = response.choices[0].message.content.strip()
+                if not json_str.startswith("{") or not json_str.endswith("}"):
+                    raise json.JSONDecodeError("Missing braces", json_str, 0)
+                new_strategy = json.loads(json_str)
+                if all(k in new_strategy for k in ["strategy_rules", "forgiveness_factor", "retaliation_threshold", "adaptability"]):
+                    self.strategy_matrix = new_strategy
+                    # Set strategy_tactic to the exact key returned in the "rationale" field.
+                    if "rationale" in new_strategy and new_strategy["rationale"] in allowed_strategy_keys:
+                        self.strategy_tactic = new_strategy["rationale"]
+                    else:
+                        # If the returned rationale is not valid, retain the old strategy_tactic.
+                        print(f"[WARNING] {self.name} returned an invalid strategy key in rationale: {new_strategy.get('rationale')}. Retaining previous strategy.")
+                    # print(f"[DEBUG] {self.name} updated strategy_tactic now: {self.strategy_tactic}")
+                    return
+            except (json.JSONDecodeError, KeyError) as e:
+                print(f"{self.name} strategy update retry due to error: {str(e)}")
+                continue
+        print(f"{self.name} strategy update failed; retaining existing strategy.")
+
+# %% [markdown]
+# ## Game Configuration
+# 
+# Define the payoff matrix for the Prisoner's Dilemma and helper functions for agent creation and interaction.
+
+# %%
+#%% 
+# Define the standard Prisoner's Dilemma payoff matrix.
+payoff_matrix = {
+    ('C', 'C'): (3, 3),  # Both cooperate
+    ('C', 'D'): (0, 5),  # Player 1 cooperates, Player 2 defects
+    ('D', 'C'): (5, 0),  # Player 1 defects, Player 2 cooperates
+    ('D', 'D'): (1, 1),  # Both defect
+}
+
+async def create_enhanced_agents(n=64) -> List[EnhancedAgent]:
+    """Create and initialize 64 agents with 8 agents having the same strategy initially."""
+    # Ensure we have enough strategies for the number of agents
+    if n != 64:
+        raise ValueError("Number of agents must be 64.")
+    
+    # Assign each strategy to 8 agents
+    strategies = PD_STRATEGIES_SORTED * 8
+    agents = []
+    for i, (strategy_key, strategy_desc, coop_level) in enumerate(strategies):
+        agent = EnhancedAgent(
+            f"Agent_{i+1}",
+            strategy_tactic=strategy_key,
+            cooperation_bias=coop_level,
+            risk_aversion=random.uniform(0.3, 0.7)
+        )
+        agents.append(agent)
+
+    agents = await asyncio.gather(*(agent.initialize() for agent in agents))
+    return agents
+
+async def simulate_interaction(agent_a: EnhancedAgent, agent_b: EnhancedAgent) -> Dict:
+    """Simulate an interaction between two agents asynchronously."""
+    decision_a, decision_b = await asyncio.gather(
+        agent_a.decide_action(agent_b),
+        agent_b.decide_action(agent_a)
+    )
+    
+    def normalize_action(decision):
+        action = str(decision.get("action", "C")).upper()
+        return "C" if action == "C" else "D"
+    
+    action_a = normalize_action(decision_a)
+    action_b = normalize_action(decision_b)
+    
+    payoff_a, payoff_b = payoff_matrix[(action_a, action_b)]
+    agent_a.total_score += payoff_a
+    agent_b.total_score += payoff_b
+    agent_a.log_interaction(agent_b.name, action_a, action_b, payoff_a)
+    agent_b.log_interaction(agent_a.name, action_b, action_a, payoff_b)
+    
+    interaction = InteractionData(
+        generation=None,  # To be filled in by simulation runner
+        pair=f"{agent_a.name}-{agent_b.name}",
+        round_actions=f"{action_a}-{action_b}",
+        payoffs=f"{payoff_a}-{payoff_b}",
+        reasoning_A=decision_a.get("rationale", ""),
+        reasoning_B=decision_b.get("rationale", ""),
+        score_A=agent_a.total_score,
+        score_B=agent_b.total_score
+    )
+    
+    return {
+        "interaction": interaction,
+        "pair": f"{agent_a.name}-{agent_b.name}",
+        "Actions": f"{action_a}-{action_b}",
+        "Payoffs": f"{payoff_a}-{payoff_b}",
+        "Strategy_A": agent_a.strategy_matrix,
+        "Strategy_B": agent_b.strategy_matrix,
+        "Reasoning_A": decision_a.get("rationale", ""),
+        "Reasoning_B": decision_b.get("rationale", ""),
+        "Score_A": agent_a.total_score,
+        "Score_B": agent_b.total_score
+    }
+
+# %% [markdown]
+# ## Main Simulation
+# 
+# The main simulation function runs multiple generations of agents, with each generation involving:
+# 
+# 1. Concurrent agent interactions
+# 
+# 2. Logging of results
+# 
+# 3. Evolution (selection of top performers)
+# 
+# 4. Creation of new agents
+
+# %%
+
+
+# %%
+
+
+# %%
+
+
+# %%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# %%
+
+
+# %%
+#%% 
+async def run_llm_driven_simulation(num_agents=64, num_generations=5, models=["gpt-4o-mini"]):
+    start_time = time.time()  # Start the timer
+    try:
+        # Determine the base path for results
+        if 'ipykernel' in sys.modules:
+            base_path = os.getcwd()
+        else:
+            base_path = os.path.dirname(__file__)
+
+        results_folder = os.path.join(base_path, "simulation_results")
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        run_folder = os.path.join(results_folder, f"run_{current_time}")
+        os.makedirs(run_folder, exist_ok=True)
+        print(f"Created folder: {run_folder}")
+
+        sim_data = SimulationData(hyperparameters={
+            "num_agents": num_agents,
+            "num_generations": num_generations,
+            "payoff_matrix": {
+                "CC": payoff_matrix[('C', 'C')],
+                "CD": payoff_matrix[('C', 'D')],
+                "DC": payoff_matrix[('D', 'C')],
+                "DD": payoff_matrix[('D', 'D')]
+            },
+            "timestamp": current_time,
+            "models": models
+        })
+
+        # Create the dictionary for cooperation biases
+        PD_COOPERATION_BIASES = {key: bias for key, _, bias in PD_STRATEGIES_SORTED}
+
+        # Update the PD_STRATEGIES dictionary for proper lookups
+        PD_STRATEGIES = {key: desc for key, desc, _ in PD_STRATEGIES_SORTED}
+        
+        # Initialize agents with all different strategies
+        agents = await create_enhanced_agents(num_agents)
+
+        # Create a quadratic matrix of agent pairs
+        agent_pairs = []
+        for i in range(8):
+            for j in range(8):
+                for k in range(8):
+                    agent_a = agents[i * 8 + k]
+                    agent_b = agents[j * 8 + k]
+                    agent_pairs.append((agent_a, agent_b))
+
+        # Log initial pairings and strategies
+        print("\nInitial Pairings and Strategies:")
+        for agent_a, agent_b in agent_pairs:
+            print(f"{agent_a.name} (Strategy: {agent_a.strategy_tactic}) vs {agent_b.name} (Strategy: {agent_b.strategy_tactic})")
+
+        # Store opponent history for each agent
+        for agent in agents:
+            agent.fixed_opponent = None
+
+        # Assign fixed opponents
+        for agent_a, agent_b in agent_pairs:
+            agent_a.fixed_opponent = agent_b.name
+            agent_b.fixed_opponent = agent_a.name
+
+        all_detailed_logs = []
+        generation_summary = []
+
+        # Track strategy distribution across generations
+        strategy_distribution = {gen: {strategy: 0 for strategy, _, _ in PD_STRATEGIES_SORTED} 
+                                for gen in range(1, num_generations + 1)}
+        
+        for gen in tqdm(range(num_generations), desc="Simulating Generations", unit="generation"):
+            print(f"\n=== Generation {gen+1} ===")
+            detailed_logs = []
+            
+            # Record strategy distribution for this generation.
+            # (If an updated strategy_tactic is not part of the originally populated dictionary, add it.)
+            for agent in agents:
+                curr_key = agent.strategy_tactic
+                current_count = strategy_distribution[gen+1].get(curr_key, 0)
+                strategy_distribution[gen+1][curr_key] = current_count + 1
+
+            interaction_tasks = []
+            for agent_a, agent_b in agent_pairs:
+                interaction_tasks.append(simulate_interaction(agent_a, agent_b))
+
+            # Run all interactions concurrently
+            interaction_results = await asyncio.gather(*interaction_tasks)
+
+            # Update each agent's strategy based on past behavior
+            await asyncio.gather(*(agent.update_strategy() for agent in agents))
+
+            # Log the strategies after update to validate distribution
+            # for agent in agents:
+                # print(f"[DEBUG] After update, {agent.name}: strategy_tactic = {agent.strategy_tactic}, strategy_matrix = {json.dumps(agent.strategy_matrix)}")
+
+            def process_interaction_results(interaction_results, gen, sim_data, all_detailed_logs):
+                gen_metrics = {
+                    "mutual_cooperation": 0,
+                    "mutual_defection": 0,
+                    "temptation_payoffs": 0,
+                    "sucker_payoffs": 0,
+                    "total_payoffs": 0
+                }
+                detailed_logs = []
+
+                for result in interaction_results:
+                    result["interaction"].generation = gen + 1
+                    sim_data.add_interaction(result["interaction"])
+
+                    detailed_logs.append({
+                        "Generation": gen+1,
+                        **result
+                    })
+                    # print(f"{result['pair']}: {result['Actions']}, Payoffs: {result['Payoffs']}")
+
+                    actions = result['Actions'].split('-')
+                    payoffs = [int(p) for p in result['Payoffs'].split('-')]
+                    gen_metrics["total_payoffs"] += sum(payoffs)
+
+                    if actions == ['C', 'C']:
+                        gen_metrics["mutual_cooperation"] += 1
+                    elif actions == ['D', 'D']:
+                        gen_metrics["mutual_defection"] += 1
+                    elif 'D' in actions and 'C' in actions:
+                        if actions[0] == 'D': 
+                            gen_metrics["temptation_payoffs"] += 1
+                        else: 
+                            gen_metrics["sucker_payoffs"] += 1
+
+                all_detailed_logs.extend(detailed_logs)
+                return gen_metrics
+
+            gen_metrics = process_interaction_results(interaction_results, gen, sim_data, all_detailed_logs)
+
+
+
+
+
+
+            def calculate_equilibrium_metrics(interaction_results, gen, sim_data, gen_metrics, agents, generation_summary):
+                # Calculate Nash equilibrium metrics
+                br_diffs = []
+                nash_regrets = []
+
+                for result in interaction_results:
+                    # Calculate best response differences
+                    action_a, action_b = result['Actions'].split('-')
+                    payoff_a, payoff_b = result['Payoffs'].split('-')
+                    payoff_a, payoff_b = int(payoff_a), int(payoff_b)
+
+                    # Calculate theoretical best responses
+                    br_a = 'D' if action_b == 'C' else 'C'  # Simplified best response logic
+                    br_b = 'D' if action_a == 'C' else 'C'
+
+                    # Calculate payoff differences
+                    br_diff_a = payoff_matrix[(br_a, action_b)][0] - payoff_a
+                    br_diff_b = payoff_matrix[(action_a, br_b)][1] - payoff_b
+
+                    br_diffs.extend([br_diff_a, br_diff_b])
+                    nash_regrets.extend([br_diff_a > 0, br_diff_b > 0])
+
+                # Calculate equilibrium metrics
+                avg_br_diff = np.mean(br_diffs) if br_diffs else 0
+                nash_dev = np.mean(nash_regrets) if nash_regrets else 0
+
+                # Store equilibrium data
+                sim_data.add_equilibrium_data(gen+1, nash_dev, avg_br_diff)
+
+                total_possible = 3 * len(interaction_results) * 2
+                pareto_eff = gen_metrics["total_payoffs"] / total_possible if total_possible > 0 else 0
+                strat_diversity = len({strategy for strategy, count in strategy_distribution[gen+1].items() if count != 0})
+                print(f"Strategy Diversity: {strat_diversity}")
+
+                avg_score = sum(a.total_score for a in agents) / len(agents) if agents else 0
+                generation_summary.append({
+                    "Generation": gen+1,
+                    "Average_Score": avg_score,
+                    "Pareto_Efficiency": pareto_eff,
+                    "Nash_Deviation": nash_dev,
+                    "Strategy_Diversity": strat_diversity,
+                    "best_response_diff": avg_br_diff,
+                    **gen_metrics
+                })
+
+
+            calculate_equilibrium_metrics(interaction_results, gen, sim_data, gen_metrics, agents, generation_summary)
+
+            # After simulation, add strategy distribution to summary
+            generation_summary[-1]["strategy_distribution"] = strategy_distribution[gen+1].copy()
+
+             # No agent replacement - just reset scores for the next generation
+            for agent in agents:
+                # Keep the total score history but reset for next round
+                agent.cooperation_rate = sum(1 for h in agent.history if h[1] == "C") / len(agent.history) if agent.history else 0
+                # Don't reset history - we want to keep the full interaction record
+                agent.total_score = 0
+
+
+
+
+
+
+
+
+        with open(os.path.join(run_folder, "parameters.json"), 'w') as f:
+            json.dump(sim_data.hyperparameters, f, indent=4)
+
+
+
+
+
+
+
+
+
+
+
+
+        detailed_df = pd.DataFrame([asdict(inter) for inter in sim_data.interactions])
+        detailed_df.to_csv(os.path.join(run_folder, "detailed_logs.csv"), index=False)
+        detailed_df.to_json(os.path.join(run_folder, "detailed_logs.json"), orient="records", indent=4)
+
+        summary_df = pd.DataFrame(generation_summary)
+        summary_df.to_csv(os.path.join(run_folder, "generation_summary.csv"), index=False)
+        summary_df.to_json(os.path.join(run_folder, "generation_summary.json"), orient="records", indent=4)
+
+        plt.figure(figsize=(10, 6))
+        generations = range(1, num_generations + 1)
+        avg_scores = [entry["Average_Score"] for entry in generation_summary]
+        plt.plot(generations, avg_scores, marker='o', linestyle='-', linewidth=2)
+        plt.title("Average Cooperation Score over Generations")
+        plt.xlabel("Generation")
+        plt.ylabel("Average Score")
+        plt.grid(True)
+        plt.savefig(os.path.join(run_folder, "cooperation_over_generations.png"))
+        plt.close()
+
+
+
+        def plot_agent_actions(agents, run_folder):
+            """
+            Create a line plot showing each agent's actions over time.
+            Cooperate (C) = 1, Defect (D) = 0
+            """
+            plt.figure(figsize=(12, 8))
+            
+            for agent in agents:
+                # Convert actions to numerical values (C=1, D=0)
+                actions = [1 if h[1] == "C" else 0 for h in agent.history]
+                print(f"Actions: {actions}")
+                rounds = range(1, len(actions) + 1)
+                
+                # Plot this agent's actions
+                plt.plot(rounds, actions, marker='o', linestyle='-', linewidth=2, 
+                        label=f"{agent.name} ({agent.strategy_tactic})")
+            
+            plt.title("Agent Actions Over Time (Cooperate=1, Defect=0)", fontsize=16)
+            plt.xlabel("Round", fontsize=14)
+            plt.ylabel("Action (1=Cooperate, 0=Defect)", fontsize=14)
+            plt.yticks([0, 1], ["Defect", "Cooperate"])
+            plt.grid(True, linestyle='--', alpha=0.7)
+            plt.legend(title="Agents", bbox_to_anchor=(1.05, 1), loc='upper left')
+            plt.tight_layout()
+            
+            plt.savefig(os.path.join(run_folder, "agent_actions_over_time.png"))
+            plt.close()
+
+
+
+        def create_strategy_distribution_plot(strategy_distribution, run_folder, num_generations):
+            """Create a plot showing the distribution of strategies across generations."""
+            
+            # Make sure all strategies are represented in the data
+            all_strategies = [key for key, _, _ in PD_STRATEGIES_SORTED]
+            
+            # Create a complete DataFrame with all strategies for all generations
+            plot_data = {}
+            for gen in range(1, num_generations + 1):
+                if gen in strategy_distribution:
+                    gen_data = strategy_distribution[gen]
+                    # Ensure all strategies are present, even if count is 0
+                    for strategy in all_strategies:
+                        if strategy not in gen_data:
+                            gen_data[strategy] = 0
+                    plot_data[gen] = gen_data
+            
+            # Convert to DataFrame for plotting
+            df = pd.DataFrame(plot_data).T
+            
+            # Ensure all strategies appear in the DataFrame even if not in data
+            for strategy in all_strategies:
+                if strategy not in df.columns:
+                    df[strategy] = 0
+            
+            # Create the plot
+            plt.figure(figsize=(10, 8))
+            for strategy in all_strategies:
+                if strategy in df.columns:
+                    plt.plot(df.index, df[strategy], marker='o', label=strategy)
+            
+            plt.xlabel('Generation')
+            plt.ylabel('Number of Agents')
+            plt.title('Strategy Distribution Across Generations')
+            plt.legend(title='Strategies', bbox_to_anchor=(1.05, 1), loc='upper left')
+            plt.grid(True, linestyle='--', alpha=0.7)
+            plt.tight_layout()
+            
+            # Save the plot
+            plt.savefig(os.path.join(run_folder, "strategy_distribution.png"))
+            plt.close()
+
+
+
+        # Add this function to count strategy occurrences over generations
+        def count_strategy_occurrences(agents, num_generations):
+            strategy_counts = {strategy: [0] * num_generations for strategy, _, _ in PD_STRATEGIES_SORTED}
+            for gen in range(num_generations):
+                for agent in agents:
+                    strategy_counts[agent.strategy_tactic][gen] += 1
+            return strategy_counts
+        
+
+
+
+
+
+
+        # Create research visualizations function with proper indentation
+        def create_research_visualizations(generations, generation_summary, strategy_distribution, sim_data, run_folder):
+            plt.figure(figsize=(15, 10))
+
+            # Strategy Diversity Over Generations
+            plt.subplot(3, 2, 1)
+            plt.plot([m["Strategy_Diversity"] for m in generation_summary], marker='o')
+            plt.title("Strategy Diversity Over Generations")
+            plt.xlabel("Generation")
+            plt.ylabel("Unique Strategies (out of 8)")
+
+            # Final Generation Outcome Distribution
+            plt.subplot(3, 2, 2)
+            plt.bar(["Mutual C", "Mutual D", "Temptation", "Sucker"], 
+                    [generation_summary[-1]["mutual_cooperation"],
+                    generation_summary[-1]["mutual_defection"],
+                    generation_summary[-1]["temptation_payoffs"],
+                    generation_summary[-1]["sucker_payoffs"]])
+            plt.title("Final Generation Outcome Distribution")
+
+            # Pareto Efficiency Progress
+            plt.subplot(3, 2, 3)
+            plt.plot([m["Pareto_Efficiency"] for m in generation_summary], color='green')
+            plt.title("Pareto Efficiency Progress")
+            plt.xlabel("Generation")
+            plt.ylabel("Pareto Efficiency")
+
+            # Strategy Distribution
+            plt.subplot(3, 2, 4)
+            strategies = [strategy for strategy, _, _ in PD_STRATEGIES_SORTED]
+            for strategy in strategies:
+                counts = [gen_summary.get("strategy_distribution", {}).get(strategy, 0) / 64 
+                        for gen_summary in generation_summary]
+                plt.plot(generations, counts, marker='o', linewidth=2, label=strategy)
+
+            plt.title("Strategy Distribution")
+            plt.xlabel("Generation")
+            plt.ylabel("Proportion of Agents")
+            plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize='x-small')
+
+            # Nash Equilibrium Deviation
+            plt.subplot(3, 2, 5)
+            nash_devs = [sim_data.equilibrium_metrics[g]['nash_deviation'] for g in generations]
+            plt.plot(generations, nash_devs, marker='o', color='darkred')
+            plt.title('Nash Equilibrium Deviation')
+            plt.xlabel('Generation')
+            plt.ylabel('Average Regret (ε)')
+            plt.grid(True, alpha=0.3)
+
+            # Average Actions per Generation
+            plt.subplot(3, 2, 6)
+            try:
+                avg_actions = []
+                for gen in range(1, num_generations + 1):
+                    gen_interactions = [inter for inter in sim_data.interactions if inter.generation == gen]
+                    if gen_interactions:
+                        gen_actions = []
+                        for inter in gen_interactions:
+                            own_action = inter.round_actions.split('-')[0]
+                            gen_actions.append(1 if own_action == 'C' else -1)
+                        avg_action = sum(gen_actions) / len(gen_actions)
+                    else:
+                        avg_action = 0
+                    avg_actions.append(avg_action)
+                plt.plot(range(1, num_generations + 1), avg_actions, marker='o', color='purple')
+                plt.title('Average Actions per Generation')
+                plt.xlabel('Generation')
+                plt.ylabel('Average Action')
+                plt.grid(True, alpha=0.3)
+            except Exception as e:
+                print('Error plotting average actions:', e)
+                plt.text(0.5, 0.5, 'Error in avg actions', horizontalalignment='center', verticalalignment='center')
+
+            plt.tight_layout()
+            plt.savefig(os.path.join(run_folder, "research_metrics.png"))
+            plt.close()
+
+        # Add new visualization function
+        def plot_equilibrium_metrics(sim_data, run_folder):
+            """Plot Nash equilibrium deviation metrics across generations"""
+            generations = sorted(sim_data.equilibrium_metrics.keys())
+            nash_devs = [sim_data.equilibrium_metrics[g]['nash_deviation'] for g in generations]
+            br_diffs = [sim_data.equilibrium_metrics[g]['best_response_diff'] for g in generations]
+
+            plt.figure(figsize=(12, 6))
+
+            # Nash Deviation plot
+            plt.subplot(1, 2, 1)
+            plt.plot(generations, nash_devs, marker='o', color='darkred')
+            plt.title('Nash Equilibrium Deviation')
+            plt.xlabel('Generation')
+            plt.ylabel('Average Regret (ε)')
+            plt.grid(True, alpha=0.3)
+
+            # Best Response Difference plot
+            plt.subplot(1, 2, 2)
+            plt.plot(generations, br_diffs, marker='o', color='darkblue')
+            plt.title('Best Response Potential')
+            plt.xlabel('Generation')
+            plt.ylabel('Average BR Payoff Difference')
+            plt.grid(True, alpha=0.3)
+
+            plt.tight_layout()
+            plt.savefig(os.path.join(run_folder, "equilibrium_metrics.png"))
+            plt.close()
+
+
+
+
+
+        # Create visualization for strategy distribution over generations
+        create_strategy_distribution_plot(strategy_distribution, run_folder, num_generations)
+        create_research_visualizations(range(1, num_generations + 1), generation_summary, strategy_distribution, sim_data, run_folder)
+        plot_equilibrium_metrics(sim_data, run_folder)
+        plot_agent_actions(agents, run_folder)
+
+   
+
+        
+
+        end_time = time.time()  # End the timer
+        elapsed_time = end_time - start_time
+        print(f"\nSimulation completed in {elapsed_time:.2f} seconds. Results saved in: {run_folder}")
+        return generation_summary, sim_data.interactions
+
+    except Exception as e:
+        print(f"An error occurred during the simulation: {e}")
+        return None, None
+
+
+
+# %%
+
+
+
+# Add this new function toward the end of the file (e.g. just before the final __main__ block)
+import matplotlib.pyplot as plt
+import numpy as np
+
+def plot_research_metrics(generation_summary, save_path):
+    """
+    Creates a 5-panel plot of research metrics extracted from the generation summary.
+    Subfigures:
+      1. Average Score
+      2. Pareto Efficiency
+      3. Nash Deviation
+      4. Strategy Diversity
+      5. Best Response Difference
+    """
+    generations = [gen["Generation"] for gen in generation_summary]
+    average_scores = [gen["Average_Score"] for gen in generation_summary]
+    pareto_efficiencies = [gen["Pareto_Efficiency"] for gen in generation_summary]
+    nash_deviations = [gen["Nash_Deviation"] for gen in generation_summary]
+    strategy_diversities = [gen["Strategy_Diversity"] for gen in generation_summary]
+    best_response_diffs = [gen["best_response_diff"] for gen in generation_summary]
+    
+    # Create 5 vertically stacked subplots
+    fig, axs = plt.subplots(5, 1, figsize=(10, 20), constrained_layout=True)
+    
+    axs[0].plot(generations, average_scores, marker='o', linestyle='-')
+    axs[0].set_title("Average Score")
+    axs[0].set_xlabel("Generation")
+    axs[0].set_ylabel("Average Score")
+    
+    axs[1].plot(generations, pareto_efficiencies, marker='o', linestyle='-')
+    axs[1].set_title("Pareto Efficiency")
+    axs[1].set_xlabel("Generation")
+    axs[1].set_ylabel("Pareto Efficiency")
+    
+    axs[2].plot(generations, nash_deviations, marker='o', linestyle='-')
+    axs[2].set_title("Nash Deviation")
+    axs[2].set_xlabel("Generation")
+    axs[2].set_ylabel("Nash Deviation")
+    
+    axs[3].plot(generations, strategy_diversities, marker='o', linestyle='-')
+    axs[3].set_title("Strategy Diversity")
+    axs[3].set_xlabel("Generation")
+    axs[3].set_ylabel("Strategy Diversity")
+    
+    axs[4].plot(generations, best_response_diffs, marker='o', linestyle='-')
+    axs[4].set_title("Best Response Difference")
+    axs[4].set_xlabel("Generation")
+    axs[4].set_ylabel("Best Response Difference")
+    
+    plt.savefig(save_path)
+    plt.close()
+
+    
+
+# %%
+
+
+# %% [markdown]
+# ## Run the Simulation
+# 
+# Execute the simulation with specified parameters.
+# 
+# Note: This will make multiple API calls to OpenAI's GPT-4, so ensure your API key is set up correctly.
+# 
+# 
+# 
+# To run in a Jupyter notebook, first install nest_asyncio:
+# 
+# ```bash
+# 
+# pip install nest_asyncio
+# 
+# ```
+# 
+# 
+# 
+# Then run the following cells:
+
+# %% [markdown]
+# 
+
+# %%
+#%%
+# Helper function to run async code in Jupyter
+async def run_simulation(num_agents=8, num_generations=3, models=["gpt-4o-mini"]):
+    """Run the simulation with configurable parameters."""
+    return await run_llm_driven_simulation(
+        num_agents=num_agents, 
+        num_generations=num_generations,
+        models=models
+    )
+
+
+# %%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def main(num_agents=8, num_generations=3, model="gpt-4o-mini"):
+    """
+    Main function to run the simulation when script is executed directly.
+    
+    Parameters:
+    -----------
+    num_agents : int
+        Number of agents in the simulation
+    num_generations : int
+        Number of generations to run
+    model : str
+        The OpenAI model to use
+    """
+    try:
+        # Print a nice header
+        print("\n" + "="*80)
+        print(" "*30 + "PRISONER'S DILEMMA SIMULATION")
+        print("="*80 + "\n")
+        
+        # Print simulation parameters
+        print("SIMULATION PARAMETERS:")
+        print("-"*50)
+        print(f"Number of agents:      {num_agents}")
+        print(f"Number of generations: {num_generations}")
+        print(f"Model:                 {model}")
+        print(f"Strategies:            All 8 predefined strategies")
+        print("-"*50 + "\n")
+        
+        print("Starting simulation...\n")
+        
+        import nest_asyncio
+        nest_asyncio.apply()
+        import asyncio
+        import os
+        
+        # Ensure we're using relative paths for saving results
+        original_cwd = os.getcwd()
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        os.chdir(script_dir)
+        
+        # Create event loop and run simulation
+        loop = asyncio.get_event_loop()
+        summary, logs = loop.run_until_complete(run_simulation(
+            num_agents=num_agents,
+            num_generations=num_generations,
+            models=[model]
+        ))
+        
+        # Print initial agent strategies
+        if summary and len(summary) > 0:
+            print("\nINITIAL AGENT STRATEGIES:")
+            print("-"*50)
+            
+            # Extract agent strategies from the first generation summary
+            first_gen = summary[0]
+            if 'agent_strategies' in first_gen:
+                for agent_name, strategy in first_gen['agent_strategies'].items():
+                    print(f"{agent_name}: {strategy}")
+            else:
+                # Alternative approach if agent_strategies isn't directly available
+                strategy_dist = first_gen.get('strategy_distribution', {})
+                for strategy, count in strategy_dist.items():
+                    if count > 0:
+                        print(f"{strategy}: {count} agent(s)")
+            
+            print("-"*50 + "\n")
+        
+        # Get the run folder from the summary if available
+        run_folder = None
+        if summary and len(summary) > 0:
+            run_folder = summary[0].get('run_folder', None)
+        
+        # If we found the run folder, list the plots that were saved
+        if run_folder and os.path.exists(run_folder):
+            print("\nPLOTS GENERATED:")
+            print("-"*50)
+            plot_files = [
+                "agent_actions_over_time.png",
+                "cooperation_over_generations.png", 
+                "equilibrium_metrics.png",
+                "research_metrics.png",
+                "strategy_distribution.png"
+            ]
+            
+            print("Click on any of these paths to open the image:")
+            for plot_file in plot_files:
+                file_path = os.path.join(run_folder, plot_file)
+                if os.path.exists(file_path):
+                    # Get absolute path for easier access
+                    abs_path = os.path.abspath(file_path)
+                    # Format as a clickable link (works in many terminals)
+                    print(f"✓ {plot_file}:")
+                    print(f"  file://{abs_path}")
+                else:
+                    print(f"✗ {plot_file} (not generated)")
+            
+            print("\nNote: You can copy-paste these paths into your browser if clicking doesn't work.")
+            print("-"*50 + "\n")
+        
+        # Restore original working directory
+        os.chdir(original_cwd)
+        
+        print("\n" + "="*80)
+        print(" "*30 + "SIMULATION COMPLETED")
+        print("="*80 + "\n")
+        
+        return summary, logs
+    except ImportError:
+        print("\nERROR: Please install nest_asyncio: pip install nest_asyncio")
+        return None, None
+    except Exception as e:
+        print(f"\nERROR: An unexpected error occurred: {e}")
+        import traceback
+        traceback.print_exc()
+        return None, None
+
+# This ensures the main() function only runs when the script is executed directly
+if __name__ == "__main__":
+    # You can easily change these parameters for different experiments
+    main(
+        num_agents=64,           # Change this to adjust number of agents
+        num_generations=30,      # Change this to adjust number of generations
+        model="gpt-4o-mini"     # Change this to use a different model
+    )
+
+
+
+
+
+
+
+
+

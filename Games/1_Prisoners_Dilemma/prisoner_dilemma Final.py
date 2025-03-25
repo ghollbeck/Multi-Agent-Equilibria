@@ -39,6 +39,8 @@ import numpy as np
 
 import concurrent.futures
 from functools import partial
+import time
+from tqdm import tqdm
 
 
 
@@ -567,6 +569,7 @@ async def simulate_interaction(agent_a: EnhancedAgent, agent_b: EnhancedAgent) -
 # %%
 #%% 
 async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gpt-4o-mini"]):
+    start_time = time.time()  # Start the timer
     try:
         # Determine the base path for results
         if 'ipykernel' in sys.modules:
@@ -649,7 +652,7 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gp
             agent_a.fixed_opponent = agent_b.name
             agent_b.fixed_opponent = agent_a.name
 
-        for gen in range(num_generations):
+        for gen in tqdm(range(num_generations), desc="Simulating Generations", unit="generation"):
             print(f"\n=== Generation {gen+1} ===")
             detailed_logs = []
             
@@ -1024,7 +1027,9 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gp
 
         
 
-        print(f"\nSimulation completed. Results saved in: {run_folder}")
+        end_time = time.time()  # End the timer
+        elapsed_time = end_time - start_time
+        print(f"\nSimulation completed in {elapsed_time:.2f} seconds. Results saved in: {run_folder}")
         return generation_summary, sim_data.interactions
 
     except Exception as e:
@@ -1271,9 +1276,10 @@ if __name__ == "__main__":
     # You can easily change these parameters for different experiments
     main(
         num_agents=8,           # Change this to adjust number of agents
-        num_generations=4,      # Change this to adjust number of generations
+        num_generations=80,      # Change this to adjust number of generations
         model="gpt-4o-mini"     # Change this to use a different model
     )
+
 
 
 
