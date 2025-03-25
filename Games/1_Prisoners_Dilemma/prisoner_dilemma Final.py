@@ -135,6 +135,7 @@ class EnhancedAgent:
         self.strategy_evolution = []  # Track strategy changes over generations
         self.cooperation_rate = 0.0
         self.reciprocity_index = 0.0  # Measure tit-for-tat behavior
+        self.fixed_opponent = None  # (Optional) store fixed opponent name for reference
 
     async def initialize(self):
         """Asynchronously initialize the agent's strategy matrix."""
@@ -142,21 +143,73 @@ class EnhancedAgent:
         return self
 
     async def generate_strategy_matrix(self):
-        prompt = """System: You are developing a novel strategy for the Iterated Prisoner's Dilemma. 
-Create a unique approach that considers:
-- Long-term relationship building
-- Error correction mechanisms
-- Adaptive response patterns
-- Potential for both cooperation and defection
 
-Format: JSON structure with:
-{
-    "strategy_rules": [list of conditional statements],
-    "forgiveness_factor": 0-1,
-    "retaliation_threshold": 0-1,
-    "adaptability": 0-1,
-    "rationale": "str"
-}"""
+
+
+        # prompt = """System: You are developing a novel strategy for the Iterated Prisoner's Dilemma. 
+        #             Create a unique approach that considers:
+        #             - Long-term relationship building
+        #             - Error correction mechanisms
+        #             - Adaptive response patterns
+        #             - Potential for both cooperation and defection
+
+        #             Format: JSON structure with:
+        #             {
+        #                 "strategy_rules": [list of conditional statements],
+        #                 "forgiveness_factor": 0-1,
+        #                 "retaliation_threshold": 0-1,
+        #                 "adaptability": 0-1,
+        #                 "rationale": "str"
+        #             }"""
+        
+
+        def generate_strategy_prompt():
+            # List available strategies
+            available_strategies = [desc for _, desc, _ in PD_STRATEGIES_SORTED]
+            strategies_text = "\n".join(f"- {strategy}" for strategy in available_strategies)
+
+            # Construct the prompt
+            prompt = f"""
+            You are tasked with developing a novel strategy for a strategic decision-making game. 
+            In this game, you interact with another player over multiple rounds, and your objective is to maximize your total score over the long run. 
+            You have two possible actions in each round: "Cooperate" or "Defect".
+
+            Considerations for Strategy Development:
+            - Focus on building long-term beneficial relationships with the other player.
+            - Implement mechanisms to correct errors in decision-making.
+            - Develop adaptive response patterns based on the other player's behavior.
+            - Balance the potential for both cooperation and defection to optimize your score.
+
+            Available Strategies:
+            {strategies_text}
+
+            Guidelines:
+            - Do not use any pre-existing theories or strategies from your training data.
+            - Base your strategy purely on your own behavior and observations to maximize your score over time.
+
+            Output Format:
+            Your strategy should be structured in JSON format as follows:
+
+            {{
+                "strategy_rules": [list of conditional statements],
+                "forgiveness_factor": 0-1,
+                "retaliation_threshold": 0-1,
+                "adaptability": 0-1,
+                "rationale": "str"
+            }}
+            """
+            return prompt
+        
+
+        
+        prompt  = generate_strategy_prompt()
+
+
+
+
+
+
+        
         
         for _ in range(3):  # Retry up to 3 times
             try:
@@ -266,8 +319,16 @@ Format: JSON structure with:
         if explicit_decision is not None:
             return explicit_decision
 
-        analysis_prompt = f"""Analyze this Prisoner's Dilemma interaction history with {opponent.name}:
-Previous Rounds (last 3): {str(self.history[-3:]) if len(self.history) > 0 else 'None'}
+        # Convert histories to a readable format
+        own_history_str = "\n".join([f"Round {i+1}: {entry}" for i, entry in enumerate(self.history)])
+        opponent_history_str = "\n".join([f"Round {i+1}: {entry}" for i, entry in enumerate(opponent.history)])
+
+        analysis_prompt = f"""Analyze this interaction history with {opponent.name}:
+Your Entire History:
+{own_history_str}
+
+Opponent's Entire History:
+{opponent_history_str}
 
 Your Strategy: {json.dumps(self.strategy_matrix)}
 Opponent's Model: {opponent.model}
@@ -315,6 +376,67 @@ Output MUST be valid JSON with:
     def log_interaction(self, opponent, own_action, opp_action, payoff):
         self.history.append((opponent, own_action, opp_action, payoff))
 
+    async def update_strategy(self):
+        """
+        Update the agent's strategy based on its past interactions with its fixed opponent.
+        """
+        # Use only interactions with the fixed opponent if available
+        if self.fixed_opponent is not None:
+            relevant_history = [entry for entry in self.history if entry[0] == self.fixed_opponent]
+        else:
+            relevant_history = self.history
+        history_str = "\n".join([f"Round {i+1}: {entry}" for i, entry in enumerate(relevant_history)])
+        # Build a list of allowed strategy keys as defined in the script
+        allowed_strategy_keys = [key for key, _, _ in PD_STRATEGIES_SORTED]
+        allowed_strategy_text = ", ".join(allowed_strategy_keys)
+        update_prompt = f"""
+        Based on your current strategy {json.dumps(self.strategy_matrix)} and the following interaction history with your opponent:
+        {history_str}
+        
+        Please update your strategy to maximize your long-term score.
+        You must choose exactly one of the following predefined strategies:
+        {allowed_strategy_text}
+
+        Return only valid JSON with the keys:
+        {{
+            "strategy_rules": [list of conditional statements],
+            "forgiveness_factor": 0-1,
+            "retaliation_threshold": 0-1,
+            "adaptability": 0-1,
+            "rationale": "str"
+        }}
+
+        Ensure that the "rationale" value is exactly one of the following: {allowed_strategy_text}.
+        """
+        for _ in range(3):
+            try:
+                response = await async_client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "system", "content": "You are an AI game theorist updating a strategy."},
+                              {"role": "user", "content": update_prompt}],
+                    temperature=0.8,
+                    response_format={"type": "json_object"},
+                    max_tokens=300
+                )
+                json_str = response.choices[0].message.content.strip()
+                if not json_str.startswith("{") or not json_str.endswith("}"):
+                    raise json.JSONDecodeError("Missing braces", json_str, 0)
+                new_strategy = json.loads(json_str)
+                if all(k in new_strategy for k in ["strategy_rules", "forgiveness_factor", "retaliation_threshold", "adaptability"]):
+                    self.strategy_matrix = new_strategy
+                    # Set strategy_tactic to the exact key returned in the "rationale" field.
+                    if "rationale" in new_strategy and new_strategy["rationale"] in allowed_strategy_keys:
+                        self.strategy_tactic = new_strategy["rationale"]
+                    else:
+                        # If the returned rationale is not valid, retain the old strategy_tactic.
+                        print(f"[WARNING] {self.name} returned an invalid strategy key in rationale: {new_strategy.get('rationale')}. Retaining previous strategy.")
+                    print(f"[DEBUG] {self.name} updated strategy_tactic now: {self.strategy_tactic}")
+                    return
+            except (json.JSONDecodeError, KeyError) as e:
+                print(f"{self.name} strategy update retry due to error: {str(e)}")
+                continue
+        print(f"{self.name} strategy update failed; retaining existing strategy.")
+
 # %% [markdown]
 # ## Game Configuration
 # 
@@ -331,14 +453,23 @@ payoff_matrix = {
 }
 
 async def create_enhanced_agents(n=4) -> List[EnhancedAgent]:
-    """Create and initialize multiple agents concurrently."""
-    # Choose from our sorted strategies
-    sorted_keys = [key for key, desc in PD_STRATEGIES_SORTED]
-    agents = [EnhancedAgent(f"Agent_{i}",
-                            strategy_tactic=random.choice(sorted_keys),
-                            cooperation_bias=random.uniform(0.3, 0.7),
-                            risk_aversion=random.uniform(0.3, 0.7))
-              for i in range(n)]
+    """Create and initialize multiple agents concurrently with unique strategies."""
+    # Ensure we have enough strategies for the number of agents
+    if n > len(PD_STRATEGIES_SORTED):
+        raise ValueError("Number of agents exceeds available unique strategies.")
+    
+    # Assign each agent a unique strategy
+    strategies = random.sample(PD_STRATEGIES_SORTED, n)
+    agents = []
+    for i, (strategy_key, strategy_desc, coop_level) in enumerate(strategies):
+        agent = EnhancedAgent(
+            f"Agent_{i+1}",
+            strategy_tactic=strategy_key,
+            cooperation_bias=coop_level,
+            risk_aversion=random.uniform(0.3, 0.7)
+        )
+        agents.append(agent)
+
     agents = await asyncio.gather(*(agent.initialize() for agent in agents))
     return agents
 
@@ -398,9 +529,6 @@ async def simulate_interaction(agent_a: EnhancedAgent, agent_b: EnhancedAgent) -
 # 3. Evolution (selection of top performers)
 # 
 # 4. Creation of new agents
-
-# %%
-
 
 # %%
 
@@ -484,38 +612,21 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gp
             
         for i in range(num_agents):
             strategy_key, strategy_desc, coop_level = strategies[i]
-            agents.append(EnhancedAgent(f"Agent_{i+1}", strategy_key, strategy_desc, coop_level))
+            agent = EnhancedAgent(
+                name=f"Agent_{i+1}",
+                model="gpt-4o-mini",    # or whichever model you want
+                strategy_tactic=strategy_key,
+                cooperation_bias=coop_level,
+                risk_aversion=random.uniform(0.3, 0.7)
+            )
+            agents.append(agent)
+
+        # Now actually initialize them
+        agents = await asyncio.gather(*(agent.initialize() for agent in agents))
 
 
 
-
-
-
-        # Update agent creation to use strategy-specific cooperation biases
-        async def create_enhanced_agents(n=4) -> List[EnhancedAgent]:
-            """Create and initialize multiple agents concurrently with strategy-specific cooperation biases."""
-            # Choose from our sorted strategies
-            sorted_keys = [key for key, _, _ in PD_STRATEGIES_SORTED]
-            agents = []
-
-            for i in range(n):
-                # Select a random strategy
-                strategy = random.choice(sorted_keys)
-                # Get the corresponding cooperation bias
-                cooperation_bias = PD_COOPERATION_BIASES[strategy]
-                # Create agent with strategy-appropriate bias
-                agent = EnhancedAgent(
-                    f"Agent_{i}",
-                    strategy_tactic=strategy,
-                    cooperation_bias=cooperation_bias,
-                    risk_aversion=random.uniform(0.3, 0.7)
-                )
-                agents.append(agent)
-
-            agents = await asyncio.gather(*(agent.initialize() for agent in agents))
-            return agents
-
-        agents = await create_enhanced_agents(num_agents)
+    
         all_detailed_logs = []
         generation_summary = []
 
@@ -542,9 +653,12 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gp
             print(f"\n=== Generation {gen+1} ===")
             detailed_logs = []
             
-            # Record strategy distribution for this generation
+            # Record strategy distribution for this generation.
+            # (If an updated strategy_tactic is not part of the originally populated dictionary, add it.)
             for agent in agents:
-                strategy_distribution[gen+1][agent.strategy_tactic] += 1
+                curr_key = agent.strategy_tactic
+                current_count = strategy_distribution[gen+1].get(curr_key, 0)
+                strategy_distribution[gen+1][curr_key] = current_count + 1
 
             interaction_tasks = []
             for agent_a, agent_b in agent_pairs:
@@ -553,12 +667,12 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gp
             # Run all interactions concurrently
             interaction_results = await asyncio.gather(*interaction_tasks)
 
+            # Update each agent's strategy based on past behavior
+            await asyncio.gather(*(agent.update_strategy() for agent in agents))
 
-
-
-
-
-
+            # Log the strategies after update to validate distribution
+            for agent in agents:
+                print(f"[DEBUG] After update, {agent.name}: strategy_tactic = {agent.strategy_tactic}, strategy_matrix = {json.dumps(agent.strategy_matrix)}")
 
             def process_interaction_results(interaction_results, gen, sim_data, all_detailed_logs):
                 gen_metrics = {
@@ -635,7 +749,8 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gp
 
                 total_possible = 3 * len(interaction_results) * 2
                 pareto_eff = gen_metrics["total_payoffs"] / total_possible if total_possible > 0 else 0
-                strat_diversity = len(set(hash(json.dumps(a.strategy_matrix)) for a in agents))
+                strat_diversity = len({strategy for strategy, count in strategy_distribution[gen+1].items() if count != 0})
+                print(f"Strategy Diversity: {strat_diversity}")
 
                 avg_score = sum(a.total_score for a in agents) / len(agents) if agents else 0
                 generation_summary.append({
@@ -647,6 +762,7 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gp
                     "best_response_diff": avg_br_diff,
                     **gen_metrics
                 })
+
 
             calculate_equilibrium_metrics(interaction_results, gen, sim_data, gen_metrics, agents, generation_summary)
 
@@ -712,6 +828,7 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gp
             for agent in agents:
                 # Convert actions to numerical values (C=1, D=0)
                 actions = [1 if h[1] == "C" else 0 for h in agent.history]
+                print(f"Actions: {actions}")
                 rounds = range(1, len(actions) + 1)
                 
                 # Plot this agent's actions
@@ -732,28 +849,44 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gp
 
 
         def create_strategy_distribution_plot(strategy_distribution, run_folder, num_generations):
-            """
-            Create a line plot showing the distribution of strategies across generations.
-            Each line represents a different strategy.
-            """
-            plt.figure(figsize=(12, 8))
-
-            # Get all unique strategies
-            strategies = [strategy for strategy, _, _ in PD_STRATEGIES_SORTED]
-            generations = range(1, num_generations + 1)
-
-            # Create line for each strategy
-            for strategy in strategies:
-                counts = [strategy_distribution[gen][strategy] for gen in generations]
-                plt.plot(generations, counts, marker='o', linewidth=2, label=strategy)
-
-            plt.title("Strategy Distribution Across Generations", fontsize=16)
-            plt.xlabel("Generation", fontsize=14)
-            plt.ylabel("Number of Agents", fontsize=14)
+            """Create a plot showing the distribution of strategies across generations."""
+            
+            # Make sure all strategies are represented in the data
+            all_strategies = [key for key, _, _ in PD_STRATEGIES_SORTED]
+            
+            # Create a complete DataFrame with all strategies for all generations
+            plot_data = {}
+            for gen in range(1, num_generations + 1):
+                if gen in strategy_distribution:
+                    gen_data = strategy_distribution[gen]
+                    # Ensure all strategies are present, even if count is 0
+                    for strategy in all_strategies:
+                        if strategy not in gen_data:
+                            gen_data[strategy] = 0
+                    plot_data[gen] = gen_data
+            
+            # Convert to DataFrame for plotting
+            df = pd.DataFrame(plot_data).T
+            
+            # Ensure all strategies appear in the DataFrame even if not in data
+            for strategy in all_strategies:
+                if strategy not in df.columns:
+                    df[strategy] = 0
+            
+            # Create the plot
+            plt.figure(figsize=(10, 8))
+            for strategy in all_strategies:
+                if strategy in df.columns:
+                    plt.plot(df.index, df[strategy], marker='o', label=strategy)
+            
+            plt.xlabel('Generation')
+            plt.ylabel('Number of Agents')
+            plt.title('Strategy Distribution Across Generations')
+            plt.legend(title='Strategies', bbox_to_anchor=(1.05, 1), loc='upper left')
             plt.grid(True, linestyle='--', alpha=0.7)
-            plt.legend(title="Strategies", bbox_to_anchor=(1.05, 1), loc='upper left')
             plt.tight_layout()
-
+            
+            # Save the plot
             plt.savefig(os.path.join(run_folder, "strategy_distribution.png"))
             plt.close()
 
@@ -774,15 +907,15 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gp
 
 
         # Create research visualizations function with proper indentation
-        def create_research_visualizations(generations, generation_summary, strategy_distribution):
-            plt.figure(figsize=(12, 8))
+        def create_research_visualizations(generations, generation_summary, strategy_distribution, sim_data, run_folder):
+            plt.figure(figsize=(15, 10))
 
             # Existing plots
-            plt.subplot(2, 2, 1)
+            plt.subplot(3, 2, 1)
             plt.plot([m["Strategy_Diversity"] for m in generation_summary], marker='o')
             plt.title("Strategy Diversity Over Generations")
 
-            plt.subplot(2, 2, 2)
+            plt.subplot(3, 2, 2)
             plt.bar(["Mutual C", "Mutual D", "Temptation", "Sucker"], 
                     [generation_summary[-1]["mutual_cooperation"],
                     generation_summary[-1]["mutual_defection"],
@@ -790,12 +923,12 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gp
                     generation_summary[-1]["sucker_payoffs"]])
             plt.title("Final Generation Outcome Distribution")
 
-            plt.subplot(2, 2, 3)
+            plt.subplot(3, 2, 3)
             plt.plot([m["Pareto_Efficiency"] for m in generation_summary], color='green')
             plt.title("Pareto Efficiency Progress")
 
             # Plot strategy distribution over generations
-            plt.subplot(2, 2, 4)
+            plt.subplot(3, 2, 4)
             strategies = [strategy for strategy, _, _ in PD_STRATEGIES_SORTED]
             for strategy in strategies:
                 counts = [gen_summary.get("strategy_distribution", {}).get(strategy, 0) 
@@ -807,8 +940,46 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gp
             plt.ylabel("Number of Agents")
             plt.legend(loc='upper right', fontsize='x-small')
 
+            # Add Nash Deviation plot
+            plt.subplot(3, 2, 5)
+            nash_devs = [sim_data.equilibrium_metrics[g]['nash_deviation'] for g in generations]
+            plt.plot(generations, nash_devs, marker='o', color='darkred')
+            plt.title('Nash Equilibrium Deviation')
+            plt.xlabel('Generation')
+            plt.ylabel('Average Regret (ε)')
+            plt.grid(True, alpha=0.3)
+
+            # Add average action plot
+            plt.subplot(3, 2, 6)
+            try:
+                avg_actions = []
+                # Compute average action per generation using interactions from sim_data
+                for gen in range(1, num_generations + 1):
+                    # Filter interactions belonging to the current generation
+                    gen_interactions = [inter for inter in sim_data.interactions if inter.generation == gen]
+                    if gen_interactions:
+                        gen_actions = []
+                        # Use the own action (first action in round_actions) from each interaction
+                        for inter in gen_interactions:
+                            own_action = inter.round_actions.split('-')[0]
+                            # Convert action to numeric value: C -> 1, D -> -1
+                            gen_actions.append(1 if own_action == 'C' else -1)
+                        avg_action = sum(gen_actions) / len(gen_actions)
+                    else:
+                        avg_action = 0
+                    avg_actions.append(avg_action)
+                plt.plot(range(1, num_generations + 1), avg_actions, marker='o', color='purple')
+                plt.title('Average Actions per Generation')
+                plt.xlabel('Generation')
+                plt.ylabel('Average Action')
+                plt.grid(True, alpha=0.3)
+            except Exception as e:
+                print('Error plotting average actions:', e)
+                plt.text(0.5, 0.5, 'Error in avg actions', horizontalalignment='center', verticalalignment='center')
+
             plt.tight_layout()
             plt.savefig(os.path.join(run_folder, "research_metrics.png"))
+            plt.close()
 
         # Add new visualization function
         def plot_equilibrium_metrics(sim_data, run_folder):
@@ -845,7 +1016,7 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gp
 
         # Create visualization for strategy distribution over generations
         create_strategy_distribution_plot(strategy_distribution, run_folder, num_generations)
-        create_research_visualizations(range(1, num_generations + 1), generation_summary, strategy_distribution)
+        create_research_visualizations(range(1, num_generations + 1), generation_summary, strategy_distribution, sim_data, run_folder)
         plot_equilibrium_metrics(sim_data, run_folder)
         plot_agent_actions(agents, run_folder)
 
@@ -860,8 +1031,65 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gp
         print(f"An error occurred during the simulation: {e}")
         return None, None
 
+
+
 # %%
 
+
+
+# Add this new function toward the end of the file (e.g. just before the final __main__ block)
+import matplotlib.pyplot as plt
+import numpy as np
+
+def plot_research_metrics(generation_summary, save_path):
+    """
+    Creates a 5-panel plot of research metrics extracted from the generation summary.
+    Subfigures:
+      1. Average Score
+      2. Pareto Efficiency
+      3. Nash Deviation
+      4. Strategy Diversity
+      5. Best Response Difference
+    """
+    generations = [gen["Generation"] for gen in generation_summary]
+    average_scores = [gen["Average_Score"] for gen in generation_summary]
+    pareto_efficiencies = [gen["Pareto_Efficiency"] for gen in generation_summary]
+    nash_deviations = [gen["Nash_Deviation"] for gen in generation_summary]
+    strategy_diversities = [gen["Strategy_Diversity"] for gen in generation_summary]
+    best_response_diffs = [gen["best_response_diff"] for gen in generation_summary]
+    
+    # Create 5 vertically stacked subplots
+    fig, axs = plt.subplots(5, 1, figsize=(10, 20), constrained_layout=True)
+    
+    axs[0].plot(generations, average_scores, marker='o', linestyle='-')
+    axs[0].set_title("Average Score")
+    axs[0].set_xlabel("Generation")
+    axs[0].set_ylabel("Average Score")
+    
+    axs[1].plot(generations, pareto_efficiencies, marker='o', linestyle='-')
+    axs[1].set_title("Pareto Efficiency")
+    axs[1].set_xlabel("Generation")
+    axs[1].set_ylabel("Pareto Efficiency")
+    
+    axs[2].plot(generations, nash_deviations, marker='o', linestyle='-')
+    axs[2].set_title("Nash Deviation")
+    axs[2].set_xlabel("Generation")
+    axs[2].set_ylabel("Nash Deviation")
+    
+    axs[3].plot(generations, strategy_diversities, marker='o', linestyle='-')
+    axs[3].set_title("Strategy Diversity")
+    axs[3].set_xlabel("Generation")
+    axs[3].set_ylabel("Strategy Diversity")
+    
+    axs[4].plot(generations, best_response_diffs, marker='o', linestyle='-')
+    axs[4].set_title("Best Response Difference")
+    axs[4].set_xlabel("Generation")
+    axs[4].set_ylabel("Best Response Difference")
+    
+    plt.savefig(save_path)
+    plt.close()
+
+    
 
 # %%
 
@@ -1043,9 +1271,11 @@ if __name__ == "__main__":
     # You can easily change these parameters for different experiments
     main(
         num_agents=8,           # Change this to adjust number of agents
-        num_generations=3,      # Change this to adjust number of generations
+        num_generations=4,      # Change this to adjust number of generations
         model="gpt-4o-mini"     # Change this to use a different model
     )
+
+
 
 
 
