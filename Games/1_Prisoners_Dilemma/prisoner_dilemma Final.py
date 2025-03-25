@@ -41,6 +41,7 @@ import concurrent.futures
 from functools import partial
 import time
 from tqdm import tqdm
+from pydantic import BaseModel, Field
 
 
 
@@ -117,27 +118,24 @@ class SimulationData:
 
 # %%
 #%% 
-class EnhancedAgent:
-    def __init__(self, name, model="gpt-4o-mini", 
-                 strategy_tactic="tit_for_tat", 
-                 cooperation_bias=0.5,      # Bias toward cooperation (0 to 1)
-                 risk_aversion=0.5,         # Tendency to avoid risky moves (0 to 1)
-                 game_theoretic_prior=None  # Additional prior parameters as a dict
-                ):
-        self.name = name
-        self.model = model  # Track model architecture
-        self.strategy_tactic = strategy_tactic  # Must be one of the keys in PD_STRATEGIES
-        self.cooperation_bias = cooperation_bias
-        self.risk_aversion = risk_aversion
-        self.game_theoretic_prior = game_theoretic_prior if game_theoretic_prior is not None else {}
-        
-        self.total_score = 0
-        self.history = []  # Each entry: (opponent_name, own_action, opp_action, payoff)
-        self.strategy_matrix = None
-        self.strategy_evolution = []  # Track strategy changes over generations
-        self.cooperation_rate = 0.0
-        self.reciprocity_index = 0.0  # Measure tit-for-tat behavior
-        self.fixed_opponent = None  # (Optional) store fixed opponent name for reference
+class EnhancedAgent(BaseModel):
+    name: str
+    model: str = Field(default="gpt-4o-mini")
+    strategy_tactic: str = Field(default="tit_for_tat")
+    cooperation_bias: float = Field(default=0.5, ge=0, le=1)  # Bias toward cooperation (0 to 1)
+    risk_aversion: float = Field(default=0.5, ge=0, le=1)  # Tendency to avoid risky moves (0 to 1)
+    game_theoretic_prior: dict = Field(default_factory=dict)  # Additional prior parameters as a dict
+    
+    total_score: int = 0
+    history: list = Field(default_factory=list)  # Each entry: (opponent_name, own_action, opp_action, payoff)
+    strategy_matrix: dict = None
+    strategy_evolution: list = Field(default_factory=list)  # Track strategy changes over generations
+    cooperation_rate: float = 0.0
+    reciprocity_index: float = 0.0  # Measure tit-for-tat behavior
+    fixed_opponent: str = None  # (Optional) store fixed opponent name for reference
+
+    class Config:
+        arbitrary_types_allowed = True
 
     async def initialize(self):
         """Asynchronously initialize the agent's strategy matrix."""
@@ -465,7 +463,7 @@ async def create_enhanced_agents(n=4) -> List[EnhancedAgent]:
     agents = []
     for i, (strategy_key, strategy_desc, coop_level) in enumerate(strategies):
         agent = EnhancedAgent(
-            f"Agent_{i+1}",
+            name=f"Agent_{i+1}",
             strategy_tactic=strategy_key,
             cooperation_bias=coop_level,
             risk_aversion=random.uniform(0.3, 0.7)
@@ -1276,7 +1274,7 @@ if __name__ == "__main__":
     # You can easily change these parameters for different experiments
     main(
         num_agents=8,           # Change this to adjust number of agents
-        num_generations=80,      # Change this to adjust number of generations
+        num_generations=4,      # Change this to adjust number of generations
         model="gpt-4o-mini"     # Change this to use a different model
     )
 
