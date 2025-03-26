@@ -42,8 +42,8 @@ from functools import partial
 import time
 from tqdm import tqdm
 from pydantic import BaseModel, Field
-
-
+import requests
+from prompts import Prompts1, Prompts2
 
 # Load environment variables and setup OpenAI client
 load_dotenv()
@@ -125,6 +125,8 @@ class EnhancedAgent(BaseModel):
     cooperation_bias: float = Field(default=0.5, ge=0, le=1)  # Bias toward cooperation (0 to 1)
     risk_aversion: float = Field(default=0.5, ge=0, le=1)  # Tendency to avoid risky moves (0 to 1)
     game_theoretic_prior: dict = Field(default_factory=dict)  # Additional prior parameters as a dict
+    llm_provider: str = Field(default="openai")  # LLM provider: 'openai' or 'litellm'
+    llm_model: str = Field(default="gpt-4o")  # Model to use with the LLM provider
     
     total_score: int = 0
     history: list = Field(default_factory=list)  # Each entry: (opponent_name, own_action, opp_action, payoff)
@@ -133,83 +135,27 @@ class EnhancedAgent(BaseModel):
     cooperation_rate: float = 0.0
     reciprocity_index: float = 0.0  # Measure tit-for-tat behavior
     fixed_opponent: str = None  # (Optional) store fixed opponent name for reference
+    custom_prompt: str = None  # New field for custom prompt
+    prompt_class: type = Prompts1  # Default to Prompts1
 
     class Config:
         arbitrary_types_allowed = True
 
-    async def initialize(self):
+    async def initialize(self, temperature):
         """Asynchronously initialize the agent's strategy matrix."""
-        self.strategy_matrix = await self.generate_strategy_matrix()
+        self.strategy_matrix = await self.generate_strategy_matrix(temperature)
         return self
 
-    async def generate_strategy_matrix(self):
+    async def generate_strategy_matrix(self, temperature):
+        if self.llm_provider == "openai":
+            return await self._generate_strategy_with_openai(temperature)
+        elif self.llm_provider == "litellm":
+            return self._generate_strategy_with_litellm(temperature)
+        else:
+            raise ValueError("Unsupported LLM provider")
 
-
-
-        # prompt = """System: You are developing a novel strategy for the Iterated Prisoner's Dilemma. 
-        #             Create a unique approach that considers:
-        #             - Long-term relationship building
-        #             - Error correction mechanisms
-        #             - Adaptive response patterns
-        #             - Potential for both cooperation and defection
-
-        #             Format: JSON structure with:
-        #             {
-        #                 "strategy_rules": [list of conditional statements],
-        #                 "forgiveness_factor": 0-1,
-        #                 "retaliation_threshold": 0-1,
-        #                 "adaptability": 0-1,
-        #                 "rationale": "str"
-        #             }"""
-        
-
-        def generate_strategy_prompt():
-            # List available strategies
-            available_strategies = [desc for _, desc, _ in PD_STRATEGIES_SORTED]
-            strategies_text = "\n".join(f"- {strategy}" for strategy in available_strategies)
-
-            # Construct the prompt
-            prompt = f"""
-            You are tasked with developing a novel strategy for a strategic decision-making game. 
-            In this game, you interact with another player over multiple rounds, and your objective is to maximize your total score over the long run. 
-            You have two possible actions in each round: "Cooperate" or "Defect".
-
-            Considerations for Strategy Development:
-            - Focus on building long-term beneficial relationships with the other player.
-            - Implement mechanisms to correct errors in decision-making.
-            - Develop adaptive response patterns based on the other player's behavior.
-            - Balance the potential for both cooperation and defection to optimize your score.
-
-            Available Strategies:
-            {strategies_text}
-
-            Guidelines:
-            - Do not use any pre-existing theories or strategies from your training data.
-            - Base your strategy purely on your own behavior and observations to maximize your score over time.
-
-            Output Format:
-            Your strategy should be structured in JSON format as follows:
-
-            {{
-                "strategy_rules": [list of conditional statements],
-                "forgiveness_factor": 0-1,
-                "retaliation_threshold": 0-1,
-                "adaptability": 0-1,
-                "rationale": "str"
-            }}
-            """
-            return prompt
-        
-
-        
-        prompt  = generate_strategy_prompt()
-
-
-
-
-
-
-        
+    async def _generate_strategy_with_openai(self, temperature):
+        prompt = self.prompt_class.get_strategy_generation_prompt([desc for _, desc, _ in PD_STRATEGIES_SORTED])
         
         for _ in range(3):  # Retry up to 3 times
             try:
@@ -217,7 +163,7 @@ class EnhancedAgent(BaseModel):
                     model=self.model,
                     messages=[{"role": "system", "content": "You are a game theory expert creating novel IPD strategies. Respond ONLY with valid JSON."},
                               {"role": "user", "content": prompt}],
-                    temperature=0.8,
+                    temperature=temperature,
                     response_format={"type": "json_object"},
                     max_tokens=300
                 )
@@ -239,9 +185,47 @@ class EnhancedAgent(BaseModel):
             "rationale": "Default fallback strategy"
         }
 
+    def _generate_strategy_with_litellm(self, temperature):
+        messages = [
+            {"role": "system", "content": "You are a game theory expert creating novel IPD strategies. Respond ONLY with valid JSON."},
+            {"role": "user", "content": self._generate_strategy_prompt()}
+        ]
+        response = self._call_litellm(messages, model=self.llm_model, temperature=temperature)
+        json_str = response.strip()
+        strategy = json.loads(json_str)
+        if all(k in strategy for k in ["strategy_rules", "forgiveness_factor", "retaliation_threshold", "adaptability"]):
+            return strategy
+        return {
+            "strategy_rules": ["CC: C", "CD: D", "DC: D", "DD: C"],
+            "forgiveness_factor": 0.5,
+            "retaliation_threshold": 0.5,
+            "adaptability": 0.5,
+            "rationale": "Default fallback strategy"
+        }
 
+    def _call_litellm(self, messages, model="gpt-4o", temperature=0.8):
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {os.getenv('LITELLM_API_KEY')}",
+        }
 
+        response = requests.post("https://litellm.sph-prod.ethz.ch/chat/completions", json=payload, headers=headers)
+        if not response.ok:
+            raise Exception(f"LiteLLM API error: {response.status_code} {response.reason}")
 
+        data = response.json()
+        return data.get("choices", [{}])[0].get("message", {}).get("content", "No response from LiteLLM.")
+
+    def _generate_strategy_prompt(self):
+        from prompts import get_strategy_generation_prompt
+        if self.custom_prompt:
+            return self.custom_prompt
+        return get_strategy_generation_prompt([desc for _, desc, _ in PD_STRATEGIES_SORTED])
 
     def decide_action_explicit(self, opponent) -> Dict:
         """
@@ -309,7 +293,7 @@ class EnhancedAgent(BaseModel):
         else:
             return None
 
-    async def decide_action(self, opponent):
+    async def decide_action(self, opponent, temperature):
         """
         Determine an action using an explicit tactic if available.
         Otherwise, fallback to the LLM-based decision approach.
@@ -323,25 +307,15 @@ class EnhancedAgent(BaseModel):
         own_history_str = "\n".join([f"Round {i+1}: {entry}" for i, entry in enumerate(self.history)])
         opponent_history_str = "\n".join([f"Round {i+1}: {entry}" for i, entry in enumerate(opponent.history)])
 
-        analysis_prompt = f"""Analyze this interaction history with {opponent.name}:
-Your Entire History:
-{own_history_str}
-
-Opponent's Entire History:
-{opponent_history_str}
-
-Your Strategy: {json.dumps(self.strategy_matrix)}
-Opponent's Model: {opponent.model}
-Opponent's Cooperation Rate: {opponent.cooperation_rate:.2f}
-
-Output MUST be valid JSON with:
-{{
-    "action": "C/D",
-    "confidence": 0-1,
-    "rationale": "str",
-    "expected_opponent_action": "C/D",
-    "risk_assessment": "str"
-}}"""
+        analysis_prompt = self.prompt_class.get_decision_analysis_prompt(
+            agent_name=self.name,
+            own_history=own_history_str,
+            strategy_matrix=self.strategy_matrix,
+            opponent_name=opponent.name,
+            opponent_history=opponent_history_str,
+            opponent_model=opponent.model,
+            opponent_coop_rate=opponent.cooperation_rate
+        )
         
         for _ in range(3):
             try:
@@ -349,7 +323,7 @@ Output MUST be valid JSON with:
                     model=self.model,
                     messages=[{"role": "system", "content": "You are an AI game theorist. Respond ONLY with valid JSON."},
                               {"role": "user", "content": analysis_prompt}],
-                    temperature=0.4,
+                    temperature=temperature,
                     response_format={"type": "json_object"},
                     max_tokens=150
                 )
@@ -376,7 +350,7 @@ Output MUST be valid JSON with:
     def log_interaction(self, opponent, own_action, opp_action, payoff):
         self.history.append((opponent, own_action, opp_action, payoff))
 
-    async def update_strategy(self):
+    async def update_strategy(self, temperature):
         """
         Update the agent's strategy based on its past interactions with its fixed opponent.
         """
@@ -389,32 +363,14 @@ Output MUST be valid JSON with:
         # Build a list of allowed strategy keys as defined in the script
         allowed_strategy_keys = [key for key, _, _ in PD_STRATEGIES_SORTED]
         allowed_strategy_text = ", ".join(allowed_strategy_keys)
-        update_prompt = f"""
-        Based on your current strategy {json.dumps(self.strategy_matrix)} and the following interaction history with your opponent:
-        {history_str}
-        
-        Please update your strategy to maximize your long-term score.
-        You must choose exactly one of the following predefined strategies:
-        {allowed_strategy_text}
-
-        Return only valid JSON with the keys:
-        {{
-            "strategy_rules": [list of conditional statements],
-            "forgiveness_factor": 0-1,
-            "retaliation_threshold": 0-1,
-            "adaptability": 0-1,
-            "rationale": "str"
-        }}
-
-        Ensure that the "rationale" value is exactly one of the following: {allowed_strategy_text}.
-        """
+        update_prompt = self.prompt_class.get_strategy_update_prompt(history_str, self.strategy_matrix, allowed_strategy_keys)
         for _ in range(3):
             try:
                 response = await async_client.chat.completions.create(
                     model=self.model,
                     messages=[{"role": "system", "content": "You are an AI game theorist updating a strategy."},
                               {"role": "user", "content": update_prompt}],
-                    temperature=0.8,
+                    temperature=temperature,
                     response_format={"type": "json_object"},
                     max_tokens=300
                 )
@@ -452,7 +408,7 @@ payoff_matrix = {
     ('D', 'D'): (1, 1),  # Both defect
 }
 
-async def create_enhanced_agents(n=4) -> List[EnhancedAgent]:
+async def create_enhanced_agents(n=4, temperature=0.8) -> List[EnhancedAgent]:
     """Create and initialize multiple agents concurrently with unique strategies."""
     # Ensure we have enough strategies for the number of agents
     if n > len(PD_STRATEGIES_SORTED):
@@ -470,14 +426,14 @@ async def create_enhanced_agents(n=4) -> List[EnhancedAgent]:
         )
         agents.append(agent)
 
-    agents = await asyncio.gather(*(agent.initialize() for agent in agents))
+    agents = await asyncio.gather(*(agent.initialize(temperature) for agent in agents))
     return agents
 
-async def simulate_interaction(agent_a: EnhancedAgent, agent_b: EnhancedAgent) -> Dict:
+async def simulate_interaction(agent_a: EnhancedAgent, agent_b: EnhancedAgent, temperature=0.8) -> Dict:
     """Simulate an interaction between two agents asynchronously."""
     decision_a, decision_b = await asyncio.gather(
-        agent_a.decide_action(agent_b),
-        agent_b.decide_action(agent_a)
+        agent_a.decide_action(agent_b, temperature),
+        agent_b.decide_action(agent_a, temperature)
     )
     
     def normalize_action(decision):
@@ -566,7 +522,7 @@ async def simulate_interaction(agent_a: EnhancedAgent, agent_b: EnhancedAgent) -
 
 # %%
 #%% 
-async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gpt-4o-mini"]):
+async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gpt-4o-mini"], custom_prompt=None, temperature=0.8):
     start_time = time.time()  # Start the timer
     try:
         # Determine the base path for results
@@ -623,7 +579,10 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gp
             agents.append(agent)
 
         # Now actually initialize them
-        agents = await asyncio.gather(*(agent.initialize() for agent in agents))
+        agents = await asyncio.gather(*(agent.initialize(temperature) for agent in agents))
+        if custom_prompt is not None:
+            for agent in agents:
+                agent.custom_prompt = custom_prompt
 
 
 
@@ -663,17 +622,17 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gp
 
             interaction_tasks = []
             for agent_a, agent_b in agent_pairs:
-                interaction_tasks.append(simulate_interaction(agent_a, agent_b))
+                interaction_tasks.append(simulate_interaction(agent_a, agent_b, temperature))
 
             # Run all interactions concurrently
             interaction_results = await asyncio.gather(*interaction_tasks)
 
             # Update each agent's strategy based on past behavior
-            await asyncio.gather(*(agent.update_strategy() for agent in agents))
+            await asyncio.gather(*(agent.update_strategy(temperature) for agent in agents))
 
             # Log the strategies after update to validate distribution
-            for agent in agents:
-                print(f"[DEBUG] After update, {agent.name}: strategy_tactic = {agent.strategy_tactic}, strategy_matrix = {json.dumps(agent.strategy_matrix)}")
+            # for agent in agents:
+                # print(f"[DEBUG] After update, {agent.name}: strategy_tactic = {agent.strategy_tactic}, strategy_matrix = {json.dumps(agent.strategy_matrix)}")
 
             def process_interaction_results(interaction_results, gen, sim_data, all_detailed_logs):
                 gen_metrics = {
@@ -911,6 +870,17 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gp
         def create_research_visualizations(generations, generation_summary, strategy_distribution, sim_data, run_folder):
             plt.figure(figsize=(15, 10))
 
+            # Add a main title with the requested information
+            main_title = (
+                f"Research Metrics\n"
+                f"Provider: {sim_data.hyperparameters['models'][0]}, "
+                f"Model: {sim_data.hyperparameters['models'][0]}\n"
+                f"Date & Time: {sim_data.hyperparameters['timestamp']}\n"
+                f"Agents: {sim_data.hyperparameters['num_agents']}, "
+                f"Generations: {sim_data.hyperparameters['num_generations']}"
+            )
+            plt.suptitle(main_title, fontsize=16, y=1.02)
+
             # Existing plots
             plt.subplot(3, 2, 1)
             plt.plot([m["Strategy_Diversity"] for m in generation_summary], marker='o')
@@ -978,7 +948,7 @@ async def run_llm_driven_simulation(num_agents=4, num_generations=5, models=["gp
                 print('Error plotting average actions:', e)
                 plt.text(0.5, 0.5, 'Error in avg actions', horizontalalignment='center', verticalalignment='center')
 
-            plt.tight_layout()
+            plt.tight_layout(rect=[0, 0, 1, 0.96])  # Adjust layout to fit the main title
             plt.savefig(os.path.join(run_folder, "research_metrics.png"))
             plt.close()
 
@@ -1124,12 +1094,14 @@ def plot_research_metrics(generation_summary, save_path):
 # %%
 #%%
 # Helper function to run async code in Jupyter
-async def run_simulation(num_agents=8, num_generations=3, models=["gpt-4o-mini"]):
+async def run_simulation(num_agents=8, num_generations=3, models=["gpt-4o-mini"], custom_prompt=None, temperature=0.8):
     """Run the simulation with configurable parameters."""
     return await run_llm_driven_simulation(
         num_agents=num_agents, 
         num_generations=num_generations,
-        models=models
+        models=models,
+        custom_prompt=custom_prompt,
+        temperature=temperature
     )
 
 
@@ -1153,7 +1125,7 @@ async def run_simulation(num_agents=8, num_generations=3, models=["gpt-4o-mini"]
 
 
 
-def main(num_agents=8, num_generations=3, model="gpt-4o-mini"):
+def main(num_agents=8, num_generations=3, llm_provider="openai", llm_model="gpt-4o", prompt_choice="prompts1", temperature=0.8):
     """
     Main function to run the simulation when script is executed directly.
     
@@ -1163,12 +1135,18 @@ def main(num_agents=8, num_generations=3, model="gpt-4o-mini"):
         Number of agents in the simulation
     num_generations : int
         Number of generations to run
-    model : str
-        The OpenAI model to use
+    llm_provider : str
+        The LLM provider to use ('openai' or 'litellm')
+    llm_model : str
+        The model to use with the LLM provider
+    prompt_choice : str
+        The prompt choice to use ('prompts1' or 'prompts2')
+    temperature : float
+        The temperature to use for LLM calls
     """
     try:
         # Print a nice header
-        print("\n" + "="*80)
+        print("\n\n\n\n\n\n\n\n\n\n" + "="*80)
         print(" "*30 + "PRISONER'S DILEMMA SIMULATION")
         print("="*80 + "\n")
         
@@ -1177,8 +1155,10 @@ def main(num_agents=8, num_generations=3, model="gpt-4o-mini"):
         print("-"*50)
         print(f"Number of agents:      {num_agents}")
         print(f"Number of generations: {num_generations}")
-        print(f"Model:                 {model}")
+        print(f"LLM Provider:          {llm_provider}")
+        print(f"Model:                 {llm_model}")
         print(f"Strategies:            All 8 predefined strategies")
+        print(f"Temperature:           {temperature}")
         print("-"*50 + "\n")
         
         print("Starting simulation...\n")
@@ -1193,12 +1173,17 @@ def main(num_agents=8, num_generations=3, model="gpt-4o-mini"):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         os.chdir(script_dir)
         
+        # Determine which prompt class to use
+        prompt_class = Prompts1 if prompt_choice == "prompts1" else Prompts2
+
         # Create event loop and run simulation
         loop = asyncio.get_event_loop()
         summary, logs = loop.run_until_complete(run_simulation(
             num_agents=num_agents,
             num_generations=num_generations,
-            models=[model]
+            models=[llm_model],
+            custom_prompt=prompt_class,
+            temperature=temperature
         ))
         
         # Print initial agent strategies
@@ -1271,12 +1256,19 @@ def main(num_agents=8, num_generations=3, model="gpt-4o-mini"):
 
 # This ensures the main() function only runs when the script is executed directly
 if __name__ == "__main__":
-    # You can easily change these parameters for different experiments
     main(
-        num_agents=8,           # Change this to adjust number of agents
-        num_generations=4,      # Change this to adjust number of generations
-        model="gpt-4o-mini"     # Change this to use a different model
+        num_agents=8,
+        num_generations=4,
+        llm_provider="litelm",
+        llm_model="claude-3-5-sonnet",
+        prompt_choice="prompts1",  # Options: "prompts1", "prompts2"
+        temperature=0.8  # Set the temperature for LLM calls
     )
+
+
+
+
+
 
 
 
