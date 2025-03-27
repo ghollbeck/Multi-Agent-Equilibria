@@ -468,15 +468,10 @@ payoff_matrix = {
 }
 
 async def create_enhanced_agents(n=64) -> List[EnhancedAgent]:
-    """Create and initialize 64 agents with 8 agents having the same strategy initially."""
-    # Ensure we have enough strategies for the number of agents
-    if n != 64:
-        raise ValueError("Number of agents must be 64.")
-    
-    # Assign each strategy to 8 agents
-    strategies = PD_STRATEGIES_SORTED * 8
+    """Create and initialize n agents with strategies assigned cyclically from predefined strategies."""
     agents = []
-    for i, (strategy_key, strategy_desc, coop_level) in enumerate(strategies):
+    for i in range(n):
+        strategy_key, strategy_desc, coop_level = PD_STRATEGIES_SORTED[i % len(PD_STRATEGIES_SORTED)]
         agent = EnhancedAgent(
             f"Agent_{i+1}",
             strategy_tactic=strategy_key,
@@ -618,28 +613,12 @@ async def run_llm_driven_simulation(num_agents=64, num_generations=5, models=["g
         # Initialize agents with all different strategies
         agents = await create_enhanced_agents(num_agents)
 
-        # Create a quadratic matrix of agent pairs
-        agent_pairs = []
-        for i in range(8):
-            for j in range(8):
-                for k in range(8):
-                    agent_a = agents[i * 8 + k]
-                    agent_b = agents[j * 8 + k]
-                    agent_pairs.append((agent_a, agent_b))
+        # Create pairs for every ordered pair of agents (everyone with everyone)
+        agent_pairs = [(a, b) for a in agents for b in agents]
 
-        # Log initial pairings and strategies
-        print("\nInitial Pairings and Strategies:")
-        for agent_a, agent_b in agent_pairs:
-            print(f"{agent_a.name} (Strategy: {agent_a.strategy_tactic}) vs {agent_b.name} (Strategy: {agent_b.strategy_tactic})")
-
-        # Store opponent history for each agent
+        # For variable agent numbers, do not assign fixed opponents based on pairing
         for agent in agents:
             agent.fixed_opponent = None
-
-        # Assign fixed opponents
-        for agent_a, agent_b in agent_pairs:
-            agent_a.fixed_opponent = agent_b.name
-            agent_b.fixed_opponent = agent_a.name
 
         all_detailed_logs = []
         generation_summary = []
@@ -1273,8 +1252,8 @@ def main(num_agents=8, num_generations=3, model="gpt-4o-mini"):
 if __name__ == "__main__":
     # You can easily change these parameters for different experiments
     main(
-        num_agents=64,           # Change this to adjust number of agents
-        num_generations=30,      # Change this to adjust number of generations
+        num_agents=8,           # Change this to adjust number of agents
+        num_generations=4,      # Change this to adjust number of generations
         model="gpt-4o-mini"     # Change this to use a different model
     )
 
