@@ -570,17 +570,24 @@ def create_fishery_plots(
     plt.close()
 
 def format_logs_with_prettier(run_folder: str):
+    """
+    Format JSON files in the results folder using Prettier.
+    Skip CSV files as Prettier doesn't support them.
+    """
     for file_name in os.listdir(run_folder):
         if file_name.endswith('.json'):
             file_path = os.path.join(run_folder, file_name)
             try:
                 subprocess.run(['prettier', '--write', file_path], check=True)
-                print(f"Formatted {file_name} with Prettier.")
+                print(f"✨ Formatted {file_name} with Prettier.")
+            except subprocess.CalledProcessError as e:
+                print(f"❌ Failed to format {file_name} with Prettier: {e}")
             except FileNotFoundError:
-                print("Prettier not installed, skipping JSON formatting.")
-                break
+                print(f"❌ Prettier not found. Install with 'npm install -g prettier' to enable formatting.")
+                return
         elif file_name.endswith('.csv'):
-            print(f"Skipping CSV file {file_name} for Prettier formatting.")
+            # Skip CSV files and inform user
+            print(f"ℹ️ Skipping {file_name} - Prettier doesn't support CSV format.")
 
 # -------------------------------------------------------------------------------------------
 # 8. Comparison to Human Data (Placeholder)

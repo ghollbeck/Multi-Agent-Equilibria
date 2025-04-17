@@ -24,6 +24,9 @@ game_file = current_dir / "market_impact_game.py"
 output_dir = current_dir / "architecture"
 os.makedirs(output_dir, exist_ok=True)
 
+
+
+
 def main():
     """Generate architecture flowchart for the Market Impact Game"""
     print(f"Generating architecture flowchart for: {game_file}")

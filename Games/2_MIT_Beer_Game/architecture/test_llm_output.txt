@@ -1,0 +1,29 @@
+```mermaid
+graph TD
+    A[Main Entry Point] --> B[run_beer_game_simulation]
+    B -->|Loop over Generations| C[run_beer_game_generation]
+    B -->|Initialize Agents| D[BeerGameAgent]
+    D -->|Initialize Strategy| E[initialize_strategy]
+    E -->|LLM Request| F[LiteLLMClient]
+    F -->|API Call| G[LITELLM API]
+
+    C -->|Loop over Rounds| H[Round Execution]
+    H -->|External Demand Observed| I[Retailer Demand]
+    H -->|Receive Shipments| J[Update Inventory]
+    H -->|Fill Downstream Orders| K[Check Inventory]
+    K -->|Unfilled Orders| L[Update Backlog]
+    H -->|Calculate Costs| M[Holding & Backlog Costs]
+
+    H -->|Decide Orders| N[decide_order_quantity]
+    N -->|LLM Request| F
+    H -->|Queue Orders| O[Update Shipments in Transit]
+
+    C -->|Log Round Data| P[log_round_data]
+    P -->|Round Logs| Q[SimulationData]
+
+    B -->|Log and Visualize| R[plot_beer_game_results]
+    B -->|Nash Equilibrium Analysis| S[calculate_nash_deviation]
+
+    H -->|Update Strategy| T[update_strategy]
+    T -->|LLM Request| F
+```

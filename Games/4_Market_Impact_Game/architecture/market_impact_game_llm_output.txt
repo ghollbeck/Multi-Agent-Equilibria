@@ -1,0 +1,43 @@
+```mermaid
+graph TD
+    A[Entry Point] --> B{Load Existing Results?}
+    B -- Yes --> C[Load Results]
+    C --> D[Generate Visualizations]
+    B -- No --> E[Parse Arguments]
+    E --> F[Initialize Logger]
+    F --> G[Configure Environment]
+    G --> H[Create Agents]
+    H --> I[Initialize Market Environment]
+    I --> J{For Each Generation}
+    
+    J -->|Yes| K[Reset Environment and Agents]
+    K --> L{For Each Round}
+    L -->|Yes| M[Agents Decide Action]
+    M --> N{Gather Decisions}
+    N --> O[Execute Trades in Environment]
+    O --> P[Update Agents]
+    P --> L
+    
+    L ---->|No| Q[Calculate Metrics]
+    Q --> J
+    
+    J ---->|No| R[Save Results]
+    R --> S[Generate Visualizations]
+    S --> T[Format Logs with Prettier]
+    T --> U[Simulation Complete]
+    
+    subgraph Agent Actions
+        M --> V[Build Decision Prompt]
+        V --> W{LLM Provider?}
+        W -->|OpenAI| X[Decide with OpenAI]
+        W -->|LiteLLM| Y[Decide with LiteLLM]
+        X --> Z[Parse and Validate Decision]
+        Y --> Z
+    end
+    
+    subgraph Market Environment
+        O --> AA[Calculate Price Impact]
+        AA --> AB[Apply Market Noise]
+        AB --> AC[Update Price]
+    end
+```

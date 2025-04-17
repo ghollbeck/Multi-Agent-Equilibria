@@ -19,35 +19,33 @@ from typing import List, Dict, Any, Tuple
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
-################################################################################
-# SIMULATION CONFIGURATION
-################################################################################
+# ========== SIMULATION CONFIGURATION ==========
+# You can edit these parameters to customize the simulation
 SIMULATION_CONFIG = {
     # Simulation structure
-    "num_agents": 5,           # Number of agents
+    "num_agents": 5,           # Number of agents in the simulation
     "num_rounds": 10,          # Number of rounds per generation
-    "num_generations": 1,      # Number of generations
+    "num_generations": 1,      # Number of generations to run
 
     # Market parameters
     "init_price": 100.0,       # Initial asset price
     "impact_factor": 0.02,     # How strongly trades affect the market price
     "volatility": 0.01,        # Random price noise component
-    "flash_crash_mode": False, # If True, amplify price impact if everyone sells
 
     # LLM parameters
-    "llm_provider": "openai",  # 'openai' or 'litellm'
-    "llm_model": "gpt-4o",     # Default model
-    "temperature": 0.7,        # LLM sampling temperature
-
-    # Random seed (None for fully random)
-    "seed": None,
+    "llm_provider": "openai",  # LLM provider ('openai' or 'litellm')
+    "llm_model": "gpt-4o",     # Default model to use
+    "temperature": 0.7,        # Temperature for LLM sampling (0.0-1.0)
+    
+    # Random seed (set to None for random behavior)
+    "seed": None,              # Random seed for reproducibility
 }
-################################################################################
+# ==========================================
 
 # Load environment variables
 load_dotenv()
 
-# ========== Logging Setup ==========
+# Set up logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -58,15 +56,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger('market')
 
-# ========== Try OpenAI / Fallback ==========
+# ========== LLM Client Setup ==========
+# Try importing OpenAI package - handle both old and new versions
 try:
     from openai import OpenAI, AsyncOpenAI
     OPENAI_NEW_API = True
 except ImportError:
+    # Fall back to old API
     import openai
     OPENAI_NEW_API = False
 
-# If using openai's new classes:
+# Set up API clients
 if OPENAI_NEW_API:
     api_key = os.getenv("OPENAI_API_KEY")
     openai_client = OpenAI(api_key=api_key)
@@ -431,33 +431,65 @@ async def simulate_market_impact_game(
     llm_provider="openai",
     models=None,
     temperature=0.7,
-    seed=None,
-    flash_crash_mode=False
+    seed=None
 ) -> Tuple[SimulationData, str]:
     """
-    Run the market impact game with optional multi-generation structure.
-    """
-    start_time = time.time()
+    Run a complete market impact game simulation with multiple generations.
     
-    # Set seeds
+    Parameters:
+    -----------
+    num_agents : int
+        Number of agents participating in the market
+    num_rounds : int 
+        Number of trading rounds per generation
+    num_generations : int
+        Number of separate market simulations to run
+    init_price : float
+        Starting price of the asset
+    impact_factor : float
+        How strongly trades affect the market price
+    volatility : float
+        Random price noise component
+    llm_provider : str
+        Provider for LLM calls ('openai' or 'litellm')
+    models : List[str]
+        List of models to use with agents
+    temperature : float
+        Temperature for LLM sampling
+    seed : int, optional
+        Random seed for reproducibility
+        
+    Returns:
+    --------
+    Tuple[SimulationData, str]
+        SimulationData object and path to results directory
+    """
+    start_time = time.time()  # Start timing
+    
     if seed is not None:
         random.seed(seed)
         np.random.seed(seed)
         logger.info(f"Random seed set to {seed}")
     
+    # Set default models if None provided
     if models is None:
         models = ["gpt-4o"]
     
-    # Prepare results directory
-    now_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    base_folder = os.path.join(script_dir, "market_results")
-    os.makedirs(base_folder, exist_ok=True)
+    # Create results directory
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     
-    results_folder = os.path.join(base_folder, f"market_run_{now_str}")
+    # Create the parent market_results directory in the Market Impact Game folder
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    market_results_dir = os.path.join(script_dir, "market_results")
+    os.makedirs(market_results_dir, exist_ok=True)
+    
+    # Create the specific run results folder inside the market_results directory
+    results_folder = os.path.join(market_results_dir, f"market_run_{current_time}")
     os.makedirs(results_folder, exist_ok=True)
+    
     logger.info(f"Created results folder: {results_folder}")
     
+    # Initialize simulation data
     sim_data = SimulationData(hyperparams={
         "num_agents": num_agents,
         "num_rounds": num_rounds,
@@ -469,13 +501,12 @@ async def simulate_market_impact_game(
         "models": models,
         "temperature": temperature,
         "seed": seed,
-        "flash_crash_mode": flash_crash_mode,
-        "timestamp": now_str
+        "timestamp": current_time
     })
     
     logger.info("🚀 Starting market impact game")
     logger.info(f"Parameters: {num_agents} agents, {num_generations} generations, {num_rounds} rounds")
-    logger.info(f"Market: impact={impact_factor}, volatility={volatility}, init_price=${init_price:.2f}, flash_crash={flash_crash_mode}")
+    logger.info(f"Market: impact={impact_factor}, volatility={volatility}, init_price=${init_price:.2f}")
     logger.info(f"LLM: provider={llm_provider}, models={models}, temperature={temperature}")
     
     # Create agents
@@ -499,8 +530,7 @@ async def simulate_market_impact_game(
     env = MarketEnvironment(
         init_price=init_price,
         impact_factor=impact_factor,
-        volatility=volatility,
-        flash_crash_mode=flash_crash_mode
+        volatility=volatility
     )
     
     generation_summary = []
@@ -772,89 +802,96 @@ if __name__ == "__main__":
     nest_asyncio.apply()
     
     import argparse
-    parser = argparse.ArgumentParser(description="N-Player Market Impact Game")
-    parser.add_argument("--agents", type=int, default=SIMULATION_CONFIG["num_agents"])
-    parser.add_argument("--rounds", type=int, default=SIMULATION_CONFIG["num_rounds"])
-    parser.add_argument("--gens", type=int, default=SIMULATION_CONFIG["num_generations"])
-    parser.add_argument("--init_price", type=float, default=SIMULATION_CONFIG["init_price"])
-    parser.add_argument("--impact", type=float, default=SIMULATION_CONFIG["impact_factor"])
-    parser.add_argument("--volatility", type=float, default=SIMULATION_CONFIG["volatility"])
-    parser.add_argument("--flash_crash", action="store_true",
-                        help="Enable flash crash amplification if all agents SELL.")
-    parser.add_argument("--provider", choices=["openai", "litellm"],
-                        default=SIMULATION_CONFIG["llm_provider"])
-    parser.add_argument("--model", type=str, default=SIMULATION_CONFIG["llm_model"])
-    parser.add_argument("--temp", type=float, default=SIMULATION_CONFIG["temperature"])
-    parser.add_argument("--seed", type=int, default=SIMULATION_CONFIG["seed"])
-    parser.add_argument("--load_results", type=str, default=None,
-                        help="Load existing results folder name for re-visualization.")
+    
+    # Parse command line arguments (these override the SIMULATION_CONFIG values if specified)
+    parser = argparse.ArgumentParser(description="Market Impact Game Simulation")
+    parser.add_argument("--agents", type=int, default=SIMULATION_CONFIG["num_agents"], help="Number of agents")
+    parser.add_argument("--rounds", type=int, default=SIMULATION_CONFIG["num_rounds"], help="Number of rounds per generation")
+    parser.add_argument("--generations", type=int, default=SIMULATION_CONFIG["num_generations"], help="Number of generations to run")
+    parser.add_argument("--init_price", type=float, default=SIMULATION_CONFIG["init_price"], help="Initial asset price")
+    parser.add_argument("--impact", type=float, default=SIMULATION_CONFIG["impact_factor"], help="Market impact factor")
+    parser.add_argument("--volatility", type=float, default=SIMULATION_CONFIG["volatility"], help="Market volatility")
+    parser.add_argument("--provider", choices=["openai", "litellm"], default=SIMULATION_CONFIG["llm_provider"], help="LLM provider")
+    parser.add_argument("--model", type=str, default=SIMULATION_CONFIG["llm_model"], help="LLM model to use")
+    parser.add_argument("--temperature", type=float, default=SIMULATION_CONFIG["temperature"], help="Temperature for LLM sampling")
+    parser.add_argument("--seed", type=int, default=SIMULATION_CONFIG["seed"], help="Random seed for reproducibility")
+    parser.add_argument("--load_results", type=str, default=None, help="Load and analyze results from a specific run folder")
     
     args = parser.parse_args()
-
-    # Print a heading
+    
+    # Print header
     logger.info("\n" + "="*80)
-    logger.info(" "*25 + "MARKET IMPACT GAME")
+    logger.info(" "*25 + "MARKET IMPACT GAME SIMULATION")
     logger.info("="*80 + "\n")
-
-    # If we're just re-visualizing:
+    
+    # If loading existing results
     if args.load_results:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        base_folder = os.path.join(script_dir, "market_results")
-        target_folder = os.path.join(base_folder, args.load_results)
-        if not os.path.exists(target_folder):
-            logger.error(f"Results folder does not exist: {target_folder}")
-            sys.exit(1)
-        # Load & re-plot
-        with open(os.path.join(target_folder, "simulation_data.json"), "r") as f:
-            sim_data_json = json.load(f)
-        sim_data_obj = SimulationData(
-            hyperparams=sim_data_json["hyperparams"],
-            equilibrium_metrics=sim_data_json["equilibrium_metrics"]
-        )
-        # Convert interactions:
-        from collections import namedtuple
-        Inter = namedtuple("Inter", sim_data_json["interactions"][0].keys())
-        sim_data_obj.interactions = []
-        for x in sim_data_json["interactions"]:
-            sim_data_obj.interactions.append(Inter(**x))
+        market_results_dir = os.path.join(script_dir, "market_results")
+        results_folder = os.path.join(market_results_dir, args.load_results)
         
-        generate_visualizations(sim_data_obj, target_folder)
-        sys.exit(0)
+        if os.path.exists(results_folder):
+            logger.info(f"Loading results from: {results_folder}")
+            
+            # Load simulation data
+            with open(os.path.join(results_folder, "simulation_data.json"), 'r') as f:
+                sim_data_dict = json.load(f)
+            
+            # Create visualization from loaded data
+            interactions_df = pd.DataFrame(sim_data_dict["interactions"])
+            generate_visualizations(SimulationData(**sim_data_dict), results_folder)
+            
+            logger.info(f"Visualizations regenerated in: {results_folder}")
+            sys.exit(0)
+        else:
+            logger.error(f"Results folder not found: {results_folder}")
+            sys.exit(1)
     
-    # Otherwise, run a new simulation
-    logger.info("SIMULATION PARAMETERS:")
+    # Print parameters
+    logger.info("⚙️ SIMULATION PARAMETERS:")
     logger.info("-"*50)
-    logger.info(f" Agents:       {args.agents}")
-    logger.info(f" Rounds:       {args.rounds}")
-    logger.info(f" Generations:  {args.gens}")
-    logger.info(f" init_price:   ${args.init_price:.2f}")
-    logger.info(f" impact:       {args.impact}")
-    logger.info(f" volatility:   {args.volatility}")
-    logger.info(f" flash_crash:  {args.flash_crash}")
-    logger.info(f" provider:     {args.provider}")
-    logger.info(f" model:        {args.model}")
-    logger.info(f" temperature:  {args.temp}")
-    logger.info(f" seed:         {args.seed}")
+    logger.info(f"Number of agents:      {args.agents}")
+    logger.info(f"Number of rounds:      {args.rounds}")
+    logger.info(f"Number of generations: {args.generations}")
+    logger.info(f"Initial price:         ${args.init_price:.2f}")
+    logger.info(f"Impact factor:         {args.impact}")
+    logger.info(f"Volatility:            {args.volatility}")
+    logger.info(f"LLM Provider:          {args.provider}")
+    logger.info(f"LLM Model:             {args.model}")
+    logger.info(f"Temperature:           {args.temperature}")
+    logger.info(f"Random seed:           {args.seed}")
     logger.info("-"*50 + "\n")
     
+    # Run simulation
     loop = asyncio.get_event_loop()
-    sim_data, folder = loop.run_until_complete(simulate_market_impact_game(
-        num_agents=args.agents,
-        num_rounds=args.rounds,
-        num_generations=args.gens,
-        init_price=args.init_price,
-        impact_factor=args.impact,
-        volatility=args.volatility,
-        llm_provider=args.provider,
-        models=[args.model],
-        temperature=args.temp,
-        seed=args.seed,
-        flash_crash_mode=args.flash_crash
-    ))
+    sim_data, results_folder = loop.run_until_complete(
+        simulate_market_impact_game(
+            num_agents=args.agents,
+            num_rounds=args.rounds,
+            num_generations=args.generations,
+            init_price=args.init_price,
+            impact_factor=args.impact,
+            volatility=args.volatility,
+            llm_provider=args.provider,
+            models=[args.model],
+            temperature=args.temperature,
+            seed=args.seed
+        )
+    )
     
-    format_logs_with_prettier(folder)
+    # Format logs with Prettier if available
+    format_logs_with_prettier(results_folder)
     
+    # Print summary
     logger.info("\n" + "="*80)
-    logger.info(" "*25 + "SIMULATION COMPLETE")
+    logger.info(" "*30 + "SIMULATION COMPLETED")
     logger.info("="*80 + "\n")
-    logger.info(f"Results at: {folder}\n")
+    
+    # List result files
+    logger.info("\n📊 RESULTS AND VISUALIZATIONS:")
+    logger.info("-"*50)
+    logger.info(f"Results saved to: {results_folder}")
+    for file in os.listdir(results_folder):
+        if file.endswith('.png'):
+            logger.info(f"Generated visualization: {os.path.join(results_folder, file)}")
+    logger.info("-"*50 + "\n")

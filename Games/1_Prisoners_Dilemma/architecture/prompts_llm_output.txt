@@ -1,0 +1,25 @@
+```mermaid
+classDiagram
+    class Prompts1 {
+        +get_strategy_generation_prompt(available_strategies)
+        +get_strategy_update_prompt(history_str, strategy_matrix, allowed_strategy_keys)
+        +get_decision_analysis_prompt(agent_name, own_history, strategy_matrix, opponent_name, opponent_history, opponent_model, opponent_coop_rate)
+    }
+    
+    class Prompts2 {
+        +get_strategy_generation_prompt(available_strategies)
+        +get_strategy_update_prompt(history_str, strategy_matrix, allowed_strategy_keys)
+        +get_decision_analysis_prompt(agent_name, own_history, strategy_matrix, opponent_name, opponent_history, opponent_model, opponent_coop_rate)
+    }
+
+    Prompts1 --> json : utilizes
+    Prompts1 <|-- Prompts2 : inherits
+
+    Prompts1 : +get_strategy_generation_prompt()
+    Prompts1 : +get_strategy_update_prompt()
+    Prompts1 : +get_decision_analysis_prompt()
+
+    Prompts2 : +get_strategy_generation_prompt()
+    Prompts2 : +get_strategy_update_prompt()
+    Prompts2 : +get_decision_analysis_prompt()
+```
