@@ -1246,9 +1246,7 @@ def format_logs_with_prettier(results_folder):
             logger.info(f"ℹ️ Skipping {file_name} - Prettier doesn't support CSV format.")
 
 def main():
-    """
-    Main function to run the simulation from command line arguments.
-    """
+    global DEFAULT_RESULTS_DIR  # <-- Must be at the top before any use
     parser = argparse.ArgumentParser(description="Enhanced Dynamic Fishery Game Simulation")
     
     # Basic simulation parameters
@@ -1285,7 +1283,6 @@ def main():
     args = parser.parse_args()
     
     # Update global variables
-    global DEFAULT_RESULTS_DIR
     DEFAULT_RESULTS_DIR = args.results_dir
     
     # Set API key if provided
