@@ -1,0 +1,60 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Architecture Flowchart</title>
+        <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+        <script>
+            mermaid.initialize({
+                startOnLoad: true,
+                theme: 'default',
+                logLevel: 'fatal',
+                securityLevel: 'loose',
+                flowchart: { htmlLabels: true }
+            });
+        </script>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f5f5f5;
+            }
+            .mermaid {
+                display: flex;
+                justify-content: center;
+                margin-top: 20px;
+            }
+            h1 {
+                text-align: center;
+                color: #333;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Architecture Flowchart</h1>
+        <div class="mermaid">
+        flowchart TD
+    A[Prompts1] --> B[get_first_action_prompt]
+    A --> C[get_next_round_decision_prompt]
+    B --> D["Returns long-term strategy prompt for first action"]
+    C --> E{"Decision factors for next move:\n- Long-term trust\n- Reputation\n- Forgiveness and signaling"}
+    E --> F["Returns long-term strategy prompt for next round decision"]
+
+    G[Prompts2] --> H[get_first_action_prompt]
+    G --> I[get_next_round_decision_prompt]
+    H --> J["Returns short-term strategy prompt for first action"]
+    I --> K{"Decision factors for next move:\n- Immediate payoff\n- Exploitation risk\n- Tactical opportunity"}
+    K --> L["Returns short-term strategy prompt for next round decision"]
+
+    M["Global prompt for first action decision"]
+    M --> N["General prompt for first action in iterated game"]
+    
+    classDef class1 fill:#f9f,stroke:#333,stroke-width:2px;
+    class A,G,M class1;
+        </div>
+    </body>
+    </html>
+    

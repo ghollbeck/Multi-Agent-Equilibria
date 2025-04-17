@@ -1,0 +1,94 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Architecture Flowchart</title>
+        <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+        <script>
+            mermaid.initialize({
+                startOnLoad: true,
+                theme: 'default',
+                logLevel: 'fatal',
+                securityLevel: 'loose',
+                flowchart: { htmlLabels: true }
+            });
+        </script>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f5f5f5;
+            }
+            .mermaid {
+                display: flex;
+                justify-content: center;
+                margin-top: 20px;
+            }
+            h1 {
+                text-align: center;
+                color: #333;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Architecture Flowchart</h1>
+        <div class="mermaid">
+        flowchart TD
+    subgraph Environment
+        direction TB
+        OligopolyGame["OligopolyGame"]
+        GameHistory["GameHistory"]
+
+        OligopolyGame -->|uses| GameHistory
+    end
+
+    subgraph Agents
+        direction TB
+        AgentBase["Agent Base Class"]
+        BaselineAgent["BaselineAgent"]
+        HeuristicAgent["HeuristicAgent"]
+        LLMAgent["LLMAgent"]
+        MixedAgent["MixedAgent"]
+
+        BaselineAgent -->|inherits| AgentBase
+        HeuristicAgent -->|inherits| AgentBase
+        LLMAgent -->|inherits| AgentBase
+        MixedAgent -->|inherits| AgentBase
+
+        MixedAgent -->|uses| HeuristicAgent
+        MixedAgent -->|uses| LLMAgent
+    end
+
+    subgraph GameDynamics
+        direction TB
+        Demand["demand(p_avg, eps)"]
+        Step["step(actions)"]
+        DeltaPriceMatrix["delta_price_matrix(window)"]
+        PriceCorrelation["price_correlation(window)"]
+
+        OligopolyGame -->|calls| Demand
+        OligopolyGame -->|calls| Step
+        OligopolyGame -->|calls| DeltaPriceMatrix
+        OligopolyGame -->|calls| PriceCorrelation
+    end
+
+    subgraph HelperFunctions
+        direction TB
+        HHI["hhi(market_shares)"]
+        MarketSharesFromProfits["market_shares_from_profits(profits)"]
+    end
+
+    OligopolyGame -->|handles| Agents
+    Agents -->|interacts with| OligopolyGame
+
+    Demand -->|calculates| Step
+    Step -->|records to| GameHistory
+
+    HelperFunctions -->|provides metrics| OligopolyGame
+        </div>
+    </body>
+    </html>
+    

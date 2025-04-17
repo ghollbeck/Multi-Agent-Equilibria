@@ -1,4 +1,3 @@
-
 """Load simulation logs, compute metrics, and create plots."""
 import json
 import pathlib
@@ -9,6 +8,10 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 from tqdm import tqdm
+
+# Directory where all figures will be saved
+PLOTS_DIR = pathlib.Path("plots")
+PLOTS_DIR.mkdir(exist_ok=True)
 
 LOG_DIR = pathlib.Path("logs")
 
@@ -63,7 +66,7 @@ def compute_metrics(df: pd.DataFrame, c: float):
         })
     return pd.DataFrame(metrics)
 
-def plot_heatmap(df: pd.DataFrame, metric: str, cbar_label: str):
+def plot_heatmap(df: pd.DataFrame, metric: str, cbar_label: str, save_as: pathlib.Path | None = None):
     pivot = df.pivot_table(index="N", columns="noise", values=metric, aggfunc="mean")
     fig, ax = plt.subplots()
     im = ax.imshow(pivot.values, aspect="auto")
@@ -75,8 +78,10 @@ def plot_heatmap(df: pd.DataFrame, metric: str, cbar_label: str):
     ax.set_ylabel("Number of Firms")
     ax.set_title(f"Average {metric}")
     fig.colorbar(im, ax=ax, label=cbar_label)
-    fig.tight_layout()
-    plt.show()
+    if save_as:
+        fig.savefig(save_as, dpi=300, bbox_inches="tight")
+    else:
+        plt.show()
 
 def t_test_vs_competitive(df: pd.DataFrame, c: float):
     group = df.groupby(["matchup"])
@@ -90,8 +95,21 @@ def main():
     c = 10.0
     df = load_all()
     metrics = compute_metrics(df, c)
+    
+    metrics_list = [
+        ("avg_markup", "Markup"),
+        ("HHI", "HHI"),
+        ("time_to_collusion", "Rounds"),
+    ]
+    for metric, label in metrics_list:
+        plot_heatmap(
+            metrics,
+            metric,
+            label,
+            save_as=PLOTS_DIR / f"{metric}_heatmap.png",
+        )
+    
     metrics.to_csv("metrics_summary.csv", index=False)
-    plot_heatmap(metrics, "avg_markup", "Markup")
     tests = t_test_vs_competitive(df, c)
     print("\nStatistical tests vs competitive price:\n")
     for k, (t, p) in tests.items():

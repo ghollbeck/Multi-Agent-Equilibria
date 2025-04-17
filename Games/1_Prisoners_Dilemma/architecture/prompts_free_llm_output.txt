@@ -1,0 +1,20 @@
+```mermaid
+flowchart TD
+    A[Prompts1] --> B[get_first_action_prompt]
+    A --> C[get_next_round_decision_prompt]
+    B --> D["Returns long-term strategy prompt for first action"]
+    C --> E{"Decision factors for next move:\n- Long-term trust\n- Reputation\n- Forgiveness and signaling"}
+    E --> F["Returns long-term strategy prompt for next round decision"]
+
+    G[Prompts2] --> H[get_first_action_prompt]
+    G --> I[get_next_round_decision_prompt]
+    H --> J["Returns short-term strategy prompt for first action"]
+    I --> K{"Decision factors for next move:\n- Immediate payoff\n- Exploitation risk\n- Tactical opportunity"}
+    K --> L["Returns short-term strategy prompt for next round decision"]
+
+    M["Global prompt for first action decision"]
+    M --> N["General prompt for first action in iterated game"]
+    
+    classDef class1 fill:#f9f,stroke:#333,stroke-width:2px;
+    class A,G,M class1;
+```

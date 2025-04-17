@@ -11,8 +11,8 @@ from pathlib import Path
 current_dir = Path(__file__).parent.absolute()
 
 # Add the Games directory to the Python path to find the architecture_flowchart module
-games_dir = current_dir.parent
-sys.path.append(str(games_dir))
+plot_architecture_dir = current_dir.parent / "PlotArchitecture"
+sys.path.append(str(plot_architecture_dir))
 
 # Import the main plotting script
 import architecture_flowchart

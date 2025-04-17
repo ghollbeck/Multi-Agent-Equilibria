@@ -10,9 +10,9 @@ from pathlib import Path
 # Get the current file's directory
 current_dir = Path(__file__).parent.absolute()
 
-# Add the Games directory to the Python path to find the architecture_flowchart module
-games_dir = current_dir.parent
-sys.path.append(str(games_dir))
+# Add the PlotArchitecture directory to the Python path to find the architecture_flowchart module
+plot_architecture_dir = current_dir.parent / "PlotArchitecture"
+sys.path.append(str(plot_architecture_dir))
 
 # Import the main plotting script
 import architecture_flowchart
@@ -23,8 +23,6 @@ game_file = current_dir / "market_impact_game.py"
 # Output directory - create an "architecture" subfolder in the current directory
 output_dir = current_dir / "architecture"
 os.makedirs(output_dir, exist_ok=True)
-
-
 
 
 def main():

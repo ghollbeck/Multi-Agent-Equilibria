@@ -29,6 +29,8 @@ HISTORY_K = 10
 ROUNDS = 10
 SEEDS = 100
 
+VERBOSE = False  # set True for per‑round logs
+
 LOG_DIR = pathlib.Path("logs")
 LOG_DIR.mkdir(exist_ok=True)
 
@@ -76,13 +78,16 @@ def run_single(seed: int, N: int, noise: float, asymmetric: bool, matchup: str):
     for _ in range(ROUNDS):
         actions = [agent.act(game, i) for i, agent in enumerate(agents)]
         demand, profits = game.step(actions)
-        # Terminal output with emojis
-        print(f"\n📈 Round {game.t} Results 📈")
-        print("   Prices:", [f"{p:.2f}" for p in actions])
-        print("   Profits:", [f"{p:.2f}" for p in profits])
-        corr = game.price_correlation(window=HISTORY_K)
-        print("   Correlation:", f"{corr:.2f}" if corr is not None else "N/A")
-        print()
+        if VERBOSE:
+            # Terminal output with emojis
+            print(f"\n📈 Round {game.t} Results 📈")
+            print("   Prices:", [f"{p:.2f}" for p in actions])
+            print("   Profits:", [f"{p:.2f}" for p in profits])
+            corr = game.price_correlation(window=HISTORY_K)
+            print("   Correlation:", f"{corr:.2f}" if corr is not None else "N/A")
+            print()
+    if not VERBOSE:
+        print(f"Seed {seed} finished: N={N}, noise={noise}, asym={asymmetric}, matchup={matchup}")
 
 def main():
     matchups = ["baseline", "heuristic", "llm", "mixed"]

@@ -1,67 +1,79 @@
-%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#ffcc00", "edgeLabelBackground":"#ffffff", "tertiaryColor": "#ffffe0"}}}%%
-
-graph TD
-    A[Fishery Game Extended] --> B[Configuration and Data Classes]
-    B --> BC[FisheryConfig]
-    B --> BD[FisheryInteractionData]
-    B --> BE[FisheryMetricsData]
-    B --> BF[FisherySimulationData]
-    BF --> BF1[add_interaction()]
-    BF --> BF2[add_generation_metrics()]
-    BF --> BF3[to_dict()]
-
-    A --> C[Agent Class]
-    C --> CA[FisheryAgent]
-    CA --> CA1[decide_fish_amount()]
-    CA --> CA2[_decide_with_openai()]
-    CA --> CA3[_decide_with_litellm()]
-    CA --> CA4[_call_litellm()]
-    CA --> CA5[log_decision()]
-    CA --> CA6[add_payoff()]
-
-    A --> D[Prompt Function for Fishery]
-    D --> DA[FisheryPrompts]
-    DA --> DA1[fishery_decision_prompt()]
-
-    A --> E[Theoretical Equilibria and Metrics]
-    E --> EA[compute_theoretical_equilibria()]
-    E --> EB[gini_coefficient()]
-    E --> EC[measure_equilibrium_distance()]
-
-    A --> F[Fishery Dynamics]
-    F --> FA[logistic_growth()]
-    F --> FB[simulate_fishery_generation()]
-    FB --> FB1[async decisions]
-    FB --> FB2[distribute fish]
-    FB --> FB3[log interactions]
-    FB --> FB4[resource regrowth]
-
-    A --> G[Main Simulation & Metrics]
-    G --> GA[run_fishery_game_simulation()]
-    GA --> GA1[initialize agents]
-    GA --> GA2[main simulation loop]
-    GA --> GA3[compute metrics]
-    G --> GB[create_fishery_plots()]
-    G --> GC[format_logs_with_prettier()]
-
-    A --> H[Enhanced Plotting & Comparison]
-    H --> HA[create_fishery_plots()]
-    HA --> HA1[plot resource over time]
-    HA --> HA2[plot eq_distance]
-    HA --> HA3[plot Gini coefficient]
-    HA --> HA4[comprehensive subplot]
-
-    A --> I[Comparison to Human Data]
-    I --> IA[compare_with_human_data()]
-    IA --> IA1[merge data]
-    IA --> IA2[compute differences]
-
-    A --> J[CLI Entry Point]
-    J --> JA[main()]
-    JA --> JA1[run simulation]
-    JA --> JA2[print results]
-
-    classDef classData fill:#ccf,stroke:#333,stroke-width:2px;
-    classDef classFunc fill:#cfc,stroke:#333,stroke-width:2px;
-    class BC,BD,BE,BF classData;
-    class BF1,BF2,BF3,CA1,CA2,CA3,CA4,CA5,CA6,DA1,EA,EB,EC,FA,FB,FB1,FB2,FB3,FB4,GA,GA1,GA2,GA3,GB,GC,HA,HA1,HA2,HA3,HA4,IA,IA1,IA2,JA,JA1,JA2 classFunc;
+flowchart TD
+    A[Start] --> B[Load Environment Variables]
+    B --> C[Initialize OpenAI and AsyncOpenAI Clients]
+    C --> D[Configuration and Data Classes]
+    
+    subgraph Configuration
+        D1[FisheryConfig]
+        D2[FisheryInteractionData]
+        D3[FisheryMetricsData]
+        D4[FisherySimulationData]
+    end
+    
+    D --> E[FisheryAgent Class]
+    
+    subgraph Agent
+        E1[decide_fish_amount]
+        E2[_decide_with_openai]
+        E3[_decide_with_litellm]
+        E4[log_decision]
+        E5[add_payoff]
+    end
+    
+    E --> F[Prompt Function for Fishery]
+    
+    subgraph Prompt
+        F1[fishery_decision_prompt]
+    end
+    
+    F --> G[Theoretical Equilibria and Metrics]
+    
+    subgraph Metrics
+        G1[compute_theoretical_equilibria]
+        G2[gini_coefficient]
+        G3[measure_equilibrium_distance]
+    end
+    
+    G --> H[Fishery Dynamics]
+    
+    subgraph Dynamics
+        H1[logistic_growth]
+        H2[simulate_fishery_generation]
+    end
+    
+    H --> I[Main Simulation & Metrics]
+    
+    subgraph Simulation
+        I1[run_fishery_game_simulation]
+    end
+    
+    I --> J[Enhanced Plotting & Comparison]
+    
+    subgraph Plotting
+        J1[create_fishery_plots]
+        J2[format_logs_with_prettier]
+    end
+    
+    J --> K[Comparison to Human Data]
+    
+    subgraph Comparison
+        K1[compare_with_human_data]
+    end
+    
+    K --> L[CLI Entry Point]
+    
+    subgraph CLI
+        L1[main]
+    end
+    
+    L --> M[End]
+    
+    %% Control Flow
+    B -->|Initializes| D
+    E1 -->|Asynchronously calls| E2
+    E1 -->|Asynchronously calls| E3
+    I1 -->|Invokes| H2
+    I1 -->|Passes results to| J1
+    I1 -->|Passes results to| K1
+    L1 -->|Executes| I1
+    L1 -->|Prints results| M

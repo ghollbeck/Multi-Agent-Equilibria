@@ -1,0 +1,87 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Architecture Flowchart</title>
+        <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+        <script>
+            mermaid.initialize({
+                startOnLoad: true,
+                theme: 'default',
+                logLevel: 'fatal',
+                securityLevel: 'loose',
+                flowchart: { htmlLabels: true }
+            });
+        </script>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f5f5f5;
+            }
+            .mermaid {
+                display: flex;
+                justify-content: center;
+                margin-top: 20px;
+            }
+            h1 {
+                text-align: center;
+                color: #333;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Architecture Flowchart</h1>
+        <div class="mermaid">
+        %%{init: {'theme': 'default', 'themeVariables': {'fontSize': '15px'}}}%%
+graph TD
+    A[main function] -->|calls| B[load_all function]
+    A -->|calls| C[compute_metrics function]
+    A -->|calls multiple times| D[plot_heatmap function]
+    A -->|calls| E[t_test_vs_competitive function]
+    A --> F[print statistical test results]
+    B --> G[parse_log function]
+    C --> H[metrics calculation loop]
+    D --> I[set up plot]
+    D --> J[show or save plot]
+    E --> K[perform t-tests]
+    G --> L[open log file]
+    G --> M[parse JSON log entries]
+    H --> N[groupby operation on DataFrame]
+    H --> O[compute avg_markup, HHI, time_to_collusion]
+    I --> P[pivot DataFrame for heatmap]
+    I --> Q[create heatmap plot]
+    K --> R[groupby operation on matchup]
+    K --> S[perform t-test against competitive price]
+
+    subgraph Load Data
+        B -->|calls| G
+        G --> L
+        G --> M
+    end
+
+    subgraph Compute Metrics
+        C --> H
+        H --> N
+        H --> O
+    end
+
+    subgraph Plot Heatmaps
+        D --> I
+        I --> P
+        I --> Q
+        D --> J
+    end
+
+    subgraph T-Test Analysis
+        E --> K
+        K --> R
+        K --> S
+    end
+        </div>
+    </body>
+    </html>
+    

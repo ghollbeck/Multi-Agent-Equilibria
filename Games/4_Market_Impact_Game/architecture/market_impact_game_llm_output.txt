@@ -1,43 +1,42 @@
 ```mermaid
 graph TD
-    A[Entry Point] --> B{Load Existing Results?}
-    B -- Yes --> C[Load Results]
-    C --> D[Generate Visualizations]
-    B -- No --> E[Parse Arguments]
-    E --> F[Initialize Logger]
-    F --> G[Configure Environment]
-    G --> H[Create Agents]
-    H --> I[Initialize Market Environment]
-    I --> J{For Each Generation}
+    A[market_impact_game.py] -->|Import Modules| B[Modules]
+    A -->|Load Environment Variables| C[load_dotenv]
+    A -->|Setup Logging| D[logging.basicConfig]
+    A -->|Setup LLM Client| E[LLM Client Setup]
+    A -->|Define Classes and Data Structures| F[Data Structures]
+    A -->|Define Market Agent| G[MarketAgent]
+    A -->|Define Market Environment| H[MarketEnvironment]
+    A -->|Define Simulation Function| I[simulate_market_impact_game]
+    A -->|Define Save and Plot Results| J[save_simulation_results]
+    A -->|Entry Point for Script Execution| K[Main Execution]
     
-    J -->|Yes| K[Reset Environment and Agents]
-    K --> L{For Each Round}
-    L -->|Yes| M[Agents Decide Action]
-    M --> N{Gather Decisions}
-    N --> O[Execute Trades in Environment]
-    O --> P[Update Agents]
-    P --> L
+    E --> F
+    F --> G
+    F --> H
+    G -->|Async Decision Making| G1[decide_action]
+    G1 -->|OpenAI Decision Making| G2[_decide_with_openai]
+    G1 -->|LiteLLM Decision Making| G3[_decide_with_litellm]
+    H -->|Trade Execution| H1[execute_trades]
+    I -->|Initialize Parameters| I1[Initialize Parameters]
+    I -->|Create Agents| I2[Create Agents]
+    I -->|Initialize Environment| I3[Initialize Environment]
+    I -->|Run Simulation| I4[Run Simulation]
+    I4 -->|Per Round Actions| I5[Per Round Actions]
+    I4 -->|Equilibrium Metrics Calculation| I6[calculate_equilibrium_metrics]
+    I5 -->|Gather Decisions| I5a[Gather Decisions]
+    I5 -->|Execute Trades| I5b[Execute Trades]
+    I5 -->|Update Agents| I5c[Update Agents]
+    I5 -->|Record Interactions| I5d[Record Interactions]
+    J -->|Save Data| J1[Save JSON/CSV Logs]
+    J -->|Generate Visualizations| J2[generate_visualizations]
+    K -->|Parse CLI Arguments| K1[Parse Arguments]
+    K -->|Load Existing Results| K2[Load Results]
+    K -->|Execute Simulation| K3[Run Simulation]
+    K -->|Format Logs| K4[format_logs_with_prettier]
     
-    L ---->|No| Q[Calculate Metrics]
-    Q --> J
-    
-    J ---->|No| R[Save Results]
-    R --> S[Generate Visualizations]
-    S --> T[Format Logs with Prettier]
-    T --> U[Simulation Complete]
-    
-    subgraph Agent Actions
-        M --> V[Build Decision Prompt]
-        V --> W{LLM Provider?}
-        W -->|OpenAI| X[Decide with OpenAI]
-        W -->|LiteLLM| Y[Decide with LiteLLM]
-        X --> Z[Parse and Validate Decision]
-        Y --> Z
-    end
-    
-    subgraph Market Environment
-        O --> AA[Calculate Price Impact]
-        AA --> AB[Apply Market Noise]
-        AB --> AC[Update Price]
-    end
+    K1 -->|Conditionally Load Results| K2
+    K2 -->|Regenerate Visualizations| J2
+    K3 -->|Run simulate_market_impact_game| I
+    K4 -->|Format JSON Logs| K4a[Prettier]
 ```

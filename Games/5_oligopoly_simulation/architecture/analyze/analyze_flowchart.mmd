@@ -1,0 +1,45 @@
+%%{init: {'theme': 'default', 'themeVariables': {'fontSize': '15px'}}}%%
+graph TD
+    A[main function] -->|calls| B[load_all function]
+    A -->|calls| C[compute_metrics function]
+    A -->|calls multiple times| D[plot_heatmap function]
+    A -->|calls| E[t_test_vs_competitive function]
+    A --> F[print statistical test results]
+    B --> G[parse_log function]
+    C --> H[metrics calculation loop]
+    D --> I[set up plot]
+    D --> J[show or save plot]
+    E --> K[perform t-tests]
+    G --> L[open log file]
+    G --> M[parse JSON log entries]
+    H --> N[groupby operation on DataFrame]
+    H --> O[compute avg_markup, HHI, time_to_collusion]
+    I --> P[pivot DataFrame for heatmap]
+    I --> Q[create heatmap plot]
+    K --> R[groupby operation on matchup]
+    K --> S[perform t-test against competitive price]
+
+    subgraph Load Data
+        B -->|calls| G
+        G --> L
+        G --> M
+    end
+
+    subgraph Compute Metrics
+        C --> H
+        H --> N
+        H --> O
+    end
+
+    subgraph Plot Heatmaps
+        D --> I
+        I --> P
+        I --> Q
+        D --> J
+    end
+
+    subgraph T-Test Analysis
+        E --> K
+        K --> R
+        K --> S
+    end

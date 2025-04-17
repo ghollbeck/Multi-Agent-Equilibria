@@ -1,0 +1,54 @@
+```mermaid
+flowchart TD
+    subgraph Environment
+        direction TB
+        OligopolyGame["OligopolyGame"]
+        GameHistory["GameHistory"]
+
+        OligopolyGame -->|uses| GameHistory
+    end
+
+    subgraph Agents
+        direction TB
+        AgentBase["Agent Base Class"]
+        BaselineAgent["BaselineAgent"]
+        HeuristicAgent["HeuristicAgent"]
+        LLMAgent["LLMAgent"]
+        MixedAgent["MixedAgent"]
+
+        BaselineAgent -->|inherits| AgentBase
+        HeuristicAgent -->|inherits| AgentBase
+        LLMAgent -->|inherits| AgentBase
+        MixedAgent -->|inherits| AgentBase
+
+        MixedAgent -->|uses| HeuristicAgent
+        MixedAgent -->|uses| LLMAgent
+    end
+
+    subgraph GameDynamics
+        direction TB
+        Demand["demand(p_avg, eps)"]
+        Step["step(actions)"]
+        DeltaPriceMatrix["delta_price_matrix(window)"]
+        PriceCorrelation["price_correlation(window)"]
+
+        OligopolyGame -->|calls| Demand
+        OligopolyGame -->|calls| Step
+        OligopolyGame -->|calls| DeltaPriceMatrix
+        OligopolyGame -->|calls| PriceCorrelation
+    end
+
+    subgraph HelperFunctions
+        direction TB
+        HHI["hhi(market_shares)"]
+        MarketSharesFromProfits["market_shares_from_profits(profits)"]
+    end
+
+    OligopolyGame -->|handles| Agents
+    Agents -->|interacts with| OligopolyGame
+
+    Demand -->|calculates| Step
+    Step -->|records to| GameHistory
+
+    HelperFunctions -->|provides metrics| OligopolyGame
+```

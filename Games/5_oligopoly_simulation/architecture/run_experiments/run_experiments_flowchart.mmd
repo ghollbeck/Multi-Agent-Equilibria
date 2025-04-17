@@ -1,0 +1,21 @@
+flowchart TD
+    A[Start] --> B[Initialize Constants and Paths]
+    B --> C{Main Function}
+    C -->|N in N_LIST| D{Noise Levels}
+    D -->|Noise in NOISE_LEVELS| E{Asymmetry}
+    E -->|Asym in [False, True]| F{Matchups}
+    F -->|Matchup in ["baseline", "heuristic", "llm", "mixed"]| G[Iterate SEEDS]
+    G -->|Each Seed| H[Run Single]
+    H --> I[Set Random Seed]
+    I --> J[Make Costs]
+    J --> K[Create Log File Path]
+    K --> L[Initialize OligopolyGame]
+    L --> M[Make Agents]
+    M --> N[Iterate ROUNDS]
+    N -->|Each Round| O[Agents Act]
+    O --> P[Game Step]
+    P --> Q{VERBOSE Check}
+    Q -->|True| R[Print Round Results]
+    Q -->|False| S[Print Seed Completion]
+    S --> T[End]
+    R --> T
