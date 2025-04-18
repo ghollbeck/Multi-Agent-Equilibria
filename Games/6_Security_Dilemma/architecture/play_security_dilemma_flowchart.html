@@ -1,0 +1,85 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Architecture Flowchart</title>
+        <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+        <script>
+            mermaid.initialize({
+                startOnLoad: true,
+                theme: 'default',
+                logLevel: 'fatal',
+                securityLevel: 'loose',
+                flowchart: { htmlLabels: true }
+            });
+        </script>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f5f5f5;
+            }
+            .mermaid {
+                display: flex;
+                justify-content: center;
+                margin-top: 20px;
+            }
+            h1 {
+                text-align: center;
+                color: #333;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Architecture Flowchart</h1>
+        <div class="mermaid">
+        graph TD
+    A[Main Function] -->|parse_args| B[Parse Arguments]
+    B -->|handle_args| C[Load Config]
+    C -->|create_logger| D[Setup Main Logger]
+    D -->|create_llm_client| E[Initialize LLM Client]
+    E -->|create_simulation| F[Initialize SimulationRunner]
+    F -->|run_simulation| G[Run Simulation]
+    G -->|save_results| H[Save Results]
+
+    subgraph Config
+        C1[Load Config File] --> C2[Set Default Values]
+        C2 --> C3[Override with CLI]
+    end
+
+    subgraph Logger
+        D1[Configure RotatingFileHandler] --> D2[Attach Handlers to Logger]
+    end
+
+    subgraph LLMClient
+        E1[Load API Key] --> E2[Create LiteLLMClient Instance]
+    end
+
+    subgraph SimulationRunner
+        F1[Initialize Player A] --> F2[Select Strategy]
+        F2 --> F3[Initialize Player B]
+        F3 --> F4[Create GameEngine Instance]
+    end
+
+    subgraph GameEngine
+        G1[Play Rounds]
+        G1 --> G2[Misperceive Actions]
+        G2 --> G3[Compute Payoffs]
+        G3 --> G4[Log Round Details]
+        G4 --> G5[Call LLM for Analysis]
+        G5 -->|validate| G6[Validate Results]
+    end
+
+    subgraph SaveResults
+        H1[Save to CSV/JSON] --> H2[Plot Analytics]
+        H2 --> H3[Generate Cooperation Rate Plot]
+        H3 --> H4[Generate Payoff Histogram]
+        H4 --> H5[Generate Confidence Interval Plot]
+    end
+        </div>
+    </body>
+    </html>
+    

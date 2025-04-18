@@ -77,6 +77,8 @@ RESULTS_SCHEMA = {
 # load environment variables from a .env file if present
 load_dotenv()
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # script directory
+
 class Config:
     """
     Configuration loader/saver for simulation parameters.
@@ -103,6 +105,8 @@ class Config:
         self.output_dir = 'results'
         self.llm_model = 'gpt-4o'
         self.llm_temp = 0.8
+        # populated at runtime to ensure all outputs use the same directory
+        self.run_dir = None
         if path:
             self.load(path)
 
@@ -204,39 +208,18 @@ class GenerousTitForTatStrategy(Strategy):
 
 
 class Player:
-    """Player in the game: human or computer with a strategy."""
-    def __init__(self, player_id, mode='computer', strategy=None):
-        self.id = player_id
-        self.is_human = (mode=='human')
+    """Company agent in the simulation (always algorithmic)."""
+    def __init__(self, company_id, strategy=None):
+        self.id = company_id
         self.strategy = strategy or RandomStrategy()
-        self.mode = mode
         self.history = []
 
     def select(self, history, role, logger):
-        """Get action and response time."""
-        if self.is_human:
-            return self._human_select(role, logger)
+        """Return chosen action and computation time."""
         start = time.time()
         action = self.strategy.select_action(history, role)
-        rt = time.time()-start
-        logger.info(f"🤖 Computer {self.id} ({role}) chose {action} (rt={rt:.4f}s)")
-        return action, rt
-
-    def _human_select(self, role, logger):
-        action = None
-        rt = 0.0
-        while action is None:
-            prompt = f"✨ Round {len(self.history)+1} - You ({role}) choose [L]ow or [H]igh: "
-            start = time.time()
-            resp = input(prompt).strip().upper()
-            rt = time.time()-start
-            if resp in ('L','LOW'):
-                action = 'Low'
-            elif resp in ('H','HIGH'):
-                action = 'High'
-            else:
-                logger.warning("⚠️ Invalid input; enter L or H.")
-        logger.info(f"🙋 Human {self.id} ({role}) chose {action} (rt={rt:.4f}s)")
+        rt = time.time() - start
+        logger.info(f"🏢 Company {self.id} ({role}) chose {action} (rt={rt:.4f}s)")
         return action, rt
 
 
@@ -328,9 +311,9 @@ class SimulationRunner:
         for i in tqdm(range(1, self.config.batch_size+1), desc="Batch Runs", unit="run"):
             run_id = f"{self.config.participant_id}_{i}_{int(time.time())}"
             # For scientific simulation, both players are computer agents
-            pA = Player(self.config.participant_id, 'computer')
+            pA = Player(self.config.participant_id)
             strat = self._get_strategy()
-            pB = Player('opponent', self.config.opponent_mode, strat)
+            pB = Player('opponent', strat)
             engine = GameEngine(pA, pB, self.config, run_id, self.logger, self.llm)
             res = engine.play()
             self.all_results.extend(res)
@@ -349,9 +332,7 @@ class SimulationRunner:
 
     def save(self, df):
         """Save DataFrame to CSV/JSON and generate analytics."""
-        outdir = os.path.join(self.config.output_dir,
-            datetime.datetime.now().strftime('%Y%m%d_%H%M%S_')+self.config.participant_id)
-        os.makedirs(outdir, exist_ok=True)
+        outdir = self.config.run_dir or os.path.join(BASE_DIR, self.config.output_dir)
         csvf = os.path.join(outdir, 'batch_results.csv')
         jsonf = os.path.join(outdir, 'batch_results.json')
         df.to_csv(csvf, index=False)
@@ -443,49 +424,10 @@ def setup_main_logger(log_path):
     return logger
 
 
-def interactive_menu(config, logger, llm_client):
-    """Menu-driven CLI for interactive play or batch runs."""
-    while True:
-        print("\n=== Security Dilemma Menu ===")
-        print("1) Play one interactive game")
-        print("2) Run batch simulations")
-        print("3) Load config file")
-        print("4) Exit")
-        choice = input("Select an option: ")
-        if choice=='1':
-            # single run with interactive human A
-            run_id = f"{config.participant_id}_{int(time.time())}"
-            pA = Player(config.participant_id,'human')
-            strat = SimulationRunner(config,logger,llm_client)._get_strategy()
-            pB = Player('opponent', config.opponent_mode, strat)
-            engine = GameEngine(pA,pB,config,run_id,logger,llm_client)
-            res = engine.play()
-            df = pd.DataFrame(res)
-            print(df)
-        elif choice=='2':
-            runner = SimulationRunner(config,logger,llm_client)
-            df = runner.run()
-            runner.save(df)
-        elif choice=='3':
-            path = input("Enter config file path: ")
-            try:
-                config.load(path)
-                logger.info(f"Loaded config from {path}")
-            except Exception as e:
-                logger.error(f"Failed to load config: {e}")
-        elif choice=='4':
-            print("Goodbye!")
-            break
-        else:
-            print("Invalid option.")
-
-
 def main():
     parser = argparse.ArgumentParser(description='Security Dilemma Simulation')
     parser.add_argument('--config-file', help='Path to JSON/YAML config')
-    parser.add_argument('--mode', choices=['batch'], default='batch')
-    parser.add_argument('--participant-id', help='Participant identifier')
-    parser.add_argument('--opponent-mode', choices=['human','computer'], default='computer')
+    parser.add_argument('--participant-id', help='Simulation run identifier')
     parser.add_argument('--strategy', choices=['random','tit_for_tat','grim_trigger','pavlov','generous_tit_for_tat'], default='tit_for_tat')
     parser.add_argument('--misinterpretation-prob', type=float, default=0.1)
     parser.add_argument('--rounds', type=int, default=10)
@@ -505,7 +447,6 @@ def main():
         config.load(args.config_file)
     # override with CLI
     if args.participant_id: config.participant_id = args.participant_id
-    config.opponent_mode = args.opponent_mode
     config.strategy = args.strategy
     config.misinterpretation_prob = args.misinterpretation_prob
     config.rounds = args.rounds
@@ -518,10 +459,13 @@ def main():
     if not config.participant_id:
         config.participant_id = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
 
-    # initialize dirs
-    os.makedirs(config.output_dir, exist_ok=True)
-    run_dir = os.path.join(config.output_dir, datetime.datetime.now().strftime('%Y%m%d_%H%M%S_')+config.participant_id)
+    # initialize dirs within script directory
+    full_results_dir = os.path.join(BASE_DIR, config.output_dir)
+    os.makedirs(full_results_dir, exist_ok=True)
+    run_dir = os.path.join(full_results_dir, datetime.datetime.now().strftime('%Y%m%d_%H%M%S'))
     os.makedirs(run_dir, exist_ok=True)
+    # store for downstream saving
+    config.run_dir = run_dir
     # setup loggers
     main_log = setup_main_logger(os.path.join(run_dir,'main.log'))
     llm_log = os.path.join(run_dir,'llm_prompts.txt')
@@ -547,8 +491,8 @@ class TestGameEngine(unittest.TestCase):
         cfg.rounds = 1
         cfg.misinterpretation_prob = 0.0
         cfg.participant_id = 'test'
-        pA = Player('test','computer',RandomStrategy())
-        pB = Player('opp','computer',RandomStrategy())
+        pA = Player('test')
+        pB = Player('opp')
         self.eng = GameEngine(pA,pB,cfg,'run0',setup_main_logger('test.log'))
 
     def test_compute_payoff(self):
