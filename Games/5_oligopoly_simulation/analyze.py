@@ -1,119 +1,118 @@
-"""Load simulation logs, compute metrics, and create plots."""
-import json
-import pathlib
-import re
-
-import matplotlib.pyplot as plt
+"""Load master log, compute rich metrics, and produce figures."""
+import json, pathlib, statistics, itertools, warnings, re, os
 import numpy as np
 import pandas as pd
-from scipy import stats
+import matplotlib.pyplot as plt
 from tqdm import tqdm
+from scipy import stats
 
-# Directory where all figures will be saved
-PLOTS_DIR = pathlib.Path("plots")
-PLOTS_DIR.mkdir(exist_ok=True)
+# Set up paths relative to the script directory
+SCRIPT_DIR = pathlib.Path(os.path.dirname(os.path.abspath(__file__)))
+LOG = SCRIPT_DIR / "logs/all_runs.jsonl"
+PLOTS = SCRIPT_DIR / "plots";  PLOTS.mkdir(exist_ok=True)
 
-LOG_DIR = pathlib.Path("logs")
+# ──────────────────────────────────────────────────────────────
+# 1. LOAD
+# ──────────────────────────────────────────────────────────────
+records = []
+with LOG.open() as fh:
+    for line in fh:
+        records.append(json.loads(line))
 
-def parse_log(path: pathlib.Path):
-    rounds = []
-    with open(path, "r", encoding="utf-8") as f:
-        for line in f:
-            rounds.append(json.loads(line))
-    return rounds
+df = pd.DataFrame(records)
+if df.empty:
+    raise SystemExit("No data found – did you run the experiments?")
 
-def load_all():
-    data = []
-    for log in LOG_DIR.glob("log_*.jsonl"):
-        meta = re.match(r"log_N(\d+)_noise([\d\.]+)_asym(True|False)_(\w+)_(\d+)\.jsonl", log.name)
-        if not meta:
-            continue
-        N, noise, asym, matchup, seed = meta.groups()
-        rounds = parse_log(log)
-        for r in rounds:
-            entry = {
-                "N": int(N),
-                "noise": float(noise),
-                "asym": asym == "True",
-                "matchup": matchup,
-                "seed": int(seed),
-                "round": r["round"],
-                "avg_price": np.mean(r["prices"]),
-                "profits": r["profits"],
-            }
-            data.append(entry)
-    return pd.DataFrame(data)
+# Helper: explode profit list into columns p0, p1, …
+max_firms = df["N"].max()
+for i in range(max_firms):
+    df[f"profit_{i}"] = df["profits"].apply(lambda lst: lst[i] if i < len(lst) else np.nan)
 
-def compute_metrics(df: pd.DataFrame, c: float):
-    grouped = df.groupby(["N", "noise", "asym", "matchup", "seed"])
-    metrics = []
-    for keys, group in tqdm(grouped, desc="metrics"):
-        avg_markup = ((group["avg_price"].mean() - c) / c)
-        last_profits = group.sort_values("round").iloc[-1]["profits"]
-        shares = np.array(last_profits) / np.sum(last_profits) if np.sum(last_profits) else np.full(len(last_profits), 1/len(last_profits))
-        hhi = np.sum(shares ** 2)
-        collusion_rounds = group[group["avg_price"] > c * 1.05]["round"]
-        time_to_collusion = collusion_rounds.iloc[0] if not collusion_rounds.empty else np.nan
-        metrics.append({
-            "N": keys[0],
-            "noise": keys[1],
-            "asym": keys[2],
-            "matchup": keys[3],
-            "seed": keys[4],
-            "avg_markup": avg_markup,
-            "HHI": hhi,
-            "time_to_collusion": time_to_collusion,
-        })
-    return pd.DataFrame(metrics)
+# Cost lookup (from baseline markup): c_i = posted_baseline - Δ
+DELTA = 0.2
+for i in range(max_firms):
+    df[f"cost_{i}"] = df.apply(
+        lambda r: 10.0 - 2.0 if (r["asym"] and i == 0) else 10.0, axis=1
+    )
+df["avg_price"] = df["prices"].apply(np.mean)
 
-def plot_heatmap(df: pd.DataFrame, metric: str, cbar_label: str, save_as: pathlib.Path | None = None):
-    pivot = df.pivot_table(index="N", columns="noise", values=metric, aggfunc="mean")
+# ──────────────────────────────────────────────────────────────
+# 2. METRICS PER RUN
+# ──────────────────────────────────────────────────────────────
+rows = []
+group_cols = ["N", "noise", "asym", "matchup", "seed"]
+for keys, grp in tqdm(df.groupby(group_cols), desc="computing metrics"):
+    N, noise, asym, matchup, seed = keys
+    series_p = grp["avg_price"]
+    markup = (series_p.mean() - 10.0) / 10.0
+
+    # price volatility
+    price_sd = series_p.std()
+
+    # time to 5 % markup
+    collusion_idx = grp[grp["avg_price"] > 10.0 * 1.05]["round"]
+    t_coll = collusion_idx.iloc[0] if not collusion_idx.empty else np.nan
+
+    # final profits
+    last = grp.iloc[-1]
+    profits = np.array(last["profits"])
+    gini = 0 if profits.sum() == 0 else (np.abs(np.subtract.outer(profits, profits)).sum()
+                                         / (2 * len(profits) * profits.sum()))
+
+    rows.append(dict(
+        N=N, noise=noise, asym=asym, matchup=matchup, seed=seed,
+        avg_markup=markup, price_sd=price_sd, time_to_collusion=t_coll, gini=gini
+    ))
+
+metrics = pd.DataFrame(rows)
+metrics.to_csv(SCRIPT_DIR / "metrics_summary.csv", index=False)
+
+# ──────────────────────────────────────────────────────────────
+# 3. PLOTS
+# ──────────────────────────────────────────────────────────────
+def heat(df, value, label):
+    pivot = df.pivot_table(
+        index="N",
+        columns="noise",
+        values=value,
+        aggfunc=lambda x: np.nanmean(x)   # ignore NaNs
+    ).sort_index()
+
+    # if everything is NaN, skip the plot
+    if np.all(np.isnan(pivot.values)):
+        warnings.warn(f"All values NaN for {value}; skipping heat‑map.")
+        return
+
+    data = np.ma.masked_invalid(pivot.values)
     fig, ax = plt.subplots()
-    im = ax.imshow(pivot.values, aspect="auto")
+    im = ax.imshow(data, aspect="auto", interpolation="nearest")
     ax.set_xticks(range(len(pivot.columns)))
     ax.set_xticklabels([f"{v:.2f}" for v in pivot.columns])
     ax.set_yticks(range(len(pivot.index)))
     ax.set_yticklabels(pivot.index)
     ax.set_xlabel("Noise σ")
-    ax.set_ylabel("Number of Firms")
-    ax.set_title(f"Average {metric}")
-    fig.colorbar(im, ax=ax, label=cbar_label)
-    if save_as:
-        fig.savefig(save_as, dpi=300, bbox_inches="tight")
-    else:
-        plt.show()
+    ax.set_ylabel("N firms")
+    ax.set_title(label)
+    cbar = fig.colorbar(im, ax=ax)
+    cbar.ax.set_ylabel(label, rotation=-90, va="bottom")
+    fig.savefig(PLOTS / f"{value}_heat.png", dpi=300, bbox_inches="tight")
+    plt.close(fig)
 
-def t_test_vs_competitive(df: pd.DataFrame, c: float):
-    group = df.groupby(["matchup"])
-    results = {}
-    for name, g in group:
-        t_stat, p_val = stats.ttest_1samp(g["avg_price"], popmean=c)
-        results[name] = (t_stat, p_val)
-    return results
+for col, lbl in [("avg_markup","Markup"), ("price_sd","Price SD"),
+                 ("gini","Gini (profits)"), ("time_to_collusion","Time to Collusion")]:
+    heat(metrics, col, lbl)
 
-def main():
-    c = 10.0
-    df = load_all()
-    metrics = compute_metrics(df, c)
-    
-    metrics_list = [
-        ("avg_markup", "Markup"),
-        ("HHI", "HHI"),
-        ("time_to_collusion", "Rounds"),
-    ]
-    for metric, label in metrics_list:
-        plot_heatmap(
-            metrics,
-            metric,
-            label,
-            save_as=PLOTS_DIR / f"{metric}_heatmap.png",
-        )
-    
-    metrics.to_csv("metrics_summary.csv", index=False)
-    tests = t_test_vs_competitive(df, c)
-    print("\nStatistical tests vs competitive price:\n")
-    for k, (t, p) in tests.items():
-        print(f"{k}: t={t:.2f}, p={p:.3e}")
+# ──────────────────────────────────────────────────────────────
+# 4. Regression: does noise hinder collusion?
+# ──────────────────────────────────────────────────────────────
+reg = stats.linregress(metrics["noise"], metrics["avg_markup"])
+print(f"\nOLS (avg markup ~ noise):  slope ={reg.slope:.3f},  p={reg.pvalue:.3e}")
 
-if __name__ == "__main__":
-    main()
+# t-test vs competitive price
+tt = stats.ttest_1samp(df["avg_price"], popmean=10.0)
+print(f"\nOverall t-test against p=c: t ={tt.statistic:.2f}, p ={tt.pvalue:.3e}")
+
+# Quick sanity‑check: how many actual LLM calls succeeded?
+if "matchup" in df.columns and any(df["matchup"].isin(["llm", "mixed"])):
+    total_rounds = len(df[df["matchup"].isin(["llm", "mixed"])])
+    print(f"\nTotal LLM‑labelled rounds logged: {total_rounds}")

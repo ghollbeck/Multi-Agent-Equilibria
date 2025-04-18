@@ -1,4 +1,3 @@
-
 """Oligopoly simulation environment, agent definitions, and logging utilities.
 
 Author: ChatGPT (OpenAI o3)
@@ -13,17 +12,36 @@ This module implements:
 from __future__ import annotations
 
 import json
+import os
 import textwrap
+import warnings
 from dataclasses import dataclass, field
 from typing import List, Sequence, Tuple
+from pathlib import Path
 
 import numpy as np
 from numpy.random import Generator
 
+# Check for .env file with API key
+env_path = Path(__file__).parent / '.env'
+if env_path.exists():
+    with open(env_path, 'r') as f:
+        for line in f:
+            if line.strip() and '=' in line:
+                key, value = line.strip().split('=', 1)
+                if key == 'OPENAI_API_KEY' and value:
+                    os.environ['OPENAI_API_KEY'] = value
+
 # Optional: Only import OpenAI if available so simulation can run without API key.
 try:
     import openai
+    # Set API key from environment if available
+    if os.environ.get("OPENAI_API_KEY"):
+        openai.api_key = os.environ.get("OPENAI_API_KEY")
+    else:
+        warnings.warn("OPENAI_API_KEY not found in environment or .env file. LLM agents may not work properly.")
 except ImportError:  # pragma: no cover
+    warnings.warn("openai package not installed. LLM agents will be disabled.")
     openai = None  # type: ignore
 
 # ---------------------------
@@ -154,36 +172,41 @@ class Agent:
         raise NotImplementedError
 
 class BaselineAgent(Agent):
-    """Always price at marginal cost."""
-
-    def __init__(self, cost: float):
-        self.cost = float(cost)
-        self.name = "BaselineAgent"
+    """
+    Posts a tiny markup Δ over marginal cost so that profits are > 0
+    (otherwise every baseline run is trivially zero).
+    """
+    def __init__(self, cost: float, delta: float = 0.2):
+        self.cost  = float(cost)
+        self.delta = float(delta)
+        self.name  = "BaselineAgent"
 
     def act(self, game: OligopolyGame, idx: int) -> float:
-        return self.cost
+        return self.cost + self.delta
 
 class HeuristicAgent(Agent):
-    """Simple adaptive heuristic."""
-
+    """
+    Adaptive rule with finer granularity (Δ = price_grid step).
+    1. If recent average price for this firm > c, match that average.
+    2. Otherwise post (c + Δ) to signal willingness to collude.
+    """
     def __init__(self, cost: float, delta: float, history_k: int):
-        self.c = cost
-        self.delta = delta
-        self.k = history_k
+        self.c  = cost
+        self.d  = delta
+        self.k  = history_k
         self.name = "HeuristicAgent"
 
     def act(self, game: OligopolyGame, idx: int) -> float:
         if not game.history.prices:
-            return self.c + self.delta
-        window = game.history.rolling_window(self.k).prices
-        avg_price = np.mean([p[idx] for p in window])
-        if avg_price > self.c:
-            candidates = game.price_grid
-            return float(candidates[np.argmin(np.abs(candidates - avg_price))])
-        return self.c + self.delta
+            return self.c + self.d
+        window    = game.history.rolling_window(self.k).prices
+        avg_price = np.mean([row[idx] for row in window])
+        grid      = game.price_grid
+        target    = avg_price if avg_price > self.c else (self.c + self.d)
+        return float(grid[np.argmin(np.abs(grid - target))])
 
 class LLMAgent(Agent):
-    """Language‑model‑driven pricing agent."""
+    """Language‑model‑driven pricing agent with cached single LLM call per game."""
 
     def __init__(
         self,
@@ -191,18 +214,26 @@ class LLMAgent(Agent):
         cost: float,
         price_grid: Sequence[float],
         history_k: int,
-        model: str = "gpt-4o",
+        models: Sequence[str] = ("gpt-4o-mini", "gpt-4o", "gpt-4-turbo-preview", "gpt-3.5-turbo"),
         temperature: float = 0.7,
     ):
-        if openai is None:
-            raise RuntimeError("openai package not installed")
+        import openai
         self.idx = firm_idx
         self.c = cost
         self.grid = list(price_grid)
         self.k = history_k
-        self.model = model
+        self.models = list(models)
+        self._current_model_index = 0
         self.temperature = temperature
         self.name = "LLMAgent"
+        self.client = openai.OpenAI()
+        # single-call cache
+        self._initialized = False
+        self._cached_price: float | None = None
+
+        # statistics
+        if not hasattr(openai, "_llm_call_counter"):
+            openai._llm_call_counter = 0
 
     def _build_prompt(self, game: OligopolyGame) -> str:
         past = game.history.rolling_window(self.k).prices
@@ -224,24 +255,44 @@ class LLMAgent(Agent):
         return prompt.strip()
 
     def _call_llm(self, prompt: str) -> str:
-        resp = openai.ChatCompletion.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=self.temperature,
-        )
-        return resp.choices[0].message["content"].strip()
+        import openai
+        last_err = None
+        for idx, model in enumerate(self.models):
+            try:
+                resp = self.client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=self.temperature,
+                )
+                openai._llm_call_counter += 1
+                # remember the model that worked
+                self._current_model_index = idx
+                return resp.choices[0].message.content.strip()
+            except Exception as e:
+                last_err = e
+                # try next model
+                continue
+        # if we get here, every model failed
+        raise RuntimeError(f"All LLM models failed. Last error: {last_err}")
 
     def act(self, game: OligopolyGame, idx: int) -> float:
-        prompt = self._build_prompt(game)
-        try:
-            reply = self._call_llm(prompt)
-            price = float(reply)
-            if price not in self.grid:
-                raise ValueError
-            return price
-        except Exception:
-            heuristic = HeuristicAgent(self.c, self.grid[1] - self.c, self.k)
-            return heuristic.act(game, idx)
+        # On first decision, query the LLM once and cache the chosen price; thereafter reuse
+        if not self._initialized:
+            prompt = self._build_prompt(game)
+            try:
+                reply = self._call_llm(prompt)
+                price = float(reply)
+                if price not in self.grid:
+                    raise ValueError(f"LLMAgent returned invalid price: {price}")
+                self._cached_price = price
+            except Exception as e:
+                warnings.warn(f"LLMAgent fallback to heuristic due to error: {e}")
+                heuristic = HeuristicAgent(self.c, self.grid[1] - self.c, self.k)
+                self._cached_price = heuristic.act(game, idx)
+            self._initialized = True
+            return self._cached_price  # type: ignore[return-value]
+        # reuse cached price for all subsequent rounds
+        return self._cached_price  # type: ignore[return-value]
 
 class MixedAgent(Agent):
     """Alternates between Heuristic and LLM every *m* rounds."""
@@ -280,3 +331,7 @@ def market_shares_from_profits(profits: Sequence[float]) -> List[float]:
     if total == 0:
         return [1 / len(profits)] * len(profits)
     return [p / total for p in profits]
+
+def llm_call_stats() -> int:
+    """Return number of successful OpenAI ChatCompletion calls so far."""
+    return getattr(openai, "_llm_call_counter", 0)
