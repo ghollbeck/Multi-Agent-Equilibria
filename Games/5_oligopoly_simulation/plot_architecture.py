@@ -15,7 +15,8 @@ plot_architecture_dir = current_dir.parent / "PlotArchitecture"
 sys.path.append(str(plot_architecture_dir))
 
 # Import the main plotting script
-import architecture_flowchart
+# Import the main plotting script from the PlotArchitecture directory
+from Games.PlotArchitecture.architecture_flowchart import create_flowchart_from_script
 
 # Paths to the main game files
 run_experiments_file = current_dir / "run_experiments.py"

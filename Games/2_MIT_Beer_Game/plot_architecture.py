@@ -15,10 +15,10 @@ plot_architecture_dir = current_dir.parent / "PlotArchitecture"
 sys.path.append(str(plot_architecture_dir))
 
 # Import the main plotting script
-import architecture_flowchart
+from Games.PlotArchitecture.architecture_flowchart import create_flowchart_from_script
 
 # Path to the main game file - adjust the filename if necessary
-game_file = current_dir / "beer_game.py"
+game_file = current_dir / "MIT_Beer_Game.py"
 
 # Check if the file exists, and use a fallback if needed
 if not game_file.exists():

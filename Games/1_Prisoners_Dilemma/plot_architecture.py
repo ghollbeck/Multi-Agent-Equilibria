@@ -15,7 +15,7 @@ plot_architecture_dir = current_dir.parent / "PlotArchitecture"
 sys.path.append(str(plot_architecture_dir))
 
 # Import the main plotting script
-import architecture_flowchart
+from Games.PlotArchitecture.architecture_flowchart import create_flowchart_from_script
 
 # Path to the main game file - adjust the filename if necessary
 game_file = current_dir / "prisoners_dilemma.py"
