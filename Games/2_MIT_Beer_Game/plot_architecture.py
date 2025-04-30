@@ -1,62 +1,43 @@
 #!/usr/bin/env python3
 """
-Internal script to generate architecture flowchart for the MIT Beer Game
-"""
+Per‑game wrapper that calls the advanced flowchart generator.
 
-import os
+Place this file inside a game directory (`1_Prisoners_Dilemma/plot_architecture.py`,
+etc.).  It automatically locates the *largest* `.py` file in the folder (assumed
+to be the game entry‑point), but you can override via CLI.
+
+usage: python plot_architecture.py            # auto‑detect main script  
+       python plot_architecture.py mygame.py  # explicit
+"""
+from __future__ import annotations
 import sys
+import os
 from pathlib import Path
 
-# Get the current file's directory
-current_dir = Path(__file__).parent.absolute()
+# ─── locate shared module ──────────────────────────────────────────────────────
+ROOT = Path(__file__).resolve().parents[1]      # …/Games
+sys.path.insert(0, str(ROOT))                   # Add …/Games to sys.path
+sys.path.append(str(ROOT / "PlotArchitecture"))
 
-# Add the Games directory to the Python path to find the architecture_flowchart module
-plot_architecture_dir = current_dir.parent / "PlotArchitecture"
-sys.path.append(str(plot_architecture_dir))
+from PlotArchitecture.architecture_flowchart import create_flowchart_from_script
 
-# Import the main plotting script
-from Games.PlotArchitecture.architecture_flowchart import create_flowchart_from_script
 
-# Path to the main game file - adjust the filename if necessary
-game_file = current_dir / "MIT_Beer_Game.py"
-
-# Check if the file exists, and use a fallback if needed
-if not game_file.exists():
-    # Try to find the main Python file in the directory
-    py_files = list(current_dir.glob("*.py"))
-    if py_files:
-        # Use the first Python file found excluding this script
-        game_files = [f for f in py_files if f.name != "plot_architecture.py"]
-        if game_files:
-            game_file = game_files[0]
-            print(f"Using {game_file.name} as the main game file")
-
-# Output directory - create an "architecture" subfolder in the current directory
-output_dir = current_dir / "architecture"
-os.makedirs(output_dir, exist_ok=True)
+def _default_target() -> Path:
+    py_files = sorted(Path(__file__).parent.glob("*.py"), key=lambda p: p.stat().st_size, reverse=True)
+    for f in py_files:
+        if f.name != Path(__file__).name:
+            return f
+    raise FileNotFoundError("No candidate .py file found.")
 
 def main():
-    """Generate architecture flowchart for the MIT Beer Game"""
-    if not game_file.exists():
-        print(f"Error: Game file not found at {game_file}")
-        print("Please update the script to point to the correct game file.")
-        sys.exit(1)
-        
-    print(f"Generating architecture flowchart for: {game_file}")
-    print(f"Output directory: {output_dir}")
-    
-    # Generate the flowchart
-    result_files = architecture_flowchart.create_flowchart_from_script(
-        script_path=str(game_file),
-        output_dir=str(output_dir),
-        render=True,
-        save_llm_output=True
-    )
-    
-    print("\nFlowchart generation complete!")
-    print(f"Generated files:")
-    for file_type, file_path in result_files.items():
-        print(f"- {file_type}: {file_path}")
+    script = Path(sys.argv[1]) if len(sys.argv) > 1 else _default_target()
+    out_dir = Path(__file__).parent / "architecture"
+    out_dir.mkdir(exist_ok=True)
+    print(f"Generating flowchart for {script.name} → {out_dir}")
+    files = create_flowchart_from_script(script, out_dir, render=True, save_llm_output=True)
+    print("Artifacts:")
+    for k, v in files.items():
+        print(f"  {k:<15} {v.relative_to(Path.cwd())}")
 
 if __name__ == "__main__":
     main()

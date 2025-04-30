@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf‑8"/>
+<title>Architecture Flowchart</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'default',flowchart:{htmlLabels:true}});</script>
+<style>body{font-family:Inter,Arial,sans-serif;background:#fafafa;padding:2rem}
+        .step-1 { fill:#e1f5fe; stroke:#0288d1; }
+        .step-2 { fill:#e8f5e9; stroke:#388e3c; }
+        .step-3 { fill:#fff8e1; stroke:#f9a825; }
+        .step-4 { fill:#fbe9e7; stroke:#d84315; }
+        .step-5 { fill:#f3e5f5; stroke:#8e24aa; }
+        .step-6 { fill:#ede7f6; stroke:#5e35b1; }
+    </style>
+</head>
+<body>
+<div class="mermaid">
+flowchart TD
+    A1["<b>1. BeerGamePrompts</b><br/><small>Generates text prompts for agents in the Beer Game.</small>"]
+    A2["<b>2. RoundData</b><br/><small>Records attributes for a single round of the Beer Game.</small>"]
+    A3["<b>3. SimulationData</b><br/><small>Stores simulation hyperparameters and logs rounds.</small>"]
+    A4["<b>4. LiteLLMClient</b><br/><small>Interacts with LiteLLM API for chat completions.</small>"]
+    A5["<b>5. BeerGameAgent</b><br/><small>Models a supply chain agent with roles and strategies.</small>"]
+    A6["<b>6. run_beer_game_generation</b><br/><small>Simulates one generation of the Beer Game.</small>"]
+    A7["<b>7. run_beer_game_simulation</b><br/><small>Orchestrates a multi-generational Beer Game simulation.</small>"]
+    A8["<b>8. plot_beer_game_results</b><br/><small>Generates and saves plots of game results.</small>"]
+    A9["<b>9. calculate_nash_deviation</b><br/><small>Computes deviation from Nash equilibrium.</small>"]
+    A10["<b>10. main</b><br/><small>Runs the beer game simulation in an event loop.</small>"]
+    A11["<b>11. __top_level__</b><br/><small>Simulates the MIT Beer Game using LLMs.</small>"]
+
+    A1 --> A5
+    A2 --> A3
+    A3 --> A6
+    A4 --> A5
+    A5 --> A6
+    A6 --> A3
+    A6 --> A7
+    A7 --> A8
+    A7 --> A9
+    A7 --> A11
+    A9 --> A11
+    A10 --> A7
+
+    style A1 fill:#FFDDC1
+    style A2 fill:#FFABAB
+    style A3 fill:#FFC3A0
+    style A4 fill:#FF677D
+    style A5 fill:#D4A5A5
+    style A6 fill:#392F5A
+    style A7 fill:#31A2AC
+    style A8 fill:#61C0BF
+    style A9 fill:#6B4226
+    style A10 fill:#D9BF77
+    style A11 fill:#ACD8AA
+</div>
+</body>
+</html>

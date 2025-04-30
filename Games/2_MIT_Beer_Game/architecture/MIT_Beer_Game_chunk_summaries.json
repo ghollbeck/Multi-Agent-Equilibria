@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "name": "BeerGamePrompts",
+    "summary": "The `BeerGamePrompts` class provides static methods to generate text prompts for a language model to assist agents in the MIT Beer Game. These prompts guide agents in creating an initial ordering strategy, updating it based on performance, and deciding on order quantities each round. The inputs include role-specific information, performance logs, and current game state, while the output is a JSON-formatted strategy or decision with specified fields. There are no direct side effects, as the class primarily facilitates strategy generation and decision-making through prompts."
+  },
+  {
+    "id": 2,
+    "name": "RoundData",
+    "summary": "The code defines a data structure, `RoundData`, which records various attributes related to a single round of the Beer Game for an agent, such as round index, role name, inventory, backlog, orders, shipments, and cost. It takes no inputs, has no side effects, and outputs an instance of `RoundData` with the specified attributes."
+  },
+  {
+    "id": 3,
+    "name": "SimulationData",
+    "summary": "The code defines a `SimulationData` class that stores simulation hyperparameters and a log of rounds. It allows adding a new round entry to the log and provides a method to output the stored data as a dictionary, converting each round entry to a dictionary format."
+  },
+  {
+    "id": 4,
+    "name": "LiteLLMClient",
+    "summary": "This code defines a `LiteLLMClient` class that asynchronously interacts with the LiteLLM API to obtain chat completions. It takes inputs such as the model, system prompt, user prompt, temperature, and max tokens, and handles API rate limiting with retries. The output is the content of the chat completion, and it has side effects of making HTTP POST requests to the API endpoint."
+  },
+  {
+    "id": 5,
+    "name": "BeerGameAgent",
+    "summary": "The `BeerGameAgent` class models a supply chain agent with roles like \"Retailer\" or \"Factory,\" maintaining state variables such as inventory, backlog, and shipments in transit. It uses an LLM (Language Model) to asynchronously generate, update, and decide on ordering strategies based on prompts, with inputs including role-specific prompts and performance logs, and outputs as JSON-formatted strategy decisions."
+  },
+  {
+    "id": 6,
+    "name": "run_beer_game_generation",
+    "summary": "The `run_beer_game_generation` function simulates one generation of the Beer Game for a specified number of rounds with given agents and external demand, updating each agent's inventory, backlog, and costs while recording the simulation data and optionally logging human-readable summaries. Inputs include a list of agents, external demand, and various parameters; it has side effects on agent states and logs data, but it does not return any value."
+  },
+  {
+    "id": 7,
+    "name": "run_beer_game_simulation",
+    "summary": "The `run_beer_game_simulation` function orchestrates a multi-generational simulation of the Beer Game, where agents representing different supply chain roles (Retailer, Wholesaler, Distributor, Factory) are initialized with strategies, run through a series of rounds with external demand, and update their strategies based on performance. It logs results to a specified directory, generates visualizations, and calculates deviations from Nash equilibrium, returning the simulation data."
+  },
+  {
+    "id": 8,
+    "name": "plot_beer_game_results",
+    "summary": "The function `plot_beer_game_results` takes a DataFrame `rounds_df` and a string `results_folder` as inputs, creates the specified folder if it doesn't exist, and generates and saves plots of inventory, backlog, and accumulated cost over time for different roles, both individually and combined, as PNG files in the given folder."
+  },
+  {
+    "id": 9,
+    "name": "calculate_nash_deviation",
+    "summary": "The function `calculate_nash_deviation` takes a DataFrame `rounds_df` and an integer `equilibrium_order` as inputs, computes the average absolute deviation of order quantities from the Nash equilibrium for each role, prints these deviations, and returns a dictionary mapping each role to its average absolute deviation."
+  },
+  {
+    "id": 10,
+    "name": "main",
+    "summary": "This code initializes an asynchronous event loop with `nest_asyncio` to allow nested event loops, and then runs a coroutine `run_beer_game_simulation` with specified parameters (1 generation, 20 rounds per generation, and a temperature of 0.7) until completion. The inputs are the simulation parameters, and the side effect is the execution of the simulation within the event loop."
+  },
+  {
+    "id": 11,
+    "name": "__top_level__",
+    "summary": "This Python script simulates the MIT Beer Game, a supply chain management game, using large language models (LLMs) to determine adaptive ordering strategies for four roles: Retailer, Wholesaler, Distributor, and Factory. The script inputs include role-specific prompts for strategy generation and updates, and it outputs JSON responses detailing order quantities and strategy rationales, while logging game dynamics and visualizing results using CSV/JSON files and matplotlib plots."
+  },
+  {
+    "id": "11.2",
+    "name": "__top_level__",
+    "summary": "The provided code defines a system for simulating the MIT Beer Game, where agents decide order quantities based on their role and current state. The `get_decision_prompt` method generates a prompt for an agent to determine its order quantity, requiring a JSON response with specific keys. The `RoundData` and `SimulationData` classes log the state and actions of each round, while the `LiteLLMClient` class facilitates communication with an external language model API to assist in decision-making."
+  },
+  {
+    "id": "11.3",
+    "name": "__top_level__",
+    "summary": "The code defines a simulation of the Beer Game, a supply chain management exercise, where agents (Retailer, Wholesaler, Distributor, Factory) use an LLM-based strategy to manage inventory, backlog, and order quantities over multiple rounds. Inputs include external demand and agent roles, while outputs are logged in simulation data, and side effects include updating agent strategies and inventory levels based on LLM-generated decisions."
+  },
+  {
+    "id": "11.4",
+    "name": "__top_level__",
+    "summary": "This code simulates a multi-round \"Beer Game,\" where agents representing different roles in a supply chain (Retailer, Wholesaler, Distributor, Factory) attempt to fulfill downstream orders from their inventory, manage backlogs, and incur costs based on inventory and backlog levels. The simulation runs for multiple generations, logging each round's activities and decisions, and involves agents deciding order quantities from upstream based on a strategy that can be influenced by a temperature parameter."
+  },
+  {
+    "id": "11.5",
+    "name": "__top_level__",
+    "summary": "This code initializes a group of agents for a simulation of the \"beer game,\" resetting their inventories, backlogs, and other attributes, and logs the start of a new generation. It then runs a simulation for a specified number of rounds, logs each agent's performance, and allows them to update their strategies. After the simulation, it saves detailed logs to disk, generates visualizations of the results, calculates deviations from a Nash equilibrium, and writes these analyses to a log file. The function returns the simulation data."
+  },
+  {
+    "id": "11.6",
+    "name": "__top_level__",
+    "summary": "The code calculates the average absolute deviation of order placements from an assumed equilibrium order for each role in a DataFrame, storing these deviations in a dictionary and printing them. It also contains a main function that sets up an asyncio event loop to run a beer game simulation if the script is executed directly."
+  }
+]
