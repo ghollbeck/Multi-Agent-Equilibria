@@ -55,6 +55,7 @@ Dependencies:
   - pydantic (for data model)
   - dotenv (to load your OpenAI key from .env)
   - requests (if using an alternate endpoint or provider)
+  - re (for regular expressions)
 
 """
 
@@ -70,12 +71,67 @@ import nest_asyncio
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import re
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from dataclasses import dataclass, field, asdict
 from typing import List, Dict, Optional, ClassVar
 from tqdm import tqdm
+
+import openai
+
+# --------------------------------------------------------------------
+# Utilities for parsing LLM JSON responses
+# --------------------------------------------------------------------
+def safe_parse_json(response_str: str) -> dict:
+    """Extract the first JSON object in the LLM response string and parse it, handling markdown fences and incomplete JSON."""
+    # Remove markdown code fences if present
+    s = response_str.strip()
+    if s.startswith("```"):
+        lines = s.splitlines()
+        lines = lines[1:]
+        if lines and lines[-1].startswith("```"):
+            lines = lines[:-1]
+        s = "\n".join(lines)
+    # Locate the first '{'
+    start = s.find('{')
+    if start == -1:
+        # No JSON detected, attempt to parse the whole string
+        return json.loads(s)
+    substring = s[start:]
+    # Match braces to extract full JSON or partial JSON
+    brace_count = 0
+    end_index = None
+    for idx, ch in enumerate(substring):
+        if ch == '{':
+            brace_count += 1
+        elif ch == '}':
+            brace_count -= 1
+            if brace_count == 0:
+                end_index = idx + 1
+                break
+    if end_index is not None:
+        json_text = substring[:end_index]
+    else:
+        # Partial JSON: trim trailing commas and whitespace, then balance braces
+        json_text = substring.rstrip(', \n\r\t')
+        json_text += '}' * brace_count
+    return json.loads(json_text)
+
+def parse_json_with_default(response_str: str, default: dict, context: str) -> dict:
+    """Parse JSON and return default value on failure, logging the error context."""
+    try:
+        return safe_parse_json(response_str)
+    except Exception as e:
+        print(f"Error parsing JSON in {context}: {e}. Response was: {response_str!r}")
+        # Attempt to salvage partial data (e.g., order_quantity)
+        m = re.search(r'"order_quantity"\s*:\s*(\d+)', response_str)
+        if m:
+            salvaged = default.copy()
+            salvaged['order_quantity'] = int(m.group(1))
+            return salvaged
+        return default
 
 # --------------------------------------------------------------------
 # 1. LLM Prompt Classes
@@ -122,9 +178,7 @@ class BeerGamePrompts:
           "expected_demand_next_round": 12
         }}
 
-        The "order_quantity" is your suggested initial order policy 
-        (e.g., a static guess or formula). 
-        The "confidence" is a number between 0 and 1.
+        IMPORTANT: Output ONLY the JSON object. Do NOT include any markdown, triple backticks, or the word 'json'. KEEP IT RATHER SHORT
         """
         # You can add role-specific instructions if needed
         # for advanced prompts. For now, it's mostly generic.
@@ -156,6 +210,8 @@ class BeerGamePrompts:
           "risk_assessment": "...",
           "expected_demand_next_round": <integer>
         }}
+
+        IMPORTANT: Output ONLY the JSON object. Do NOT include any markdown, triple backticks, or the word 'json'. KEEP IT RATHER SHORT
         """
 
     @staticmethod
@@ -199,6 +255,8 @@ class BeerGamePrompts:
           "risk_assessment": "...",
           "expected_demand_next_round": <integer>
         }}
+
+        IMPORTANT: Output ONLY the JSON object. Do NOT include any markdown, triple backticks, or the word 'json'. KEEP IT RATHER SHORT
         """
 
 # --------------------------------------------------------------------
@@ -255,7 +313,7 @@ class LiteLLMClient:
         self.endpoint = "https://litellm.sph-prod.ethz.ch/chat/completions"
         self.semaphore = asyncio.Semaphore(2)
 
-    async def chat_completion(self, model: str, system_prompt: str, user_prompt: str, temperature: float = 0.7, max_tokens: int = 150):
+    async def chat_completion(self, model: str, system_prompt: str, user_prompt: str, temperature: float = 0.7, max_tokens: int = 450):
         payload = {
             "model": model,
             "messages": [
@@ -330,17 +388,18 @@ class BeerGameAgent(BaseModel):
                                                       system_prompt=system_prompt,
                                                       user_prompt=prompt,
                                                       temperature=temperature)
-        try:
-            response = json.loads(response_str)
-        except Exception as e:
-            print(f"Error parsing JSON in initialize_strategy for {self.role_name}: {e}")
-            response = {
-                "order_quantity": 10,
-                "confidence": 1.0,
-                "rationale": "Default initial strategy",
-                "risk_assessment": "No risk",
-                "expected_demand_next_round": 10
-            }
+        default_strategy = {
+            "order_quantity": 10,
+            "confidence": 1.0,
+            "rationale": "Default initial strategy",
+            "risk_assessment": "No risk",
+            "expected_demand_next_round": 10
+        }
+        response = parse_json_with_default(
+            response_str,
+            default_strategy,
+            f"initialize_strategy for {self.role_name}"
+        )
         self.strategy = response
 
     async def update_strategy(self, performance_log: str, temperature=0.7):
@@ -353,17 +412,18 @@ class BeerGameAgent(BaseModel):
                                                       system_prompt=system_prompt,
                                                       user_prompt=prompt,
                                                       temperature=temperature)
-        try:
-            response = json.loads(response_str)
-        except Exception as e:
-            print(f"Error parsing JSON in update_strategy for {self.role_name}: {e}")
-            response = {
-                "order_quantity": 10,
-                "confidence": 1.0,
-                "rationale": "Default update strategy",
-                "risk_assessment": "No risk",
-                "expected_demand_next_round": 10
-            }
+        default_update = {
+            "order_quantity": 10,
+            "confidence": 1.0,
+            "rationale": "Default update strategy",
+            "risk_assessment": "No risk",
+            "expected_demand_next_round": 10
+        }
+        response = parse_json_with_default(
+            response_str,
+            default_update,
+            f"update_strategy for {self.role_name}"
+        )
         self.strategy = response
 
     async def decide_order_quantity(self, temperature=0.7) -> dict:
@@ -384,17 +444,18 @@ class BeerGameAgent(BaseModel):
                                                       system_prompt=system_prompt,
                                                       user_prompt=prompt,
                                                       temperature=temperature)
-        try:
-            response = json.loads(response_str)
-        except Exception as e:
-            print(f"Error parsing JSON in decide_order_quantity for {self.role_name}: {e}")
-            response = {
-                "order_quantity": 10,
-                "confidence": 1.0,
-                "rationale": "Default decision",
-                "risk_assessment": "No risk",
-                "expected_demand_next_round": 10
-            }
+        default_decision = {
+            "order_quantity": 10,
+            "confidence": 1.0,
+            "rationale": "Default decision",
+            "risk_assessment": "No risk",
+            "expected_demand_next_round": 10
+        }
+        response = parse_json_with_default(
+            response_str,
+            default_decision,
+            f"decide_order_quantity for {self.role_name}"
+        )
         return response
 
 # --------------------------------------------------------------------
@@ -699,7 +760,6 @@ def plot_beer_game_results(rounds_df: pd.DataFrame, results_folder: str):
     plt.grid(True)
     plt.savefig(os.path.join(results_folder, "cost_over_time.png"))
     plt.close()
-
 
     # Combined Plot with subplots for Inventory, Backlog, and Cost
     fig, axes = plt.subplots(3, 1, figsize=(10, 18))
