@@ -1139,7 +1139,6 @@ def plot_beer_game_results(rounds_df: pd.DataFrame, results_folder: str):
     plt.savefig(os.path.join(results_folder, "cost_over_time.png"))
     plt.close()
 
-
     # Combined Plot with subplots for Inventory, Backlog, and Cost
     fig, axes = plt.subplots(3, 1, figsize=(10, 18))
 
