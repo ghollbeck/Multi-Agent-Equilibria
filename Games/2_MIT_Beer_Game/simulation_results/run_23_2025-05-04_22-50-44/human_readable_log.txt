@@ -1,0 +1,2370 @@
+
+============================================================
+            Starting Beer Game Simulation
+============================================================
+
+
+--------------------- Round 1 ---------------------
+External demand (Retailer): 13
+Shipments received per agent: [10, 10, 10, 10]
+Agent: Retailer: Inventory: 37, Backlog: 0, Order placed: 10, Units sold: 13, Profit: 65.00, Total Profit: 46.5
+    LLM Output: order_quantity=10, confidence=0.85, rationale=Ordering 10 units keeps a buffer for expected demand while managing holding costs., risk_assessment=Potential for excess inventory due to demand fluctuations, but necessary to avoid stockouts., expected_demand_next_round=13
+    LLM Decision Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Current State:
+          - Inventory: 37 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [13]
+          - Incoming shipments this round: [0]
+          - Profit per unit sold: $5
+          - Last order placed: None
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Given the initial inventory of 40 units and the profit per unit, ordering 10 units balances holding costs while preparing for future demand.",
+  "risk_assessment": "There is a risk of overestimating demand, leading to excess inventory and increased holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 10, "confidence": 0.85, "rationale": "Ordering 10 units keeps a buffer for expected demand while managing holding costs.", "risk_assessment": "Potential for excess inventory due to demand fluctuations, but necessary to avoid stockouts.", "expected_demand_next_round": 13}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Given the initial inventory of 40 units and the profit per unit, ordering 10 units balances holding costs while preparing for future demand.", "risk_assessment": "There is a risk of overestimating demand, leading to excess inventory and increased holding costs.", "expected_demand_next_round": 12}
+Agent: Wholesaler: Inventory: 37, Backlog: 10, Order placed: 10, Units sold: 13, Profit: 65.00, Total Profit: 46.5
+    LLM Output: order_quantity=10, confidence=0.85, rationale=Ordering 10 units will help maintain a buffer for expected demand of 13 units while avoiding stockouts., risk_assessment=Potential for excess inventory if demand is overestimated, but necessary to prevent stockouts., expected_demand_next_round=13
+    LLM Decision Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Current State:
+          - Inventory: 37 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [13]
+          - Incoming shipments this round: [0]
+          - Profit per unit sold: $5
+          - Last order placed: None
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Given the current inventory and the expected demand of 12 units, ordering 10 units balances holding and backlog costs while preparing for future demand.",
+  "risk_assessment": "There is a risk of overestimating demand, which could lead to excess inventory and increased holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 10, "confidence": 0.85, "rationale": "Ordering 10 units will help maintain a buffer for expected demand of 13 units while avoiding stockouts.", "risk_assessment": "Potential for excess inventory if demand is overestimated, but necessary to prevent stockouts.", "expected_demand_next_round": 13}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Given the current inventory and the expected demand of 12 units, ordering 10 units balances holding and backlog costs while preparing for future demand.", "risk_assessment": "There is a risk of overestimating demand, which could lead to excess inventory and increased holding costs.", "expected_demand_next_round": 12}
+Agent: Distributor: Inventory: 37, Backlog: 10, Order placed: 10, Units sold: 13, Profit: 65.00, Total Profit: 46.5
+    LLM Output: order_quantity=10, confidence=0.85, rationale=Ordering 10 units maintains a buffer to meet anticipated demand while keeping holding costs manageable., risk_assessment=Demand may vary, risking backlog if orders exceed expectations, but over-ordering could increase holding costs., expected_demand_next_round=12
+    LLM Decision Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Current State:
+          - Inventory: 37 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [13]
+          - Incoming shipments this round: [0]
+          - Profit per unit sold: $5
+          - Last order placed: None
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "The current inventory is sufficient to meet anticipated demand while minimizing holding and backlog costs. Ordering 10 units balances inventory levels and expected sales.",
+  "risk_assessment": "Demand may fluctuate unexpectedly, potentially leading to backlog if demand exceeds the forecast. Additionally, over-ordering could increase holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 10, "confidence": 0.85, "rationale": "Ordering 10 units maintains a buffer to meet anticipated demand while keeping holding costs manageable.", "risk_assessment": "Demand may vary, risking backlog if orders exceed expectations, but over-ordering could increase holding costs.", "expected_demand_next_round": 12}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "The current inventory is sufficient to meet anticipated demand while minimizing holding and backlog costs. Ordering 10 units balances inventory levels and expected sales.", "risk_assessment": "Demand may fluctuate unexpectedly, potentially leading to backlog if demand exceeds the forecast. Additionally, over-ordering could increase holding costs.", "expected_demand_next_round": 12}
+Agent: Factory: Inventory: 37, Backlog: 10, Order placed: 10, Units sold: 13, Profit: 65.00, Total Profit: 46.5
+    LLM Output: order_quantity=10, confidence=0.85, rationale=Ordering 10 units balances inventory levels while preparing for expected demand, ensuring we avoid stockouts., risk_assessment=Potential risks include demand fluctuations or excess inventory leading to higher holding costs., expected_demand_next_round=12
+    LLM Decision Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Current State:
+          - Inventory: 37 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [13]
+          - Incoming shipments this round: [0]
+          - Profit per unit sold: $5
+          - Last order placed: None
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Based on current inventory and expected demand, a conservative order of 10 units minimizes holding costs while preparing for potential demand increase.",
+  "risk_assessment": "Risks include underestimating demand, leading to backlog costs, or over-ordering, increasing holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 10, "confidence": 0.85, "rationale": "Ordering 10 units balances inventory levels while preparing for expected demand, ensuring we avoid stockouts.", "risk_assessment": "Potential risks include demand fluctuations or excess inventory leading to higher holding costs.", "expected_demand_next_round": 12}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Based on current inventory and expected demand, a conservative order of 10 units minimizes holding costs while preparing for potential demand increase.", "risk_assessment": "Risks include underestimating demand, leading to backlog costs, or over-ordering, increasing holding costs.", "expected_demand_next_round": 12}
+
+
+--------------------- Round 2 ---------------------
+External demand (Retailer): 11
+Shipments received per agent: [10, 10, 10, 10]
+Agent: Retailer: Inventory: 36, Backlog: 0, Order placed: 12, Units sold: 11, Profit: 55.00, Total Profit: 83.5
+    LLM Output: order_quantity=12, confidence=0.85, rationale=With current inventory at 36 and recent demand averaging 12, ordering 12 units will cover expected demand and maintain a buffer., risk_assessment=Potential for excess inventory if demand drops unexpectedly, but necessary to prevent stockouts., expected_demand_next_round=12
+    LLM Decision Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Current State:
+          - Inventory: 36 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [13, 11]
+          - Incoming shipments this round: [13]
+          - Profit per unit sold: $5
+          - Last order placed: 10
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Given the initial inventory of 40 units and the profit per unit, ordering 10 units balances holding costs while preparing for future demand.",
+  "risk_assessment": "There is a risk of overestimating demand, leading to excess inventory and increased holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 12, "confidence": 0.85, "rationale": "With current inventory at 36 and recent demand averaging 12, ordering 12 units will cover expected demand and maintain a buffer.", "risk_assessment": "Potential for excess inventory if demand drops unexpectedly, but necessary to prevent stockouts.", "expected_demand_next_round": 12}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Given the initial inventory of 40 units and the profit per unit, ordering 10 units balances holding costs while preparing for future demand.", "risk_assessment": "There is a risk of overestimating demand, leading to excess inventory and increased holding costs.", "expected_demand_next_round": 12}
+Agent: Wholesaler: Inventory: 26, Backlog: 12, Order placed: 10, Units sold: 21, Profit: 105.00, Total Profit: 138.5
+    LLM Output: order_quantity=10, confidence=0.85, rationale=With an inventory of 26 units and expected demand of 12 units, ordering 10 units maintains a buffer and minimizes holding costs., risk_assessment=Ordering too much could lead to higher holding costs if demand decreases unexpectedly., expected_demand_next_round=12
+    LLM Decision Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Current State:
+          - Inventory: 26 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [13, 11]
+          - Incoming shipments this round: [13]
+          - Profit per unit sold: $5
+          - Last order placed: 10
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Given the current inventory and the expected demand of 12 units, ordering 10 units balances holding and backlog costs while preparing for future demand.",
+  "risk_assessment": "There is a risk of overestimating demand, which could lead to excess inventory and increased holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 10, "confidence": 0.85, "rationale": "With an inventory of 26 units and expected demand of 12 units, ordering 10 units maintains a buffer and minimizes holding costs.", "risk_assessment": "Ordering too much could lead to higher holding costs if demand decreases unexpectedly.", "expected_demand_next_round": 12}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Given the current inventory and the expected demand of 12 units, ordering 10 units balances holding and backlog costs while preparing for future demand.", "risk_assessment": "There is a risk of overestimating demand, which could lead to excess inventory and increased holding costs.", "expected_demand_next_round": 12}
+Agent: Distributor: Inventory: 16, Backlog: 10, Order placed: 15, Units sold: 31, Profit: 155.00, Total Profit: 193.5
+    LLM Output: order_quantity=15, confidence=0.85, rationale=Given the recent demand trends and current inventory, ordering 15 units provides a buffer to cover anticipated demand while reducing the risk of stockouts., risk_assessment=There is a possibility of demand exceeding expectations, which could lead to backlog. However, ordering too much may increase holding costs., expected_demand_next_round=15
+    LLM Decision Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Current State:
+          - Inventory: 16 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [13, 21]
+          - Incoming shipments this round: [13]
+          - Profit per unit sold: $5
+          - Last order placed: 10
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "The current inventory is sufficient to meet anticipated demand while minimizing holding and backlog costs. Ordering 10 units balances inventory levels and expected sales.",
+  "risk_assessment": "Demand may fluctuate unexpectedly, potentially leading to backlog if demand exceeds the forecast. Additionally, over-ordering could increase holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 15, "confidence": 0.85, "rationale": "Given the recent demand trends and current inventory, ordering 15 units provides a buffer to cover anticipated demand while reducing the risk of stockouts.", "risk_assessment": "There is a possibility of demand exceeding expectations, which could lead to backlog. However, ordering too much may increase holding costs.", "expected_demand_next_round": 15}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "The current inventory is sufficient to meet anticipated demand while minimizing holding and backlog costs. Ordering 10 units balances inventory levels and expected sales.", "risk_assessment": "Demand may fluctuate unexpectedly, potentially leading to backlog if demand exceeds the forecast. Additionally, over-ordering could increase holding costs.", "expected_demand_next_round": 12}
+Agent: Factory: Inventory: 6, Backlog: 15, Order placed: 15, Units sold: 41, Profit: 205.00, Total Profit: 248.5
+    LLM Output: order_quantity=15, confidence=0.85, rationale=To cover the expected demand of 12 units in the next round and maintain a buffer, ordering 15 units will ensure inventory stability., risk_assessment=Potential risks include demand spikes leading to backlog costs or excess inventory if demand decreases., expected_demand_next_round=12
+    LLM Decision Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Current State:
+          - Inventory: 6 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [13, 31]
+          - Incoming shipments this round: [10]
+          - Profit per unit sold: $5
+          - Last order placed: 10
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Based on current inventory and expected demand, a conservative order of 10 units minimizes holding costs while preparing for potential demand increase.",
+  "risk_assessment": "Risks include underestimating demand, leading to backlog costs, or over-ordering, increasing holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 15, "confidence": 0.85, "rationale": "To cover the expected demand of 12 units in the next round and maintain a buffer, ordering 15 units will ensure inventory stability.", "risk_assessment": "Potential risks include demand spikes leading to backlog costs or excess inventory if demand decreases.", "expected_demand_next_round": 12}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Based on current inventory and expected demand, a conservative order of 10 units minimizes holding costs while preparing for potential demand increase.", "risk_assessment": "Risks include underestimating demand, leading to backlog costs, or over-ordering, increasing holding costs.", "expected_demand_next_round": 12}
+
+
+--------------------- Round 3 ---------------------
+External demand (Retailer): 9
+Shipments received per agent: [0, 0, 0, 0]
+Agent: Retailer: Inventory: 27, Backlog: 0, Order placed: 10, Units sold: 9, Profit: 45.00, Total Profit: 115.0
+    LLM Output: order_quantity=10, confidence=0.85, rationale=Ordering 10 units maintains a buffer for potential demand while managing holding costs., risk_assessment=There is a possibility of ordering too much if demand decreases, leading to higher holding costs., expected_demand_next_round=11
+    LLM Decision Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Current State:
+          - Inventory: 27 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [13, 11, 9]
+          - Incoming shipments this round: [21]
+          - Profit per unit sold: $5
+          - Last order placed: 12
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Given the initial inventory of 40 units and the profit per unit, ordering 10 units balances holding costs while preparing for future demand.",
+  "risk_assessment": "There is a risk of overestimating demand, leading to excess inventory and increased holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 10, "confidence": 0.85, "rationale": "Ordering 10 units maintains a buffer for potential demand while managing holding costs.", "risk_assessment": "There is a possibility of ordering too much if demand decreases, leading to higher holding costs.", "expected_demand_next_round": 11}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Given the initial inventory of 40 units and the profit per unit, ordering 10 units balances holding costs while preparing for future demand.", "risk_assessment": "There is a risk of overestimating demand, leading to excess inventory and increased holding costs.", "expected_demand_next_round": 12}
+Agent: Wholesaler: Inventory: 5, Backlog: 10, Order placed: 10, Units sold: 21, Profit: 105.00, Total Profit: 241.0
+    LLM Output: order_quantity=10, confidence=0.85, rationale=Ordering 10 units aligns with anticipated demand while maintaining a safety buffer to prevent stockouts., risk_assessment=Potential for over-ordering exists, but the buffer is necessary given past demand spikes., expected_demand_next_round=12
+    LLM Decision Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Current State:
+          - Inventory: 5 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [13, 11, 9]
+          - Incoming shipments this round: [31]
+          - Profit per unit sold: $5
+          - Last order placed: 10
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Given the current inventory and the expected demand of 12 units, ordering 10 units balances holding and backlog costs while preparing for future demand.",
+  "risk_assessment": "There is a risk of overestimating demand, which could lead to excess inventory and increased holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 10, "confidence": 0.85, "rationale": "Ordering 10 units aligns with anticipated demand while maintaining a safety buffer to prevent stockouts.", "risk_assessment": "Potential for over-ordering exists, but the buffer is necessary given past demand spikes.", "expected_demand_next_round": 12}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Given the current inventory and the expected demand of 12 units, ordering 10 units balances holding and backlog costs while preparing for future demand.", "risk_assessment": "There is a risk of overestimating demand, which could lead to excess inventory and increased holding costs.", "expected_demand_next_round": 12}
+Agent: Distributor: Inventory: 0, Backlog: 25, Order placed: 25, Units sold: 16, Profit: 80.00, Total Profit: 258.5
+    LLM Output: order_quantity=25, confidence=0.85, rationale=To avoid stockouts and cover the backlog, ordering 25 units accounts for the expected demand and provides a buffer., risk_assessment=Potential fluctuations in demand could lead to backlog, but the order helps maintain inventory levels. Over-ordering may increase holding costs., expected_demand_next_round=20
+    LLM Decision Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Current State:
+          - Inventory: 0 units
+          - Backlog: 15 units
+          - Recent downstream demand or orders: [13, 21, 21]
+          - Incoming shipments this round: [41]
+          - Profit per unit sold: $5
+          - Last order placed: 15
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "The current inventory is sufficient to meet anticipated demand while minimizing holding and backlog costs. Ordering 10 units balances inventory levels and expected sales.",
+  "risk_assessment": "Demand may fluctuate unexpectedly, potentially leading to backlog if demand exceeds the forecast. Additionally, over-ordering could increase holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 25, "confidence": 0.85, "rationale": "To avoid stockouts and cover the backlog, ordering 25 units accounts for the expected demand and provides a buffer.", "risk_assessment": "Potential fluctuations in demand could lead to backlog, but the order helps maintain inventory levels. Over-ordering may increase holding costs.", "expected_demand_next_round": 20}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "The current inventory is sufficient to meet anticipated demand while minimizing holding and backlog costs. Ordering 10 units balances inventory levels and expected sales.", "risk_assessment": "Demand may fluctuate unexpectedly, potentially leading to backlog if demand exceeds the forecast. Additionally, over-ordering could increase holding costs.", "expected_demand_next_round": 12}
+Agent: Factory: Inventory: 0, Backlog: 50, Order placed: 20, Units sold: 6, Profit: 30.00, Total Profit: 253.5
+    LLM Output: order_quantity=20, confidence=0.85, rationale=Ordering 20 units aligns with expected demand and provides a buffer to avoid stockouts., risk_assessment=Potential risks include demand fluctuations exceeding expectations, leading to backlog, or excess inventory if demand drops., expected_demand_next_round=16
+    LLM Decision Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Current State:
+          - Inventory: 0 units
+          - Backlog: 25 units
+          - Recent downstream demand or orders: [13, 31, 16]
+          - Incoming shipments this round: [15]
+          - Profit per unit sold: $5
+          - Last order placed: 15
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Based on current inventory and expected demand, a conservative order of 10 units minimizes holding costs while preparing for potential demand increase.",
+  "risk_assessment": "Risks include underestimating demand, leading to backlog costs, or over-ordering, increasing holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 20, "confidence": 0.85, "rationale": "Ordering 20 units aligns with expected demand and provides a buffer to avoid stockouts.", "risk_assessment": "Potential risks include demand fluctuations exceeding expectations, leading to backlog, or excess inventory if demand drops.", "expected_demand_next_round": 16}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Based on current inventory and expected demand, a conservative order of 10 units minimizes holding costs while preparing for potential demand increase.", "risk_assessment": "Risks include underestimating demand, leading to backlog costs, or over-ordering, increasing holding costs.", "expected_demand_next_round": 12}
+
+
+--------------------- Round 4 ---------------------
+External demand (Retailer): 13
+Shipments received per agent: [13, 13, 13, 10]
+Agent: Retailer: Inventory: 27, Backlog: 0, Order placed: 12, Units sold: 13, Profit: 65.00, Total Profit: 166.5
+    LLM Output: order_quantity=12, confidence=0.85, rationale=Ordering 12 units accounts for the expected demand of 12 units over the next two rounds while maintaining a buffer to avoid stockouts., risk_assessment=There is a moderate risk of overordering, but the buffer reduces the likelihood of stockouts given the current backlog and incoming shipments., expected_demand_next_round=12
+    LLM Decision Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Current State:
+          - Inventory: 27 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [11, 9, 13]
+          - Incoming shipments this round: [21]
+          - Profit per unit sold: $5
+          - Last order placed: 10
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Given the initial inventory of 40 units and the profit per unit, ordering 10 units balances holding costs while preparing for future demand.",
+  "risk_assessment": "There is a risk of overestimating demand, leading to excess inventory and increased holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 12, "confidence": 0.85, "rationale": "Ordering 12 units accounts for the expected demand of 12 units over the next two rounds while maintaining a buffer to avoid stockouts.", "risk_assessment": "There is a moderate risk of overordering, but the buffer reduces the likelihood of stockouts given the current backlog and incoming shipments.", "expected_demand_next_round": 12}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Given the initial inventory of 40 units and the profit per unit, ordering 10 units balances holding costs while preparing for future demand.", "risk_assessment": "There is a risk of overestimating demand, leading to excess inventory and increased holding costs.", "expected_demand_next_round": 12}
+Agent: Wholesaler: Inventory: 0, Backlog: 17, Order placed: 15, Units sold: 18, Profit: 90.00, Total Profit: 326.0
+    LLM Output: order_quantity=15, confidence=0.85, rationale=To cover the backlog and anticipated future demand, ordering 15 units will help mitigate stockouts while considering lead time., risk_assessment=Ordering too high could increase holding costs if demand decreases, but it ensures service levels are met., expected_demand_next_round=12
+    LLM Decision Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Current State:
+          - Inventory: 0 units
+          - Backlog: 5 units
+          - Recent downstream demand or orders: [11, 9, 13]
+          - Incoming shipments this round: [16]
+          - Profit per unit sold: $5
+          - Last order placed: 10
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Given the current inventory and the expected demand of 12 units, ordering 10 units balances holding and backlog costs while preparing for future demand.",
+  "risk_assessment": "There is a risk of overestimating demand, which could lead to excess inventory and increased holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 15, "confidence": 0.85, "rationale": "To cover the backlog and anticipated future demand, ordering 15 units will help mitigate stockouts while considering lead time.", "risk_assessment": "Ordering too high could increase holding costs if demand decreases, but it ensures service levels are met.", "expected_demand_next_round": 12}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Given the current inventory and the expected demand of 12 units, ordering 10 units balances holding and backlog costs while preparing for future demand.", "risk_assessment": "There is a risk of overestimating demand, which could lead to excess inventory and increased holding costs.", "expected_demand_next_round": 12}
+Agent: Distributor: Inventory: 0, Backlog: 45, Order placed: 25, Units sold: 13, Profit: 65.00, Total Profit: 293.5
+    LLM Output: order_quantity=25, confidence=0.85, rationale=Ordering 25 units will help meet the current backlog and cover expected demand over the next two rounds, reducing the risk of stockouts., risk_assessment=There is still a risk of fluctuating demand; however, this order aims to balance backlog costs and maintain sufficient inventory., expected_demand_next_round=21
+    LLM Decision Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Current State:
+          - Inventory: 0 units
+          - Backlog: 30 units
+          - Recent downstream demand or orders: [21, 21, 18]
+          - Incoming shipments this round: [6]
+          - Profit per unit sold: $5
+          - Last order placed: 25
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "The current inventory is sufficient to meet anticipated demand while minimizing holding and backlog costs. Ordering 10 units balances inventory levels and expected sales.",
+  "risk_assessment": "Demand may fluctuate unexpectedly, potentially leading to backlog if demand exceeds the forecast. Additionally, over-ordering could increase holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 25, "confidence": 0.85, "rationale": "Ordering 25 units will help meet the current backlog and cover expected demand over the next two rounds, reducing the risk of stockouts.", "risk_assessment": "There is still a risk of fluctuating demand; however, this order aims to balance backlog costs and maintain sufficient inventory.", "expected_demand_next_round": 21}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "The current inventory is sufficient to meet anticipated demand while minimizing holding and backlog costs. Ordering 10 units balances inventory levels and expected sales.", "risk_assessment": "Demand may fluctuate unexpectedly, potentially leading to backlog if demand exceeds the forecast. Additionally, over-ordering could increase holding costs.", "expected_demand_next_round": 12}
+Agent: Factory: Inventory: 0, Backlog: 78, Order placed: 30, Units sold: 10, Profit: 50.00, Total Profit: 250.5
+    LLM Output: order_quantity=30, confidence=0.85, rationale=To cover the backlog and expected demand, ordering 30 units ensures we meet current and near-future needs while minimizing backlog costs., risk_assessment=Potential risks include increased holding costs if demand decreases unexpectedly, but the backlog risks outweigh this concern., expected_demand_next_round=15
+    LLM Decision Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Current State:
+          - Inventory: 0 units
+          - Backlog: 53 units
+          - Recent downstream demand or orders: [31, 16, 13]
+          - Incoming shipments this round: [20]
+          - Profit per unit sold: $5
+          - Last order placed: 20
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Based on current inventory and expected demand, a conservative order of 10 units minimizes holding costs while preparing for potential demand increase.",
+  "risk_assessment": "Risks include underestimating demand, leading to backlog costs, or over-ordering, increasing holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 30, "confidence": 0.85, "rationale": "To cover the backlog and expected demand, ordering 30 units ensures we meet current and near-future needs while minimizing backlog costs.", "risk_assessment": "Potential risks include increased holding costs if demand decreases unexpectedly, but the backlog risks outweigh this concern.", "expected_demand_next_round": 15}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Based on current inventory and expected demand, a conservative order of 10 units minimizes holding costs while preparing for potential demand increase.", "risk_assessment": "Risks include underestimating demand, leading to backlog costs, or over-ordering, increasing holding costs.", "expected_demand_next_round": 12}
+
+
+--------------------- Round 5 ---------------------
+External demand (Retailer): 11
+Shipments received per agent: [21, 31, 41, 15]
+Agent: Retailer: Inventory: 37, Backlog: 0, Order placed: 12, Units sold: 11, Profit: 55.00, Total Profit: 203.0
+    LLM Output: order_quantity=12, confidence=0.85, rationale=Ordering 12 units aligns with the recent average demand of 11 units, ensuring a buffer while minimizing holding costs., risk_assessment=Potential risk of demand fluctuations could lead to excess inventory or stockouts if demand exceeds expectations., expected_demand_next_round=11
+    LLM Decision Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Current State:
+          - Inventory: 37 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [9, 13, 11]
+          - Incoming shipments this round: [18]
+          - Profit per unit sold: $5
+          - Last order placed: 12
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Given the initial inventory of 40 units and the profit per unit, ordering 10 units balances holding costs while preparing for future demand.",
+  "risk_assessment": "There is a risk of overestimating demand, leading to excess inventory and increased holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 12, "confidence": 0.85, "rationale": "Ordering 12 units aligns with the recent average demand of 11 units, ensuring a buffer while minimizing holding costs.", "risk_assessment": "Potential risk of demand fluctuations could lead to excess inventory or stockouts if demand exceeds expectations.", "expected_demand_next_round": 11}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Given the initial inventory of 40 units and the profit per unit, ordering 10 units balances holding costs while preparing for future demand.", "risk_assessment": "There is a risk of overestimating demand, leading to excess inventory and increased holding costs.", "expected_demand_next_round": 12}
+Agent: Wholesaler: Inventory: 3, Backlog: 12, Order placed: 15, Units sold: 28, Profit: 140.00, Total Profit: 464.5
+    LLM Output: order_quantity=15, confidence=0.85, rationale=Ordering 15 units aligns with the average expected demand of 11 units, providing a buffer for the next two rounds while avoiding stockouts., risk_assessment=There is a potential for overstock if demand decreases, leading to higher holding costs., expected_demand_next_round=11
+    LLM Decision Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Current State:
+          - Inventory: 3 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [9, 13, 11]
+          - Incoming shipments this round: [13]
+          - Profit per unit sold: $5
+          - Last order placed: 15
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Given the current inventory and the expected demand of 12 units, ordering 10 units balances holding and backlog costs while preparing for future demand.",
+  "risk_assessment": "There is a risk of overestimating demand, which could lead to excess inventory and increased holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 15, "confidence": 0.85, "rationale": "Ordering 15 units aligns with the average expected demand of 11 units, providing a buffer for the next two rounds while avoiding stockouts.", "risk_assessment": "There is a potential for overstock if demand decreases, leading to higher holding costs.", "expected_demand_next_round": 11}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Given the current inventory and the expected demand of 12 units, ordering 10 units balances holding and backlog costs while preparing for future demand.", "risk_assessment": "There is a risk of overestimating demand, which could lead to excess inventory and increased holding costs.", "expected_demand_next_round": 12}
+Agent: Distributor: Inventory: 0, Backlog: 47, Order placed: 30, Units sold: 41, Profit: 205.00, Total Profit: 466.5
+    LLM Output: order_quantity=30, confidence=0.8, rationale=Ordering 30 units covers the backlog and anticipated demand over the next two rounds, ensuring minimal stockouts., risk_assessment=Demand may increase unexpectedly, leading to higher backlog costs if not adequately prepared. However, ordering too much may raise holding costs., expected_demand_next_round=20
+    LLM Decision Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Current State:
+          - Inventory: 0 units
+          - Backlog: 32 units
+          - Recent downstream demand or orders: [21, 18, 28]
+          - Incoming shipments this round: [10]
+          - Profit per unit sold: $5
+          - Last order placed: 25
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "The current inventory is sufficient to meet anticipated demand while minimizing holding and backlog costs. Ordering 10 units balances inventory levels and expected sales.",
+  "risk_assessment": "Demand may fluctuate unexpectedly, potentially leading to backlog if demand exceeds the forecast. Additionally, over-ordering could increase holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 30, "confidence": 0.8, "rationale": "Ordering 30 units covers the backlog and anticipated demand over the next two rounds, ensuring minimal stockouts.", "risk_assessment": "Demand may increase unexpectedly, leading to higher backlog costs if not adequately prepared. However, ordering too much may raise holding costs.", "expected_demand_next_round": 20}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "The current inventory is sufficient to meet anticipated demand while minimizing holding and backlog costs. Ordering 10 units balances inventory levels and expected sales.", "risk_assessment": "Demand may fluctuate unexpectedly, potentially leading to backlog if demand exceeds the forecast. Additionally, over-ordering could increase holding costs.", "expected_demand_next_round": 12}
+Agent: Factory: Inventory: 0, Backlog: 134, Order placed: 30, Units sold: 15, Profit: 75.00, Total Profit: 221.5
+    LLM Output: order_quantity=30, confidence=0.85, rationale=Ordering 30 units aligns with expected demand and mitigates backlog risks while maintaining a buffer., risk_assessment=Potential risks include fluctuating demand exceeding expectations or increased holding costs if demand decreases., expected_demand_next_round=12
+    LLM Decision Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Current State:
+          - Inventory: 0 units
+          - Backlog: 104 units
+          - Recent downstream demand or orders: [16, 13, 41]
+          - Incoming shipments this round: [30]
+          - Profit per unit sold: $5
+          - Last order placed: 30
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Based on current inventory and expected demand, a conservative order of 10 units minimizes holding costs while preparing for potential demand increase.",
+  "risk_assessment": "Risks include underestimating demand, leading to backlog costs, or over-ordering, increasing holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 30, "confidence": 0.85, "rationale": "Ordering 30 units aligns with expected demand and mitigates backlog risks while maintaining a buffer.", "risk_assessment": "Potential risks include fluctuating demand exceeding expectations or increased holding costs if demand decreases.", "expected_demand_next_round": 12}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Based on current inventory and expected demand, a conservative order of 10 units minimizes holding costs while preparing for potential demand increase.", "risk_assessment": "Risks include underestimating demand, leading to backlog costs, or over-ordering, increasing holding costs.", "expected_demand_next_round": 12}
+
+
+--------------------- Round 6 ---------------------
+External demand (Retailer): 16
+Shipments received per agent: [21, 16, 6, 20]
+Agent: Retailer: Inventory: 42, Backlog: 0, Order placed: 16, Units sold: 16, Profit: 80.00, Total Profit: 262.0
+    LLM Output: order_quantity=16, confidence=0.85, rationale=With incoming shipments of 28 units and expected demand of 16 over the next two rounds, ordering 16 units ensures a buffer while meeting potential demand., risk_assessment=While this order covers expected demand, there's a risk of holding excess inventory if demand decreases unexpectedly., expected_demand_next_round=16
+    LLM Decision Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Current State:
+          - Inventory: 42 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [13, 11, 16]
+          - Incoming shipments this round: [28]
+          - Profit per unit sold: $5
+          - Last order placed: 12
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Given the initial inventory of 40 units and the profit per unit, ordering 10 units balances holding costs while preparing for future demand.",
+  "risk_assessment": "There is a risk of overestimating demand, leading to excess inventory and increased holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 16, "confidence": 0.85, "rationale": "With incoming shipments of 28 units and expected demand of 16 over the next two rounds, ordering 16 units ensures a buffer while meeting potential demand.", "risk_assessment": "While this order covers expected demand, there's a risk of holding excess inventory if demand decreases unexpectedly.", "expected_demand_next_round": 16}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Given the initial inventory of 40 units and the profit per unit, ordering 10 units balances holding costs while preparing for future demand.", "risk_assessment": "There is a risk of overestimating demand, leading to excess inventory and increased holding costs.", "expected_demand_next_round": 12}
+Agent: Wholesaler: Inventory: 0, Backlog: 25, Order placed: 20, Units sold: 19, Profit: 95.00, Total Profit: 550.5
+    LLM Output: order_quantity=20, confidence=0.85, rationale=Ordering 20 units covers the backlog and expected demand while considering the 2-round lead time., risk_assessment=Potential for overstocking if demand decreases, but necessary to prevent further backlog., expected_demand_next_round=12
+    LLM Decision Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Current State:
+          - Inventory: 0 units
+          - Backlog: 9 units
+          - Recent downstream demand or orders: [13, 11, 16]
+          - Incoming shipments this round: [41]
+          - Profit per unit sold: $5
+          - Last order placed: 15
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Given the current inventory and the expected demand of 12 units, ordering 10 units balances holding and backlog costs while preparing for future demand.",
+  "risk_assessment": "There is a risk of overestimating demand, which could lead to excess inventory and increased holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 20, "confidence": 0.85, "rationale": "Ordering 20 units covers the backlog and expected demand while considering the 2-round lead time.", "risk_assessment": "Potential for overstocking if demand decreases, but necessary to prevent further backlog.", "expected_demand_next_round": 12}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Given the current inventory and the expected demand of 12 units, ordering 10 units balances holding and backlog costs while preparing for future demand.", "risk_assessment": "There is a risk of overestimating demand, which could lead to excess inventory and increased holding costs.", "expected_demand_next_round": 12}
+Agent: Distributor: Inventory: 0, Backlog: 80, Order placed: 30, Units sold: 6, Profit: 30.00, Total Profit: 436.5
+    LLM Output: order_quantity=30, confidence=0.85, rationale=Ordering 30 units will cover the backlog and buffer for expected demand in the next rounds, preventing stockouts., risk_assessment=There's a risk of over-ordering if demand decreases, but this ensures we meet current backlogs and anticipated needs., expected_demand_next_round=18
+    LLM Decision Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Current State:
+          - Inventory: 0 units
+          - Backlog: 60 units
+          - Recent downstream demand or orders: [18, 28, 19]
+          - Incoming shipments this round: [15]
+          - Profit per unit sold: $5
+          - Last order placed: 30
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "The current inventory is sufficient to meet anticipated demand while minimizing holding and backlog costs. Ordering 10 units balances inventory levels and expected sales.",
+  "risk_assessment": "Demand may fluctuate unexpectedly, potentially leading to backlog if demand exceeds the forecast. Additionally, over-ordering could increase holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 30, "confidence": 0.85, "rationale": "Ordering 30 units will cover the backlog and buffer for expected demand in the next rounds, preventing stockouts.", "risk_assessment": "There's a risk of over-ordering if demand decreases, but this ensures we meet current backlogs and anticipated needs.", "expected_demand_next_round": 18}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "The current inventory is sufficient to meet anticipated demand while minimizing holding and backlog costs. Ordering 10 units balances inventory levels and expected sales.", "risk_assessment": "Demand may fluctuate unexpectedly, potentially leading to backlog if demand exceeds the forecast. Additionally, over-ordering could increase holding costs.", "expected_demand_next_round": 12}
+Agent: Factory: Inventory: 0, Backlog: 150, Order placed: 30, Units sold: 20, Profit: 100.00, Total Profit: 201.5
+    LLM Output: order_quantity=30, confidence=0.85, rationale=Ordering 30 units aligns with recent demand trends and mitigates backlog risks while maintaining a safety buffer., risk_assessment=Potential risks include demand fluctuations leading to excess inventory or insufficient stock if demand spikes unexpectedly., expected_demand_next_round=20
+    LLM Decision Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Current State:
+          - Inventory: 0 units
+          - Backlog: 120 units
+          - Recent downstream demand or orders: [13, 41, 6]
+          - Incoming shipments this round: [30]
+          - Profit per unit sold: $5
+          - Last order placed: 30
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Based on current inventory and expected demand, a conservative order of 10 units minimizes holding costs while preparing for potential demand increase.",
+  "risk_assessment": "Risks include underestimating demand, leading to backlog costs, or over-ordering, increasing holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 30, "confidence": 0.85, "rationale": "Ordering 30 units aligns with recent demand trends and mitigates backlog risks while maintaining a safety buffer.", "risk_assessment": "Potential risks include demand fluctuations leading to excess inventory or insufficient stock if demand spikes unexpectedly.", "expected_demand_next_round": 20}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Based on current inventory and expected demand, a conservative order of 10 units minimizes holding costs while preparing for potential demand increase.", "risk_assessment": "Risks include underestimating demand, leading to backlog costs, or over-ordering, increasing holding costs.", "expected_demand_next_round": 12}
+
+
+--------------------- Round 7 ---------------------
+External demand (Retailer): 10
+Shipments received per agent: [18, 13, 10, 30]
+Agent: Retailer: Inventory: 50, Backlog: 0, Order placed: 16, Units sold: 10, Profit: 50.00, Total Profit: 287.0
+    LLM Output: order_quantity=16, confidence=0.85, rationale=To cover the recent demand trends and maintain a buffer for the next rounds, ordering 16 units ensures we won't stockout., risk_assessment=Risk of holding excess inventory if demand decreases unexpectedly, leading to higher holding costs., expected_demand_next_round=12
+    LLM Decision Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Current State:
+          - Inventory: 50 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [11, 16, 10]
+          - Incoming shipments this round: [19]
+          - Profit per unit sold: $5
+          - Last order placed: 16
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Given the initial inventory of 40 units and the profit per unit, ordering 10 units balances holding costs while preparing for future demand.",
+  "risk_assessment": "There is a risk of overestimating demand, leading to excess inventory and increased holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 16, "confidence": 0.85, "rationale": "To cover the recent demand trends and maintain a buffer for the next rounds, ordering 16 units ensures we won't stockout.", "risk_assessment": "Risk of holding excess inventory if demand decreases unexpectedly, leading to higher holding costs.", "expected_demand_next_round": 12}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Given the initial inventory of 40 units and the profit per unit, ordering 10 units balances holding costs while preparing for future demand.", "risk_assessment": "There is a risk of overestimating demand, leading to excess inventory and increased holding costs.", "expected_demand_next_round": 12}
+Agent: Wholesaler: Inventory: 0, Backlog: 38, Order placed: 20, Units sold: 13, Profit: 65.00, Total Profit: 593.5
+    LLM Output: order_quantity=20, confidence=0.85, rationale=Ordering 20 units aligns with the backlog and anticipated demand, providing a buffer for the next rounds., risk_assessment=Potential risk of higher backlog costs if demand exceeds expectations, but necessary to avoid stockouts., expected_demand_next_round=12
+    LLM Decision Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Current State:
+          - Inventory: 0 units
+          - Backlog: 22 units
+          - Recent downstream demand or orders: [11, 16, 10]
+          - Incoming shipments this round: [6]
+          - Profit per unit sold: $5
+          - Last order placed: 20
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Given the current inventory and the expected demand of 12 units, ordering 10 units balances holding and backlog costs while preparing for future demand.",
+  "risk_assessment": "There is a risk of overestimating demand, which could lead to excess inventory and increased holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 20, "confidence": 0.85, "rationale": "Ordering 20 units aligns with the backlog and anticipated demand, providing a buffer for the next rounds.", "risk_assessment": "Potential risk of higher backlog costs if demand exceeds expectations, but necessary to avoid stockouts.", "expected_demand_next_round": 12}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Given the current inventory and the expected demand of 12 units, ordering 10 units balances holding and backlog costs while preparing for future demand.", "risk_assessment": "There is a risk of overestimating demand, which could lead to excess inventory and increased holding costs.", "expected_demand_next_round": 12}
+Agent: Distributor: Inventory: 0, Backlog: 103, Order placed: 30, Units sold: 10, Profit: 50.00, Total Profit: 403.5
+    LLM Output: order_quantity=30, confidence=0.8, rationale=Ordering 30 units will cover the backlog and anticipated demand, ensuring we avoid stockouts in the next rounds., risk_assessment=While this order may lead to higher holding costs, it mitigates the risk of backlog due to fluctuating demand., expected_demand_next_round=20
+    LLM Decision Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Current State:
+          - Inventory: 0 units
+          - Backlog: 83 units
+          - Recent downstream demand or orders: [28, 19, 13]
+          - Incoming shipments this round: [20]
+          - Profit per unit sold: $5
+          - Last order placed: 30
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "The current inventory is sufficient to meet anticipated demand while minimizing holding and backlog costs. Ordering 10 units balances inventory levels and expected sales.",
+  "risk_assessment": "Demand may fluctuate unexpectedly, potentially leading to backlog if demand exceeds the forecast. Additionally, over-ordering could increase holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 30, "confidence": 0.8, "rationale": "Ordering 30 units will cover the backlog and anticipated demand, ensuring we avoid stockouts in the next rounds.", "risk_assessment": "While this order may lead to higher holding costs, it mitigates the risk of backlog due to fluctuating demand.", "expected_demand_next_round": 20}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "The current inventory is sufficient to meet anticipated demand while minimizing holding and backlog costs. Ordering 10 units balances inventory levels and expected sales.", "risk_assessment": "Demand may fluctuate unexpectedly, potentially leading to backlog if demand exceeds the forecast. Additionally, over-ordering could increase holding costs.", "expected_demand_next_round": 12}
+Agent: Factory: Inventory: 0, Backlog: 160, Order placed: 30, Units sold: 30, Profit: 150.00, Total Profit: 221.5
+    LLM Output: order_quantity=30, confidence=0.85, rationale=Ordering 30 units meets immediate backlog and anticipates future demand, maintaining a buffer., risk_assessment=Potential for overstock if demand decreases, but necessary to prevent further backlog costs., expected_demand_next_round=12
+    LLM Decision Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Current State:
+          - Inventory: 0 units
+          - Backlog: 130 units
+          - Recent downstream demand or orders: [41, 6, 10]
+          - Incoming shipments this round: [30]
+          - Profit per unit sold: $5
+          - Last order placed: 30
+          - Last round profit: None
+
+        Your known lead time is 2 rounds for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.0 per unfilled unit per round
+          - Profit: $5 per unit sold
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next two rounds (the lead time before your order arrives).
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "order_quantity": 10,
+  "confidence": 0.9,
+  "rationale": "Based on current inventory and expected demand, a conservative order of 10 units minimizes holding costs while preparing for potential demand increase.",
+  "risk_assessment": "Risks include underestimating demand, leading to backlog costs, or over-ordering, increasing holding costs.",
+  "expected_demand_next_round": 12
+}
+
+        Given this state, how many units do you order from your upstream supplier 
+        **this round**? Return valid JSON with:
+
+        {
+          "order_quantity": <integer>,
+          "confidence": <float>,
+          "rationale": "...",
+          "risk_assessment": "...",
+          "expected_demand_next_round": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"order_quantity": 30, "confidence": 0.85, "rationale": "Ordering 30 units meets immediate backlog and anticipates future demand, maintaining a buffer.", "risk_assessment": "Potential for overstock if demand decreases, but necessary to prevent further backlog costs.", "expected_demand_next_round": 12}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 40 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 2-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.0 per unit per round of unmet demand
+          • You earn $5 profit for each unit sold
+
+        Please return only valid JSON with the following fields:
+
+        {
+          "order_quantity": 10,
+          "confidence": 0.9,
+          "rationale": "Explain your reasoning briefly",
+          "risk_assessment": "Describe any risks you anticipate",
+          "expected_demand_next_round": 12
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"order_quantity": 10, "confidence": 0.9, "rationale": "Based on current inventory and expected demand, a conservative order of 10 units minimizes holding costs while preparing for potential demand increase.", "risk_assessment": "Risks include underestimating demand, leading to backlog costs, or over-ordering, increasing holding costs.", "expected_demand_next_round": 12}
+
+
+----- Nash Equilibrium Analysis -----
+Role: Retailer - Average Absolute Deviation: 2.57
+Role: Wholesaler - Average Absolute Deviation: 4.29
+Role: Distributor - Average Absolute Deviation: 13.57
+Role: Factory - Average Absolute Deviation: 13.57
