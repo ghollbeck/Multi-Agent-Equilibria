@@ -1,5 +1,5 @@
 import json
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 class BeerGamePrompts:
     """
@@ -100,8 +100,8 @@ class BeerGamePrompts:
                             incoming_shipments: List[int],
                             current_strategy: dict,
                             profit_per_unit_sold: float = 5,
-                            last_order_placed: int = None,
-                            last_profit: float = None) -> str:
+                            last_order_placed: Optional[int] = None,
+                            last_profit: Optional[float] = None) -> str:
         return f"""
         You are the {role_name} in the MIT Beer Game. 
         Current State:
@@ -148,4 +148,4 @@ class BeerGamePrompts:
         }}
 
         IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
-        """ 
+        """  

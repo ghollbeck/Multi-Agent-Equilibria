@@ -64,8 +64,8 @@ class BeerGameAgent(BaseModel):
     shipments_in_transit: Dict[int,int] = Field(default_factory=lambda: {0:10, 1:10})
     downstream_orders_history: List[int] = Field(default_factory=list)
     strategy: dict = Field(default_factory=dict)
-    prompts: ClassVar[BeerGamePrompts] = BeerGamePrompts
-    logger: BeerGameLogger = None
+    prompts: ClassVar[BeerGamePrompts] = BeerGamePrompts()
+    logger: Optional[BeerGameLogger] = None
     last_decision_prompt: str = ""
     last_decision_output: dict = Field(default_factory=dict)
     last_update_prompt: str = ""
@@ -157,8 +157,8 @@ class BeerGameAgent(BaseModel):
             incoming_shipments=[self.shipments_in_transit[1]],
             current_strategy=self.strategy,
             profit_per_unit_sold=profit_per_unit_sold,
-            last_order_placed=last_order_placed,
-            last_profit=last_profit
+            last_order_placed=last_order_placed or 0,
+            last_profit=last_profit or 0.0
         )
         self.last_decision_prompt = prompt
         system_prompt = "You are an expert supply chain manager. Return valid JSON only."
@@ -187,4 +187,4 @@ class BeerGameAgent(BaseModel):
             response = default_decision
         self.last_decision_output = response
         self.last_profit = response.get('profit', None)
-        return response 
+        return response  
