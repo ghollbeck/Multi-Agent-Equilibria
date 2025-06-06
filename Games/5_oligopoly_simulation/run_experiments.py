@@ -17,7 +17,7 @@ from oligopoly import (
 # Check if OpenAI is available
 try:
     import openai
-    if os.environ.get("OPENAI_API_KEY") and not os.environ.get("OPENAI_API_KEY").startswith("sk-your"):
+    if os.environ.get("OPENAI_API_KEY") and not (os.environ.get("OPENAI_API_KEY") or "").startswith("sk-your"):
         OPENAI_AVAILABLE = True
         print(f"OpenAI API key found - LLM agents enabled")
     else:

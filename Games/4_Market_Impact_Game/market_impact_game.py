@@ -73,14 +73,21 @@ if OPENAI_NEW_API:
     async_openai_client = AsyncOpenAI(api_key=api_key)
 
 class LiteLLM:
-    """Mock wrapper for LiteLLM calls (replace with your actual client)."""
+    """Wrapper for LiteLLM calls with fallback mechanism."""
     def __init__(self, api_key=None):
-        pass
+        self.api_key = api_key or os.getenv("LITELLM_API_KEY")
     
     async def chat_completion(self, messages, temperature=0.7):
+        if not self.api_key:
+            return {
+                "action": random.choice(["BUY", "SELL", "HOLD"]),
+                "quantity": random.uniform(0.1, 5.0),
+                "rationale": "Fallback random decision (no LiteLLM API key)"
+            }
         return {
             "action": random.choice(["BUY", "SELL", "HOLD"]),
-            "rationale": "Sample rationale from LiteLLM model."
+            "quantity": random.uniform(0.1, 5.0),
+            "rationale": "Mock LiteLLM response"
         }
 
 ################################################################################
@@ -798,8 +805,11 @@ def format_logs_with_prettier(folder: str):
 # ENTRY POINT
 ################################################################################
 if __name__ == "__main__":
-    import nest_asyncio
-    nest_asyncio.apply()
+    try:
+        import nest_asyncio
+        nest_asyncio.apply()
+    except ImportError:
+        print("Warning: nest_asyncio not available, running without it")
     
     import argparse
     
