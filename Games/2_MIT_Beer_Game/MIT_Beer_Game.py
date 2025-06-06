@@ -84,558 +84,174 @@ from pydantic import BaseModel, Field
 from dataclasses import dataclass, field, asdict
 from typing import List, Dict, Optional, ClassVar
 from tqdm import tqdm
-
-# Default LLM model for all chat completions
-MODEL_NAME: str = "gpt-4o-mini"
-
-# --------------------------------------------------------------------
-# Utility for robust JSON extraction from LLM responses
-# --------------------------------------------------------------------
-def safe_parse_json(response_str: str) -> dict:
-    """Extract the first JSON object in the LLM response string and parse it, handling markdown fences and incomplete JSON."""
-    import re
-    s = response_str.strip()
-    if s.startswith("```"):
-        lines = s.splitlines()
-        lines = lines[1:]
-        if lines and lines[-1].startswith("```"):
-            lines = lines[:-1]
-        s = "\n".join(lines)
-    start = s.find('{')
-    if start == -1:
-        try:
-            return json.loads(s)
-        except Exception as e:
-            print(f"❌ [safe_parse_json] Could not find '{{' in response. Error: {e}. Response: {s}")
-            raise
-    substring = s[start:]
-    brace_count = 0
-    end_index = None
-    for idx, ch in enumerate(substring):
-        if ch == '{':
-            brace_count += 1
-        elif ch == '}':
-            brace_count -= 1
-            if brace_count == 0:
-                end_index = idx + 1
-                break
-    if end_index is not None:
-        json_text = substring[:end_index]
-    else:
-        json_text = substring.rstrip(', \n\r\t')
-        json_text += '}' * brace_count
-    try:
-        return json.loads(json_text)
-    except Exception as e:
-        print(f"❌ [safe_parse_json] Failed to parse JSON. Error: {e}. Extracted: {json_text}")
-        raise
-
-def parse_json_with_default(response_str: str, default: dict, context: str) -> dict:
-    """Parse JSON and return default value on failure, logging the error context."""
-    try:
-        return safe_parse_json(response_str)
-    except Exception as e:
-        print(f"❌ [parse_json_with_default] Error parsing JSON in {context}: {e}. Response was: {response_str!r}")
-        # Attempt to salvage partial data (e.g., order_quantity)
-        m = re.search(r'"order_quantity"\s*:\s*(\d+)', response_str)
-        if m:
-            salvaged = default.copy()
-            salvaged['order_quantity'] = int(m.group(1))
-            print(f"❌ [parse_json_with_default] Salvaged order_quantity={m.group(1)} in {context}.")
-            return salvaged
-        return default
-
-# Helper to fill backlog and new demand for an agent and return units served
-# AFTER  (put this once, e.g. utilities.py)
-def fulfill(agent, new_demand: int, incoming: int = 0, logger=None) -> int:
-    """
-    •  Add today's inbound shipment to inventory.
-    •  Satisfy backlog first, then today's demand.
-    •  Update inventory & backlog in‑place; return units shipped downstream.
-    """
-    # 1. receive today's shipment
-    agent.inventory += incoming
-
-    # 2. figure out how many units are needed in total
-    need   = agent.backlog + new_demand
-    served = min(agent.inventory, need)
-
-    # 3. update state
-    agent.inventory -= served
-    agent.backlog    = need - served   # whatever we could not serve
-
-    if logger:
-        logger.log(
-            f"{agent.role_name}: inbound={incoming}, demand={new_demand}, "
-            f"served={served}, new_inv={agent.inventory}, new_backlog={agent.backlog}"
-        )
-    return served
-
-
-# --------------------------------------------------------------------
-# 1. LLM Prompt Classes
-#    Replace any references to "cooperate/defect" with Beer Game logic.
-# --------------------------------------------------------------------
-
-class BeerGamePrompts:
-    """
-    Provides system and user prompts for the MIT Beer Game.
-    Each agent will use these to:
-      1. Generate an initial ordering strategy,
-      2. Update the strategy after each generation,
-      3. Decide on a new order quantity each round.
-    """
-
-    @staticmethod
-    def get_strategy_generation_prompt(role_name: str, inventory: int = 100, backlog: int = 0, profit_per_unit_sold: float = 5) -> str:
-        """
-        Prompt to generate an initial ordering strategy for a given role.
-        The LLM must return valid JSON with the required keys.
-
-        role_name can be one of: ["Retailer", "Wholesaler", "Distributor", "Factory"].
-        """
-        return f"""
-        You are the {role_name} in the MIT Beer Game. 
-        Your task is to develop an ordering strategy that will minimize total costs 
-        (holding costs + backlog costs - profits) over multiple rounds.
-
-        Current State:
-          • Initial Inventory: {inventory} units
-          • Initial Backlog: {backlog} units
-          • Profit per unit sold: ${profit_per_unit_sold}
-
-        Consider:
-          • Your current role's position in the supply chain
-          • You have a 1-round lead time for the orders you place
-          • You observe demand (if Retailer) or incoming orders (for other roles)
-          • You want to avoid large swings (the Bullwhip effect)
-          • You have a holding cost of 0.5 per unit per round
-          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
-          • You earn ${profit_per_unit_sold} profit for each unit sold
-         • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
-         • Never let the inventory go to zero.
-
-        Please return only valid JSON with the following fields in order:
-
-        {{
-          "role_name": "{role_name}",
-          "inventory": {inventory},
-          "backlog": {backlog},
-          "confidence": <float between 0 and 1>,
-          "rationale": "<brief explanation of your reasoning>",
-          "risk_assessment": "<describe any risks you anticipate>",
-          "expected_demand_next_round": <integer>,
-          "order_quantity": <integer>
-        }}
-
-        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
-        """
-        # You can add role-specific instructions if needed
-        # for advanced prompts. For now, it's mostly generic.
-
-    @staticmethod
-    def get_strategy_update_prompt(role_name: str, performance_log: str, current_strategy: dict, 
-                                 inventory: int = 100, backlog: int = 0, profit_per_unit_sold: float = 5) -> str:
-        """
-        Prompt to update an existing strategy after completing a generation.
-        performance_log is a text summary of the agent's costs, backlog, bullwhip, etc.
-        current_strategy is the JSON dict from the agent's prior strategy.
-
-        The LLM must again return valid JSON with the required keys.
-        """
-        return f"""
-        You are the {role_name} in the MIT Beer Game. 
-        
-        Current State:
-          • Current Inventory: {inventory} units
-          • Current Backlog: {backlog} units
-          • Profit per unit sold: ${profit_per_unit_sold}
-        
-        Here is your recent performance log:
-        {performance_log}
-
-        Your current strategy is:
-        {json.dumps(current_strategy, indent=2)}
-
-        Based on your performance and the desire to minimize holding & backlog costs while maximizing profits, 
-        please propose any improvements to your ordering policy. 
-        
-        Remember:
-          • You have a holding cost of 0.5 per unit per round
-          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
-          • You earn ${profit_per_unit_sold} profit for each unit sold
-         • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
-          • Never let the inventory go to zero.
-          
-        Return only valid JSON with the following fields in order:
-
-        {{
-          "role_name": "{role_name}",
-          "inventory": {inventory},
-          "backlog": {backlog},
-          "confidence": <float between 0 and 1>,
-          "rationale": "<brief explanation>",
-          "risk_assessment": "<describe any risks>",
-          "expected_demand_next_round": <integer>,
-          "order_quantity": <integer>
-        }}
-
-        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
-        """
-
-    @staticmethod
-    def get_decision_prompt(role_name: str, 
-                            inventory: int, 
-                            backlog: int, 
-                            recent_demand_or_orders: List[int], 
-                            incoming_shipments: List[int],
-                            current_strategy: dict,
-                            profit_per_unit_sold: float = 5,
-                            last_order_placed: int = None,
-                            last_profit: float = None) -> str:
-        """
-        Prompt to decide this round's order quantity, given the latest state.
-        The agent must return valid JSON with the required keys.
-
-        - role_name: "Retailer", "Wholesaler", "Distributor", or "Factory"
-        - inventory: current on-hand inventory
-        - backlog: current unmet demand
-        - recent_demand_or_orders: a short history of demands/orders from downstream
-        - incoming_shipments: the shipments that are arriving this round (from lead times)
-        - current_strategy: the agent's strategy as a JSON dict
-        - profit_per_unit_sold: profit earned per unit sold
-        - last_order_placed: the order placed in the previous round
-        - last_profit: the profit made in the previous round
-        """
-        return f"""
-        You are the {role_name} in the MIT Beer Game. 
-        Current State:
-          - Inventory: {inventory} units
-          - Backlog: {backlog} units
-          - Recent downstream demand or orders: {recent_demand_or_orders}
-          - Incoming shipments this round: {incoming_shipments}
-          - Profit per unit sold: ${profit_per_unit_sold}
-          - Last order placed: {last_order_placed}
-          - Last round profit: {last_profit}
-
-        Your known lead time is 1 round for any order you place.
-
-        Economics:
-          - Holding cost: $0.5 per unit per round
-          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
-          - Profit: ${profit_per_unit_sold} per unit sold
-          - Never let the inventory go to zero.
-
-        **Important:**
-        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
-        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
-        - CRITICAL: You must account for BOTH your current backlog ({backlog} units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
-        - Review how much you have ordered and earned in the last round(s) to inform your decision.
-        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
-
-        Current Strategy:
-        {json.dumps(current_strategy, indent=2)}
-
-        Given this state, return valid JSON with the following fields in order:
-
-        {{
-          "role_name": "{role_name}",
-          "inventory": {inventory},
-          "backlog": {backlog},
-          "recent_demand_or_orders": {recent_demand_or_orders},
-          "incoming_shipments": {incoming_shipments},
-          "last_order_placed": {last_order_placed},
-          "expected_demand_next_round": <integer>,
-          "confidence": <float between 0 and 1>,
-          "rationale": "<brief explanation>",
-          "risk_assessment": "<describe any risks>",
-          "order_quantity": <integer>
-        }}
-
-        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
-        """
-
-# --------------------------------------------------------------------
-# 2. Data Classes for Logging & Simulation State
-# --------------------------------------------------------------------
-
-@dataclass
-class RoundData:
-    """
-    Records data from each round of the Beer Game for a single agent:
-    - round_index: which round in the generation
-    - role_name: Retailer / Wholesaler / Distributor / Factory
-    - inventory: units on hand at the end of the round
-    - backlog: unmet demand
-    - order_placed: how many units were ordered from upstream
-    - shipment_received: how many units arrived from upstream
-    - shipment_sent_downstream: how many units were shipped to downstream
-    - cost: total cost incurred this round
-    """
-    generation: int
-    round_index: int
-    role_name: str
-    inventory: int
-    backlog: int
-    order_placed: int
-    shipment_received: int
-    shipment_sent_downstream: int
-    profit: float
-
-@dataclass
-class SimulationData:
-    hyperparameters: dict
-    rounds_log: List[RoundData] = field(default_factory=list)
-
-    def add_round_entry(self, entry: RoundData):
-        self.rounds_log.append(entry)
-
-    def to_dict(self):
-        return {
-            'hyperparameters': self.hyperparameters,
-            'rounds_log': [asdict(r) for r in self.rounds_log]
-        }
-
-# --------------------------------------------------------------------
-# Logger for capturing all simulation events, prompts, and responses
-# --------------------------------------------------------------------
-class BeerGameLogger:
-    def __init__(self, log_to_file=None):
-        self.logs = []
-        self.log_to_file = log_to_file
-        self.file_handle = open(log_to_file, 'a') if log_to_file else None
-    def log(self, msg):
-        self.logs.append(msg)
-        print(msg)
-        if self.file_handle:
-            self.file_handle.write(msg + '\n')
-    def get_logs(self):
-        return self.logs
-    def close(self):
-        if self.file_handle:
-            self.file_handle.close()
-
-# --------------------------------------------------------------------
-# 3. LLM Client Setup
-#    (Replace with your own concurrency or provider if needed)
-# --------------------------------------------------------------------
-
-load_dotenv()
-
-class LiteLLMClient:
-    def __init__(self, logger=None):
-        self.api_key = os.getenv("LITELLM_API_KEY")
-        self.endpoint = "https://litellm.sph-prod.ethz.ch/chat/completions"
-        self.semaphore = asyncio.Semaphore(2)
-        self.logger = logger
-
-    async def chat_completion(self, model: str, system_prompt: str, user_prompt: str, temperature: float = 0.7, max_tokens: int = 450):
-        print(f"[LLM SYSTEM PROMPT]: {system_prompt}")
-        print(f"[LLM USER PROMPT]: {user_prompt}")
-        if self.logger:
-            self.logger.log(f"[LLM SYSTEM PROMPT]: {system_prompt}")
-            self.logger.log(f"[LLM USER PROMPT]: {user_prompt}")
-        payload = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            "temperature": temperature,
-            "max_tokens": max_tokens
-        }
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}"
-        }
-        max_retries = 5
-        delay = 2
-        attempt = 0
-        while True:
-            async with self.semaphore:
-                response = await asyncio.to_thread(requests.post, self.endpoint, json=payload, headers=headers)
-            if response.ok:
-                break
-            elif response.status_code == 429:
-                attempt += 1
-                if attempt >= max_retries:
-                    raise Exception(f"LiteLLM API error: {response.status_code} {response.text}")
-                await asyncio.sleep(delay)
-                delay *= 2
-            else:
-                raise Exception(f"LiteLLM API error: {response.status_code} {response.text}")
-        data = response.json()
-        content = data.get("choices", [{}])[0].get("message", {}).get("content", "No response from LiteLLM.")
-        print(f"[LLM RAW RESPONSE]: {content}")
-        if self.logger:
-            self.logger.log(f"[LLM RAW RESPONSE]: {content}")
-        return content
-
-lite_client = LiteLLMClient()
+from prompts_mitb_game import BeerGamePrompts
+from llm_calls_mitb_game import MODEL_NAME, lite_client
+from models_mitb_game import BeerGameAgent, RoundData, SimulationData, BeerGameLogger
+from analysis_mitb_game import plot_beer_game_results, calculate_nash_deviation
 
 # --------------------------------------------------------------------
 # 4. Agent Class: BeerGameAgent
 #    Each Agent has: role, inventory, backlog, cost, strategy, etc.
 # --------------------------------------------------------------------
 
-class BeerGameAgent(BaseModel):
-    role_name: str  # "Retailer", "Wholesaler", "Distributor", "Factory"
-    inventory: int = 100
-    backlog: int = 0
-    profit_accumulated: float = 0.0
-    # Store last round profit and last order placed for context in prompts
-    last_profit: Optional[float] = None
-    last_order_placed: Optional[int] = None
+# class BeerGameAgent(BaseModel):
+#     role_name: str  # "Retailer", "Wholesaler", "Distributor", "Factory"
+#     inventory: int = 100
+#     backlog: int = 0
+#     profit_accumulated: float = 0.0
+#     # Store last round profit and last order placed for context in prompts
+#     last_profit: Optional[float] = None
+#     last_order_placed: Optional[int] = None
     
-    # Start with 10 units already in transit so agents receive shipments in the first rounds
-    # 1-round lead time: position 0 = what's arriving this round, position 1 = what arrives next round
-    shipments_in_transit: Dict[int,int] = Field(default_factory=lambda: {0:10, 1:10})
+#     # Start with 10 units already in transit so agents receive shipments in the first rounds
+#     # 1-round lead time: position 0 = what's arriving this round, position 1 = what arrives next round
+#     shipments_in_transit: Dict[int,int] = Field(default_factory=lambda: {0:10, 1:10})
     
-    # Orders from the downstream agent (or external demand if Retailer)
-    # We keep a short log: the most recent N rounds (for context).
-    downstream_orders_history: List[int] = Field(default_factory=list)
+#     # Orders from the downstream agent (or external demand if Retailer)
+#     # We keep a short log: the most recent N rounds (for context).
+#     downstream_orders_history: List[int] = Field(default_factory=list)
     
-    # The LLM-based strategy
-    strategy: dict = Field(default_factory=dict)
+#     # The LLM-based strategy
+#     strategy: dict = Field(default_factory=dict)
     
-    # For demonstration, each agent can have its own prompts class, 
-    # or we can store a reference to a shared prompts. We'll assume a single set here.
-    prompts: ClassVar[BeerGamePrompts] = BeerGamePrompts
-    logger: BeerGameLogger = None
-    # For logging LLM I/O
-    last_decision_prompt: str = ""
-    last_decision_output: dict = Field(default_factory=dict)
-    last_update_prompt: str = ""
-    last_update_output: dict = Field(default_factory=dict)
-    last_init_prompt: str = ""
-    last_init_output: dict = Field(default_factory=dict)
+#     # For demonstration, each agent can have its own prompts class, 
+#     # or we can store a reference to a shared prompts. We'll assume a single set here.
+#     prompts: ClassVar[BeerGamePrompts] = BeerGamePrompts
+#     logger: BeerGameLogger = None
+#     # For logging LLM I/O
+#     last_decision_prompt: str = ""
+#     last_decision_output: dict = Field(default_factory=dict)
+#     last_update_prompt: str = ""
+#     last_update_output: dict = Field(default_factory=dict)
+#     last_init_prompt: str = ""
+#     last_init_output: dict = Field(default_factory=dict)
 
-    class Config:
-        arbitrary_types_allowed = True
+#     class Config:
+#         arbitrary_types_allowed = True
 
-    async def initialize_strategy(self, temperature=0.7, profit_per_unit_sold=5):
-        """
-        Generate initial strategy JSON from the LLM.
-        """
-        if self.logger:
-            self.logger.log(f"[Agent {self.role_name}] Initializing strategy...")
-        prompt = self.prompts.get_strategy_generation_prompt(self.role_name, self.inventory, self.backlog, profit_per_unit_sold)
-        self.last_init_prompt = prompt
-        system_prompt = "You are an expert supply chain manager. Return valid JSON only."
-        try:
-            response_str = await lite_client.chat_completion(model=MODEL_NAME,
-                                                      system_prompt=system_prompt,
-                                                      user_prompt=prompt,
-                                                      temperature=temperature)
-        except Exception as e:
-            print(f"❌ [Agent {self.role_name}] initialize_strategy: LLM call failed. Error: {e}")
-            response_str = ''
-        print(f"[Agent {self.role_name}] Strategy response: {response_str}")
-        if self.logger:
-            self.logger.log(f"[Agent {self.role_name}] Strategy response: {response_str}")
-        default_strategy = {
-            "order_quantity": 10,
-            "confidence": 1.0,
-            "rationale": "Default initial strategy",
-            "risk_assessment": "No risk",
-            "expected_demand_next_round": 10
-        }
-        try:
-            response = safe_parse_json(response_str)
-            print(f"✅ [Agent {self.role_name}] initialize_strategy: Valid JSON received.")
-        except Exception as e:
-            print(f"❌ [Agent {self.role_name}] initialize_strategy: Invalid JSON. Using default. Error: {e}")
-            response = default_strategy
-        self.strategy = response
-        self.last_init_output = response
+#     async def initialize_strategy(self, temperature=0.7, profit_per_unit_sold=5):
+#         """
+#         Generate initial strategy JSON from the LLM.
+#         """
+#         if self.logger:
+#             self.logger.log(f"[Agent {self.role_name}] Initializing strategy...")
+#         prompt = self.prompts.get_strategy_generation_prompt(self.role_name, self.inventory, self.backlog, profit_per_unit_sold)
+#         self.last_init_prompt = prompt
+#         system_prompt = "You are an expert supply chain manager. Return valid JSON only."
+#         try:
+#             response_str = await lite_client.chat_completion(model=MODEL_NAME,
+#                                                       system_prompt=system_prompt,
+#                                                       user_prompt=prompt,
+#                                                       temperature=temperature)
+#         except Exception as e:
+#             print(f"❌ [Agent {self.role_name}] initialize_strategy: LLM call failed. Error: {e}")
+#             response_str = ''
+#         print(f"[Agent {self.role_name}] Strategy response: {response_str}")
+#         if self.logger:
+#             self.logger.log(f"[Agent {self.role_name}] Strategy response: {response_str}")
+#         default_strategy = {
+#             "order_quantity": 10,
+#             "confidence": 1.0,
+#             "rationale": "Default initial strategy",
+#             "risk_assessment": "No risk",
+#             "expected_demand_next_round": 10
+#         }
+#         try:
+#             response = safe_parse_json(response_str)
+#             print(f"✅ [Agent {self.role_name}] initialize_strategy: Valid JSON received.")
+#         except Exception as e:
+#             print(f"❌ [Agent {self.role_name}] initialize_strategy: Invalid JSON. Using default. Error: {e}")
+#             response = default_strategy
+#         self.strategy = response
+#         self.last_init_output = response
 
-    async def update_strategy(self, performance_log: str, temperature=0.7, profit_per_unit_sold=5):
-        """
-        Update an existing strategy after a generation completes.
-        """
-        if self.logger:
-            self.logger.log(f"[Agent {self.role_name}] Updating strategy with performance log: {performance_log}")
-        prompt = self.prompts.get_strategy_update_prompt(self.role_name, performance_log, self.strategy, self.inventory, self.backlog, profit_per_unit_sold)
-        self.last_update_prompt = prompt
-        system_prompt = "You are an expert supply chain manager. Return valid JSON only."
-        try:
-            response_str = await lite_client.chat_completion(model=MODEL_NAME,
-                                                      system_prompt=system_prompt,
-                                                      user_prompt=prompt,
-                                                      temperature=temperature)
-        except Exception as e:
-            print(f"❌ [Agent {self.role_name}] update_strategy: LLM call failed. Error: {e}")
-            response_str = ''
-        print(f"[Agent {self.role_name}] Update response: {response_str}")
-        if self.logger:
-            self.logger.log(f"[Agent {self.role_name}] Update response: {response_str}")
-        default_update = {
-            "order_quantity": 10,
-            "confidence": 1.0,
-            "rationale": "Default update strategy",
-            "risk_assessment": "No risk",
-            "expected_demand_next_round": 10
-        }
-        try:
-            response = safe_parse_json(response_str)
-            print(f"✅ [Agent {self.role_name}] update_strategy: Valid JSON received.")
-        except Exception as e:
-            print(f"❌ [Agent {self.role_name}] update_strategy: Invalid JSON. Using default. Error: {e}")
-            response = default_update
-        self.strategy = response
-        self.last_update_output = response
+#     async def update_strategy(self, performance_log: str, temperature=0.7, profit_per_unit_sold=5):
+#         """
+#         Update an existing strategy after a generation completes.
+#         """
+#         if self.logger:
+#             self.logger.log(f"[Agent {self.role_name}] Updating strategy with performance log: {performance_log}")
+#         prompt = self.prompts.get_strategy_update_prompt(self.role_name, performance_log, self.strategy, self.inventory, self.backlog, profit_per_unit_sold)
+#         self.last_update_prompt = prompt
+#         system_prompt = "You are an expert supply chain manager. Return valid JSON only."
+#         try:
+#             response_str = await lite_client.chat_completion(model=MODEL_NAME,
+#                                                       system_prompt=system_prompt,
+#                                                       user_prompt=prompt,
+#                                                       temperature=temperature)
+#         except Exception as e:
+#             print(f"❌ [Agent {self.role_name}] update_strategy: LLM call failed. Error: {e}")
+#             response_str = ''
+#         print(f"[Agent {self.role_name}] Update response: {response_str}")
+#         if self.logger:
+#             self.logger.log(f"[Agent {self.role_name}] Update response: {response_str}")
+#         default_update = {
+#             "order_quantity": 10,
+#             "confidence": 1.0,
+#             "rationale": "Default update strategy",
+#             "risk_assessment": "No risk",
+#             "expected_demand_next_round": 10
+#         }
+#         try:
+#             response = safe_parse_json(response_str)
+#             print(f"✅ [Agent {self.role_name}] update_strategy: Valid JSON received.")
+#         except Exception as e:
+#             print(f"❌ [Agent {self.role_name}] update_strategy: Invalid JSON. Using default. Error: {e}")
+#             response = default_update
+#         self.strategy = response
+#         self.last_update_output = response
 
-    async def decide_order_quantity(self, temperature=0.7, profit_per_unit_sold=5) -> dict:
-        """
-        Ask the LLM how many units to order from upstream in this round, 
-        given our current state. Must return the JSON dict with 'order_quantity', etc.
-        """
-        if self.logger:
-            self.logger.log(f"[Agent {self.role_name}] Deciding order quantity. Inventory: {self.inventory}, Backlog: {self.backlog}, Downstream: {self.downstream_orders_history[-3:]}, Shipments: {[self.shipments_in_transit[1]]}")
-        # Get last order placed and last profit for context
-        last_order_placed = self.last_order_placed
-        last_profit = self.last_profit
-        prompt = self.prompts.get_decision_prompt(
-            role_name=self.role_name,
-            inventory=self.inventory,
-            backlog=self.backlog,
-            recent_demand_or_orders=self.downstream_orders_history[-3:],
-            incoming_shipments=[self.shipments_in_transit[1]],
-            current_strategy=self.strategy,
-            profit_per_unit_sold=profit_per_unit_sold,
-            last_order_placed=last_order_placed,
-            last_profit=last_profit
-        )
-        self.last_decision_prompt = prompt
-        system_prompt = "You are an expert supply chain manager. Return valid JSON only."
-        try:
-            response_str = await lite_client.chat_completion(model=MODEL_NAME,
-                                                      system_prompt=system_prompt,
-                                                      user_prompt=prompt,
-                                                      temperature=temperature)
-        except Exception as e:
-            print(f"❌ [Agent {self.role_name}] decide_order_quantity: LLM call failed. Error: {e}")
-            response_str = ''
-        print(f"[Agent {self.role_name}] Decision response: {response_str}")
-        if self.logger:
-            self.logger.log(f"[Agent {self.role_name}] Decision response: {response_str}")
-        default_decision = {
-            "order_quantity": 10,
-            "confidence": 1.0,
-            "rationale": "Default decision",
-            "risk_assessment": "No risk",
-            "expected_demand_next_round": 10
-        }
-        try:
-            response = safe_parse_json(response_str)
-            print(f"✅ [Agent {self.role_name}] decide_order_quantity: Valid JSON received.")
-        except Exception as e:
-            print(f"❌ [Agent {self.role_name}] decide_order_quantity: Invalid JSON. Using default. Error: {e}")
-            response = default_decision
-        self.last_decision_output = response
-        # Store last profit for next round context
-        self.last_profit = response.get('profit', None)
-        return response
+#     async def decide_order_quantity(self, temperature=0.7, profit_per_unit_sold=5) -> dict:
+#         """
+#         Ask the LLM how many units to order from upstream in this round, 
+#         given our current state. Must return the JSON dict with 'order_quantity', etc.
+#         """
+#         if self.logger:
+#             self.logger.log(f"[Agent {self.role_name}] Deciding order quantity. Inventory: {self.inventory}, Backlog: {self.backlog}, Downstream: {self.downstream_orders_history[-3:]}, Shipments: {[self.shipments_in_transit[1]]}")
+#         # Get last order placed and last profit for context
+#         last_order_placed = self.last_order_placed
+#         last_profit = self.last_profit
+#         prompt = self.prompts.get_decision_prompt(
+#             role_name=self.role_name,
+#             inventory=self.inventory,
+#             backlog=self.backlog,
+#             recent_demand_or_orders=self.downstream_orders_history[-3:],
+#             incoming_shipments=[self.shipments_in_transit[1]],
+#             current_strategy=self.strategy,
+#             profit_per_unit_sold=profit_per_unit_sold,
+#             last_order_placed=last_order_placed,
+#             last_profit=last_profit
+#         )
+#         self.last_decision_prompt = prompt
+#         system_prompt = "You are an expert supply chain manager. Return valid JSON only."
+#         try:
+#             response_str = await lite_client.chat_completion(model=MODEL_NAME,
+#                                                       system_prompt=system_prompt,
+#                                                       user_prompt=prompt,
+#                                                       temperature=temperature)
+#         except Exception as e:
+#             print(f"❌ [Agent {self.role_name}] decide_order_quantity: LLM call failed. Error: {e}")
+#             response_str = ''
+#         print(f"[Agent {self.role_name}] Decision response: {response_str}")
+#         if self.logger:
+#             self.logger.log(f"[Agent {self.role_name}] Decision response: {response_str}")
+#         default_decision = {
+#             "order_quantity": 10,
+#             "confidence": 1.0,
+#             "rationale": "Default decision",
+#             "risk_assessment": "No risk",
+#             "expected_demand_next_round": 10
+#         }
+#         try:
+#             response = safe_parse_json(response_str)
+#             print(f"✅ [Agent {self.role_name}] decide_order_quantity: Valid JSON received.")
+#         except Exception as e:
+#             print(f"❌ [Agent {self.role_name}] decide_order_quantity: Invalid JSON. Using default. Error: {e}")
+#             response = default_decision
+#         self.last_decision_output = response
+#         # Store last profit for next round context
+#         self.last_profit = response.get('profit', None)
+#         return response
 
 # --------------------------------------------------------------------
 # 5. Simulation Logic
@@ -946,7 +562,7 @@ async def run_beer_game_generation(
 # --------------------------------------------------------------------
 
 async def run_beer_game_simulation(
-    num_generations: int = 3,
+    num_generations: int = 1,
     num_rounds_per_generation: int = 20,
     temperature: float = 0.7,
     logger: BeerGameLogger = None
@@ -1089,123 +705,3 @@ async def run_beer_game_simulation(
     logger.log("\nSimulation complete. Results saved to: {}".format(results_folder))
     logger.close()
     return sim_data
-
-# --------------------------------------------------------------------
-# 7. Visualization
-# --------------------------------------------------------------------
-
-def plot_beer_game_results(rounds_df: pd.DataFrame, results_folder: str):
-    """
-    Basic plots: inventory over time, backlog over time, cost, etc.
-    """
-    os.makedirs(results_folder, exist_ok=True)
-
-    # Inventory by role
-    plt.figure(figsize=(10,6))
-    for role in rounds_df["role_name"].unique():
-        subset = rounds_df[rounds_df["role_name"] == role]
-        plt.plot(subset["round_index"], subset["inventory"], label=role)
-    plt.title("Inventory Over Rounds")
-    plt.xlabel("Round")
-    plt.ylabel("Units in Inventory")
-    plt.legend()
-    plt.grid(True)
-    plt.savefig(os.path.join(results_folder, "inventory_over_time.png"))
-    plt.close()
-
-    # Backlog by role
-    plt.figure(figsize=(10,6))
-    for role in rounds_df["role_name"].unique():
-        subset = rounds_df[rounds_df["role_name"] == role]
-        plt.plot(subset["round_index"], subset["backlog"], label=role)
-    plt.title("Backlog Over Rounds")
-    plt.xlabel("Round")
-    plt.ylabel("Unmet Demand (Backlog)")
-    plt.legend()
-    plt.grid(True)
-    plt.savefig(os.path.join(results_folder, "backlog_over_time.png"))
-    plt.close()
-
-    # Cost by role (accumulated)
-    plt.figure(figsize=(10,6))
-    for role in rounds_df["role_name"].unique():
-        subset = rounds_df[rounds_df["role_name"] == role]
-        plt.plot(subset["round_index"], subset["profit"], label=role)
-    plt.title("Accumulated Profit Over Time")
-    plt.xlabel("Round")
-    plt.ylabel("Accumulated Profit")
-    plt.legend()
-    plt.grid(True)
-    plt.savefig(os.path.join(results_folder, "cost_over_time.png"))
-    plt.close()
-
-    # Combined Plot with subplots for Inventory, Backlog, and Cost
-    fig, axes = plt.subplots(3, 1, figsize=(10, 18))
-
-    # Subplot 1: Inventory by role
-    for role in rounds_df["role_name"].unique():
-        subset = rounds_df[rounds_df["role_name"] == role]
-        axes[0].plot(subset["round_index"], subset["inventory"], label=role)
-    axes[0].set_title("Inventory Over Rounds")
-    axes[0].set_xlabel("Round")
-    axes[0].set_ylabel("Units in Inventory")
-    axes[0].legend()
-    axes[0].grid(True)
-
-    # Subplot 2: Backlog by role
-    for role in rounds_df["role_name"].unique():
-        subset = rounds_df["role_name"] == role
-        subset = rounds_df[rounds_df["role_name"] == role]
-        axes[1].plot(subset["round_index"], subset["backlog"], label=role)
-    axes[1].set_title("Backlog Over Rounds")
-    axes[1].set_xlabel("Round")
-    axes[1].set_ylabel("Unmet Demand (Backlog)")
-    axes[1].legend()
-    axes[1].grid(True)
-
-    # Subplot 3: Accumulated Cost Over Time
-    for role in rounds_df["role_name"].unique():
-        subset = rounds_df[rounds_df["role_name"] == role]
-        axes[2].plot(subset["round_index"], subset["profit"], label=role)
-    axes[2].set_title("Accumulated Profit Over Time")
-    axes[2].set_xlabel("Round")
-    axes[2].set_ylabel("Accumulated Profit")
-    axes[2].legend()
-    axes[2].grid(True)
-
-    fig.tight_layout()
-    combined_plot_path = os.path.join(results_folder, "combined_plots.png")
-    plt.savefig(combined_plot_path)
-    plt.close(fig)
-
-def calculate_nash_deviation(rounds_df: pd.DataFrame, equilibrium_order: int = 10) -> Dict[str, float]:
-    """
-    Computes the average absolute deviation of the agent orders from the assumed Nash equilibrium order quantity.
-    Returns a dictionary mapping each role to its average absolute deviation.
-    """
-    deviations = {}
-    roles = rounds_df["role_name"].unique()
-    for role in roles:
-        role_df = rounds_df[rounds_df["role_name"] == role]
-        avg_deviation = (role_df["order_placed"] - equilibrium_order).abs().mean()
-        deviations[role] = avg_deviation
-    print("\nNash Equilibrium Analysis (Assumed equilibrium order = {}):".format(equilibrium_order))
-    for role, dev in deviations.items():
-        print("Role: {} - Average Absolute Deviation: {:.2f}".format(role, dev))
-    return deviations
-
-# --------------------------------------------------------------------
-# 8. Main Entry (if running as a script)
-# --------------------------------------------------------------------
-
-def main():
-    nest_asyncio.apply()
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(run_beer_game_simulation(
-        num_generations=1,
-        num_rounds_per_generation=7,
-        temperature=0.7
-    ))
-
-if __name__ == "__main__":
-    main()  # Run the simulation once
