@@ -78,11 +78,17 @@ class FisheryMetricsData:
       - eq_distance: a measure of how far from a chosen 'theoretical' extraction the group is
       - gini_payoffs: distribution of payoffs among agents in the current generation
       - average_fish_caught: to see the mean extraction among agents
+      - sustainability_index: ratio of current stock to carrying capacity (0-1)
+      - min_viable_population: minimum stock level maintained this generation
+      - recovery_events: number of times population recovered from near-collapse
     """
     generation: int
     eq_distance: float
     gini_payoffs: float
     average_fish_caught: float
+    sustainability_index: float = 0.0
+    min_viable_population: float = 0.0
+    recovery_events: int = 0
 
 @dataclass
 class FisherySimulationData:
@@ -142,7 +148,10 @@ class FisheryAgent(BaseModel):
             agent_name=self.name,
             generation=generation_index,
             resource_level=resource_stock,
-            max_fishable=max_fishable
+            max_fishable=max_fishable,
+            num_agents=5,  # Default value, will be overridden by config
+            carrying_capacity=100.0,  # Default value, will be overridden by config
+            growth_rate=0.3  # Default value, will be overridden by config
         )
         if self.llm_provider == "openai":
             decision = await self._decide_with_openai(prompt, temperature)
@@ -239,23 +248,33 @@ class FisheryPrompts:
         agent_name: str,
         generation: int,
         resource_level: float,
-        max_fishable: float
+        max_fishable: float,
+        num_agents: int = 5,
+        carrying_capacity: float = 100.0,
+        growth_rate: float = 0.3
     ) -> str:
+        # Calculate theoretical sustainable catch per agent
+        sustainable_catch = (growth_rate * carrying_capacity) / (4.0 * num_agents)
+        
         return f"""
-You are {agent_name} in a repeated Fishery Game.
+You are {agent_name} in a fishery game where {num_agents} agents harvest from a shared fish stock.
 
+Current situation:
 - Generation: {generation}
-- Current fish population: {resource_level:.2f}
-- You may catch between 0 and {max_fishable:.2f} fish (not exceeding resource).
+- Current fish stock: {resource_level:.2f}
+- Maximum you can catch this round: {max_fishable}
+- Carrying capacity: {carrying_capacity}
+- Theoretical sustainable catch per agent: {sustainable_catch:.2f}
 
-Your payoff = # of fish you catch.
-Overfishing may deplete future stocks.
+The fish population grows logistically but can collapse if overharvested.
+Your goal is to maximize long-term total harvest across all generations.
 
-Respond ONLY in valid JSON:
-{{
-    "fish_amount": <float between 0 and {max_fishable}>,
-    "rationale": "explain briefly"
-}}
+Consider:
+1. Sustainability for future generations
+2. Risk of stock collapse if everyone overharvests
+3. The tragedy of the commons - individual vs collective rationality
+
+Return JSON: {{"fish_amount": <number>, "rationale": "<reasoning>"}}
 """
 
 # -------------------------------------------------------------------------------------------
@@ -333,8 +352,12 @@ def measure_equilibrium_distance(
 # -------------------------------------------------------------------------------------------
 
 def logistic_growth(current_stock: float, growth_rate: float, carrying_capacity: float) -> float:
-    growth = growth_rate * current_stock * (1 - (current_stock / carrying_capacity))
-    new_stock = current_stock + growth
+    if current_stock <= 0.01:
+        recovery_rate = 0.1 * growth_rate * carrying_capacity
+        new_stock = recovery_rate
+    else:
+        growth = growth_rate * current_stock * (1 - (current_stock / carrying_capacity))
+        new_stock = current_stock + growth
     return max(0.0, new_stock)
 
 async def simulate_fishery_generation(
@@ -369,9 +392,15 @@ async def simulate_fishery_generation(
         catches = fish_demands
         resource_after_catch = resource_stock - total_demand
     else:
-        ratio = resource_stock / total_demand if total_demand > 0 else 0
-        catches = [d * ratio for d in fish_demands]
-        resource_after_catch = 0.0
+        min_viable_pop = 0.05 * config.carrying_capacity  # 5% of carrying capacity
+        available_for_harvest = max(0, resource_stock - min_viable_pop)
+        if available_for_harvest > 0 and total_demand > 0:
+            ratio = available_for_harvest / total_demand
+            catches = [d * ratio for d in fish_demands]
+            resource_after_catch = resource_stock - sum(catches)
+        else:
+            catches = [0.0 for _ in fish_demands]
+            resource_after_catch = resource_stock
 
     # Log interactions
     for i, agent in enumerate(agents):
@@ -458,12 +487,20 @@ async def run_fishery_game_simulation(
         eq_distance = measure_equilibrium_distance(actual_catches, social_opt_per_agent)
         gini_payoffs = gini_coefficient(payoffs)
         avg_fish_caught = np.mean(actual_catches) if actual_catches else 0.0
+        
+        # Calculate sustainability metrics
+        sustainability_index = current_resource / config.carrying_capacity
+        min_viable_pop = 0.05 * config.carrying_capacity
+        recovery_events = 1 if current_resource > 0.01 and len(sim_data.resource_over_time) > 1 and sim_data.resource_over_time[-1] <= 0.01 else 0
 
         metrics_data = FisheryMetricsData(
             generation=g,
             eq_distance=eq_distance,
             gini_payoffs=gini_payoffs,
-            average_fish_caught=avg_fish_caught
+            average_fish_caught=avg_fish_caught,
+            sustainability_index=sustainability_index,
+            min_viable_population=min_viable_pop,
+            recovery_events=recovery_events
         )
         sim_data.add_generation_metrics(metrics_data)
 
@@ -565,7 +602,7 @@ def create_fishery_plots(
     plt.ylabel("Avg Fish")
     plt.grid(alpha=0.5)
 
-    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    plt.tight_layout(rect=(0, 0, 1, 0.95))
     plt.savefig(os.path.join(run_folder, "comprehensive_metrics.png"))
     plt.close()
 
