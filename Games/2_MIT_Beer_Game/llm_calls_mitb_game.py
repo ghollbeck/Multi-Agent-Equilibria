@@ -70,7 +70,7 @@ class LiteLLMClient:
     def __init__(self, logger=None):
         self.api_key = os.getenv("LITELLM_API_KEY")
         self.endpoint = "https://litellm.sph-prod.ethz.ch/chat/completions"
-        self.semaphore = asyncio.Semaphore(2)
+        self._semaphores_by_loop = {}
         self.logger = logger
 
     async def chat_completion(self, model: str, system_prompt: str, user_prompt: str,
@@ -96,8 +96,13 @@ class LiteLLMClient:
         max_retries = 5
         delay = 2
         attempt = 0
+        loop = asyncio.get_running_loop()
+        semaphore = self._semaphores_by_loop.get(loop)
+        if semaphore is None:
+            semaphore = asyncio.Semaphore(2)
+            self._semaphores_by_loop[loop] = semaphore
         while True:
-            async with self.semaphore:
+            async with semaphore:
                 response = await asyncio.to_thread(requests.post, self.endpoint, json=payload, headers=headers)
             if response.ok:
                 break
