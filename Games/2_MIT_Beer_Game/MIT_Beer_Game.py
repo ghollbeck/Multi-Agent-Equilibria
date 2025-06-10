@@ -267,11 +267,11 @@ async def run_beer_game_generation(
     profit_per_unit_sold: float = 5,
     temperature: float = 0.7,
     generation_index: int = 1,
-    sim_data: SimulationData = None,
+    sim_data: Optional[SimulationData] = None,
     human_log_file = None,
-    logger: BeerGameLogger = None,
-    csv_log_path: str = None,
-    json_log_path: str = None
+    logger: Optional[BeerGameLogger] = None,
+    csv_log_path: Optional[str] = None,
+    json_log_path: Optional[str] = None
 ):
     """
     Runs one generation of the Beer Game with the provided agents.
@@ -391,24 +391,27 @@ async def run_beer_game_generation(
             factory.downstream_orders_history.append(dist_order)
             distributor.shipments_in_transit[1] += ship_down
 
-        # 4. Each role pays holding + backlog cost
+        # 4. Each role pays holding + backlog cost and calculates profit
+        round_profits = []
         for idx, agent in enumerate(agents):
             holding_cost = agent.inventory * holding_cost_per_unit
             backlog_cost = agent.backlog * backlog_cost_per_unit
-            # Calculate profit for units sold (1.5 per unit)
+            # Calculate revenue for units sold
             units_sold = shipments_sent_downstream[idx]
-            profit = units_sold * profit_per_unit_sold
-            # Calculate net profit (profit minus costs)
-            round_profit = profit - (holding_cost + backlog_cost)
+            revenue = units_sold * profit_per_unit_sold
+            # Calculate net profit (revenue minus costs)
+            round_profit = revenue - (holding_cost + backlog_cost)
+            round_profits.append(round_profit)
             agent.profit_accumulated += round_profit
+            agent.last_profit = round_profit
             
             if logger:
-                logger.log(f"Agent {agent.role_name}: Holding cost: {holding_cost}, Backlog cost: {backlog_cost}, Revenue: {profit}, Net profit: {round_profit}")
+                logger.log(f"Agent {agent.role_name}: Holding cost: {holding_cost}, Backlog cost: {backlog_cost}, Revenue: {revenue}, Net profit: {round_profit}")
 
         # 5. Each role decides on new order quantity from upstream
         order_decision_tasks = []
         for agent in agents:
-            order_decision_tasks.append(agent.decide_order_quantity(temperature=temperature, profit_per_unit_sold=profit_per_unit_sold))
+            order_decision_tasks.append(agent.decide_order_quantity(temperature=temperature, profit_per_unit_sold=int(profit_per_unit_sold)))
         decisions = await asyncio.gather(*order_decision_tasks)
 
         # 6. Place orders upstream => those orders become supplier's backlog
@@ -418,6 +421,7 @@ async def run_beer_game_generation(
             orders_placed.append(order_qty)
             # store last order placed for context
             agent.last_order_placed = order_qty
+            agent.last_profit = round_profit if 'round_profit' in locals() else 0.0
             if idx < len(agents) - 1:
                 # normal agent places order to its supplier
                 upstream_agent = agents[idx + 1]
@@ -438,7 +442,7 @@ async def run_beer_game_generation(
                     order_placed = orders_placed[idx],
                     shipment_received = shipments_received_list[idx],
                     shipment_sent_downstream = shipments_sent_downstream[idx],
-                    profit = agent.profit_accumulated
+                    profit = round_profits[idx]
                 )
                 sim_data.add_round_entry(entry)
                 # Write to CSV after each round
@@ -565,7 +569,7 @@ async def run_beer_game_simulation(
     num_generations: int = 1,
     num_rounds_per_generation: int = 20,
     temperature: float = 0.7,
-    logger: BeerGameLogger = None
+    logger: Optional[BeerGameLogger] = None
 ):
     """
     Orchestrates multiple generations of the Beer Game. 
