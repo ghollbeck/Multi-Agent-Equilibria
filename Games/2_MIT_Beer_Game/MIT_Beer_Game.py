@@ -760,9 +760,11 @@ async def run_beer_game_simulation(
     # Simple visualizations (inventory/backlog over time, cost, etc.)
     # Ensure df_rounds is defined for saving and plotting
     df_rounds = pd.DataFrame([asdict(r) for r in sim_data.rounds_log])
-    # Persist aggregated logs
-    # df_rounds.to_csv(csv_log_path, index=False)
-    # df_rounds.to_json(json_log_path, orient="records", indent=2)
+    
+    complete_sim_data = sim_data.to_dict()
+    with open(json_log_path, 'w') as jsonfile:
+        json.dump(complete_sim_data, jsonfile, indent=2)
+    
     # Generate visualizations
     plot_beer_game_results(df_rounds, results_folder)
 
