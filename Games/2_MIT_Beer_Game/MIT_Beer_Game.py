@@ -71,7 +71,11 @@ import datetime
 import random
 import asyncio
 import requests
-import nest_asyncio  # required to apply asyncio loops in scripts
+try:
+    import nest_asyncio  # required to apply asyncio loops in scripts
+    nest_asyncio.apply()
+except ImportError:
+    print("Warning: nest_asyncio not available, running without it")
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -271,7 +275,9 @@ async def run_beer_game_generation(
     human_log_file = None,
     logger: BeerGameLogger = None,
     csv_log_path: str = None,
-    json_log_path: str = None
+    json_log_path: str = None,
+    enable_communication: bool = False,
+    communication_rounds: int = 2
 ):
     """
     Runs one generation of the Beer Game with the provided agents.
@@ -405,10 +411,59 @@ async def run_beer_game_generation(
             if logger:
                 logger.log(f"Agent {agent.role_name}: Holding cost: {holding_cost}, Backlog cost: {backlog_cost}, Revenue: {profit}, Net profit: {round_profit}")
 
-        # 5. Each role decides on new order quantity from upstream
+        communication_messages = []
+        if enable_communication:
+            if logger:
+                logger.log(f"Starting communication phase with {communication_rounds} rounds")
+            
+            for comm_round in range(communication_rounds):
+                if logger:
+                    logger.log(f"Communication round {comm_round + 1}/{communication_rounds}")
+                
+                round_messages = []
+                # Each agent sends a message sequentially
+                for agent in agents:
+                    message_response = await agent.generate_communication_message(
+                        round_index=round_index,
+                        other_agents=[a for a in agents if a != agent],
+                        message_history=communication_messages,
+                        temperature=temperature
+                    )
+                    
+                    message_entry = {
+                        "round": round_index,
+                        "communication_round": comm_round + 1,
+                        "sender": agent.role_name,
+                        "message": message_response.get("message", ""),
+                        "strategy_hint": message_response.get("strategy_hint", ""),
+                        "collaboration_proposal": message_response.get("collaboration_proposal", ""),
+                        "information_shared": message_response.get("information_shared", ""),
+                        "confidence": message_response.get("confidence", 0.5)
+                    }
+                    
+                    round_messages.append(message_entry)
+                    communication_messages.append(message_entry)
+                    
+                    if logger:
+                        logger.log(f"[{agent.role_name}] Message: {message_response.get('message', '')}")
+                
+                for agent in agents:
+                    agent.message_history.extend(round_messages)
+
+        # 5. Each role decides on new order quantity from upstream (modified to include communication context)
         order_decision_tasks = []
         for agent in agents:
-            order_decision_tasks.append(agent.decide_order_quantity(temperature=temperature, profit_per_unit_sold=profit_per_unit_sold))
+            recent_messages = communication_messages[-len(agents)*2:] if enable_communication else []
+            if enable_communication and recent_messages:
+                order_decision_tasks.append(
+                    agent.decide_order_quantity_with_communication(
+                        temperature=temperature, 
+                        profit_per_unit_sold=profit_per_unit_sold,
+                        recent_communications=recent_messages
+                    )
+                )
+            else:
+                order_decision_tasks.append(agent.decide_order_quantity(temperature=temperature, profit_per_unit_sold=profit_per_unit_sold))
         decisions = await asyncio.gather(*order_decision_tasks)
 
         # 6. Place orders upstream => those orders become supplier's backlog
@@ -441,6 +496,11 @@ async def run_beer_game_generation(
                     profit = agent.profit_accumulated
                 )
                 sim_data.add_round_entry(entry)
+                
+                if enable_communication and communication_messages:
+                    for msg in communication_messages:
+                        if msg["round"] == round_index:
+                            sim_data.add_communication_entry(msg)
                 # Write to CSV after each round
                 if csv_log_path:
                     write_header = not os.path.exists(csv_log_path) or os.path.getsize(csv_log_path) == 0
@@ -565,7 +625,9 @@ async def run_beer_game_simulation(
     num_generations: int = 1,
     num_rounds_per_generation: int = 20,
     temperature: float = 0.7,
-    logger: BeerGameLogger = None
+    logger: BeerGameLogger = None,
+    enable_communication: bool = False,
+    communication_rounds: int = 2
 ):
     """
     Orchestrates multiple generations of the Beer Game. 
@@ -661,7 +723,9 @@ async def run_beer_game_simulation(
             human_log_file=human_log_file,
             logger=logger,
             csv_log_path=csv_log_path,
-            json_log_path=json_log_path
+            json_log_path=json_log_path,
+            enable_communication=enable_communication,
+            communication_rounds=communication_rounds
         )
 
         # After the generation, collect performance logs for each agent,
