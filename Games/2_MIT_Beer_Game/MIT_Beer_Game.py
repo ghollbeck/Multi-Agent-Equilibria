@@ -578,6 +578,21 @@ async def run_beer_game_generation(
             human_log_file.write("\n--------------------- Round {} ---------------------\n".format(round_index))
             human_log_file.write("External demand (Retailer): {}\n".format(retailer_demand))
             human_log_file.write("Shipments received per agent: {}\n".format(shipments_received_list))
+            
+            # Log communication messages if they exist for this round
+            if enable_communication and communication_messages:
+                round_comm_messages = [msg for msg in communication_messages if msg["round"] == round_index]
+                if round_comm_messages:
+                    human_log_file.write("\n--- Communication Messages ---\n")
+                    for msg in round_comm_messages:
+                        human_log_file.write("Communication Round {}: {} says: {}\n".format(
+                            msg["communication_round"], msg["sender"], msg["message"]
+                        ))
+                        human_log_file.write("  Strategy Hint: {}\n".format(msg["strategy_hint"]))
+                        human_log_file.write("  Collaboration Proposal: {}\n".format(msg["collaboration_proposal"]))
+                        human_log_file.write("  Information Shared: {}\n".format(msg["information_shared"]))
+                        human_log_file.write("  Confidence: {}\n".format(msg["confidence"]))
+                    human_log_file.write("\n")
             for idx, agent in enumerate(agents):
                 human_log_file.write("Agent: {}: Inventory: {}, Backlog: {}, Order placed: {}, Units sold: {}, Profit: {:.2f}, Total Profit: {}\n".format(
                     agent.role_name, agent.inventory, agent.backlog, orders_placed[idx], shipments_sent_downstream[idx], 
@@ -604,6 +619,9 @@ async def run_beer_game_generation(
                 # Log the LLM prompt and output (Decision Output is now more detailed)
                 human_log_file.write("    LLM Decision Prompt: {}\n".format(getattr(agent, 'last_decision_prompt', '')))
                 human_log_file.write("    LLM Decision Output: {}\n".format(json.dumps(getattr(agent, 'last_decision_output', {}))))
+                if enable_communication:
+                    human_log_file.write("    LLM Communication Prompt: {}\n".format(getattr(agent, 'last_communication_prompt', '')))
+                    human_log_file.write("    LLM Communication Output: {}\n".format(json.dumps(getattr(agent, 'last_communication_output', {}))))
                 human_log_file.write("    LLM Update Prompt: {}\n".format(getattr(agent, 'last_update_prompt', '')))
                 human_log_file.write("    LLM Update Output: {}\n".format(json.dumps(getattr(agent, 'last_update_output', {}))))
                 human_log_file.write("    LLM Init Prompt: {}\n".format(getattr(agent, 'last_init_prompt', '')))
