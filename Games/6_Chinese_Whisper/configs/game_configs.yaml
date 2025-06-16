@@ -1,0 +1,46 @@
+
+game_config:
+  agents:
+    count: [2, 5, 8, 10, 15, 20]  # Number of agents in the chain
+    models: ["gpt-4o-mini", "gpt-3.5-turbo", "gpt-4", "claude-3-sonnet"]  # LLM models to test
+    temperatures: [0.3, 0.5, 0.7, 0.9]  # Temperature settings for LLM calls
+  
+  information:
+    types: ["factual", "narrative", "technical", "structured"]  # Types of information to test
+    complexity_levels: ["simple", "medium", "complex"]  # Complexity levels
+    sizes: [100, 300, 500, 1000, 2000]  # Target token counts for information
+    formats: ["txt", "json", "yaml"]  # Storage formats (future use)
+  
+  context:
+    strategies: ["full_history", "sliding_window", "summary"]  # How context is managed
+    max_lengths: [4000, 8000, 16000, 32000]  # Maximum context lengths to test
+    window_sizes: [2, 4, 6]  # For sliding window strategy
+  
+  experiment:
+    runs_per_config: 3  # Number of runs per configuration
+    batch_size: 10  # Number of experiments to run in parallel
+    timeout_seconds: 300  # Timeout for individual agent processing
+    retry_attempts: 3  # Number of retry attempts for failed LLM calls
+  
+  output:
+    save_individual_results: true  # Save each individual experiment result
+    save_chain_data: true  # Save intermediate chain data
+    save_agent_summaries: true  # Save agent processing summaries
+    generate_visualizations: true  # Generate plots and charts
+    log_level: "INFO"  # Logging level (DEBUG, INFO, WARNING, ERROR)
+
+research_config:
+  thresholds:
+    retention_critical: 0.5  # Below this retention score is considered critical
+    similarity_critical: 0.6  # Below this similarity score is considered critical
+    accuracy_critical: 0.7  # Below this accuracy score is considered critical
+  
+  degradation:
+    acceleration_threshold: 1.5  # Factor for detecting degradation acceleration
+    minimum_chain_length: 3  # Minimum chain length for degradation analysis
+    analysis_windows: [2, 4, 6]  # Window sizes for degradation rate analysis
+  
+  preservation:
+    key_element_weight: 0.4  # Weight for key element preservation in scoring
+    structural_weight: 0.3  # Weight for structural preservation
+    semantic_weight: 0.3  # Weight for semantic preservation
