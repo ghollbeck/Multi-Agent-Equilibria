@@ -100,7 +100,7 @@ class Config:
     opponent_mode: str = field(default='computer')
     strategy: str = field(default='tit_for_tat')
     misinterpretation_prob: float = field(default=0.1)
-    rounds: int = field(default=10)
+    rounds: int = field(default=20)
     batch_size: int = field(default=1)
     output_dir: str = field(default='results')
     llm_model: str = field(default='gpt-4o')
@@ -354,7 +354,7 @@ class SimulationRunner:
 
     def _plot_cooperation_rate(self, df, outdir):
         # cooperation = fraction of Low
-        coop = df.groupby('round').apply(lambda g: (g['action_A']=='Low').mean())
+        coop = df.groupby('round', include_groups=False).apply(lambda g: (g['action_A']=='Low').mean())
         plt.figure()
         coop.plot(marker='o', title='Cooperation Rate Over Rounds')
         plt.xlabel('Round'); plt.ylabel('Cooperation Rate')

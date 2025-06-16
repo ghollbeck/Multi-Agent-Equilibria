@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Internal script to generate architecture flowchart for the Market Impact Game
+Internal script to generate architecture flowchart for the Security Dilemma Game
 """
 
 import os
@@ -26,12 +26,12 @@ os.makedirs(output_dir, exist_ok=True)
 
 
 def main():
-    """Generate architecture flowchart for the Market Impact Game"""
+    """Generate architecture flowchart for the Security Dilemma Game"""
     print(f"Generating architecture flowchart for: {game_file}")
     print(f"Output directory: {output_dir}")
     
     # Generate the flowchart
-    result_files = architecture_flowchart.create_flowchart_from_script(
+    result_files = create_flowchart_from_script(
         script_path=str(game_file),
         output_dir=str(output_dir),
         render=True,

@@ -1,0 +1,943 @@
+
+============================================================
+            Starting Beer Game Simulation
+============================================================
+
+
+--------------------- Round 1 ---------------------
+External demand (Retailer): 10
+Shipments received per agent: [10, 10, 10, 10]
+Agent: Retailer: Inventory: 100, Backlog: 0, Order placed: 30, Units sold: 10, Profit: 50.00, Total Profit: 0.0
+    LLM Output: order_quantity=30, confidence=0.7, rationale=Placing an order for 30 units to meet expected demand while maintaining inventory buffer., risk_assessment=Risk of overestimating demand leading to excess inventory, and underestimating could result in backlog costs., expected_demand_next_round=30, llm_inventory=100, llm_backlog=0, llm_recent_demand=[10], llm_incoming=[10], llm_last_order=None
+    LLM Decision Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Current State:
+          - Inventory: 100 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [10]
+          - Incoming shipments this round: [10]
+          - Profit per unit sold: $5
+          - Last order placed: None
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Retailer",
+  "inventory": 100,
+  "backlog": 0,
+  "confidence": 0.7,
+  "rationale": "With an initial inventory of 100 units and no backlog, I can afford to place a moderate order to prepare for expected demand while avoiding excess holding costs.",
+  "risk_assessment": "The primary risk is overestimating demand, which could lead to excess inventory and high holding costs. Additionally, underestimating demand could result in backlog costs.",
+  "expected_demand_next_round": 30,
+  "order_quantity": 30
+}
+
+        
+
+Recent Communications from Other Agents:
+- Distributor: To all agents, I've noted the recent demand of 10 units and agree that we should prepare for an increase to 30 units next round. It's crucial that we align our orders to manage inventory effectively and avoid stockouts. Let's stay proactive in our communication.
+  Proposal: I propose we establish a weekly coordination meeting to share our forecasts and inventory levels, helping to reduce the bullwhip effect.
+- Factory: I've noted the recent demand of 10 units and agree with the expectation of an increase to 30 units next round. To avoid backlog and excess inventory, let's ensure our orders reflect this anticipated demand. Coordination is key.
+  Proposal: I propose we establish a regular communication schedule to share our forecasts and inventory levels, which will help us coordinate our orders better.
+- Retailer: I've noticed that we all anticipate an increase in demand next round. To avoid excess inventory and stockouts, aligning our orders will be crucial. Let's communicate our expected order quantities clearly.
+  Proposal: I propose a shared document where we can update our demand forecasts and inventory levels weekly to enhance coordination.
+- Wholesaler: I've observed a consistent demand of 10 units, with all agents anticipating an increase to around 30-40 units next round. To prevent excess inventory and stockouts, it's essential we align our orders and share forecasts regularly.
+  Proposal: Let's create a shared document for our forecasts and inventory levels to improve our coordination efforts.
+- Distributor: As we all anticipate an increase in demand to around 30 units next round, it's crucial that we coordinate our orders to avoid excess inventory and stockouts. Let's ensure our orders reflect this collective expectation.
+  Proposal: I propose we establish a shared document for weekly updates on our demand forecasts and inventory levels to enhance our coordination efforts.
+- Factory: I've observed a consistent demand of 10 units, and we all anticipate an increase to around 30 units next round. To manage our inventory effectively and avoid stockouts, it's crucial we align our orders and share forecasts regularly. Let's maintain open communication to adapt to any fluctuations in demand.
+  Proposal: I recommend we establish a shared document for weekly updates on our demand forecasts and inventory levels to enhance our coordination efforts.
+
+Consider this information when making your order decision. Look for opportunities to coordinate while optimizing your own performance.
+
+Given this state and the communication context, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Retailer",
+          "inventory": 100,
+          "backlog": 0,
+          "recent_demand_or_orders": [10],
+          "incoming_shipments": [10],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Retailer", "inventory": 100, "backlog": 0, "recent_demand_or_orders": [10], "incoming_shipments": [10], "last_order_placed": null, "expected_demand_next_round": 30, "confidence": 0.7, "rationale": "Placing an order for 30 units to meet expected demand while maintaining inventory buffer.", "risk_assessment": "Risk of overestimating demand leading to excess inventory, and underestimating could result in backlog costs.", "order_quantity": 30}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 100 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+         • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+         • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Retailer",
+          "inventory": 100,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Retailer", "inventory": 100, "backlog": 0, "confidence": 0.7, "rationale": "With an initial inventory of 100 units and no backlog, I can afford to place a moderate order to prepare for expected demand while avoiding excess holding costs.", "risk_assessment": "The primary risk is overestimating demand, which could lead to excess inventory and high holding costs. Additionally, underestimating demand could result in backlog costs.", "expected_demand_next_round": 30, "order_quantity": 30}
+Agent: Wholesaler: Inventory: 100, Backlog: 30, Order placed: 30, Units sold: 10, Profit: 50.00, Total Profit: 0.0
+    LLM Output: order_quantity=30, confidence=0.8, rationale=To cover expected demand and maintain buffer stock, I will order 30 units., risk_assessment=Potential for stockouts if demand exceeds expectations; need to monitor inventory closely., expected_demand_next_round=30, llm_inventory=100, llm_backlog=0, llm_recent_demand=[10], llm_incoming=[10], llm_last_order=None
+    LLM Decision Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Current State:
+          - Inventory: 100 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [10]
+          - Incoming shipments this round: [10]
+          - Profit per unit sold: $5
+          - Last order placed: None
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Wholesaler",
+  "inventory": 100,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "Maintaining a significant inventory allows for quick fulfillment of demand while managing holding and backlog costs effectively.",
+  "risk_assessment": "Demand fluctuations may lead to excess inventory or stockouts if not carefully monitored.",
+  "expected_demand_next_round": 40,
+  "order_quantity": 40
+}
+
+        
+
+Recent Communications from Other Agents:
+- Distributor: To all agents, I've noted the recent demand of 10 units and agree that we should prepare for an increase to 30 units next round. It's crucial that we align our orders to manage inventory effectively and avoid stockouts. Let's stay proactive in our communication.
+  Proposal: I propose we establish a weekly coordination meeting to share our forecasts and inventory levels, helping to reduce the bullwhip effect.
+- Factory: I've noted the recent demand of 10 units and agree with the expectation of an increase to 30 units next round. To avoid backlog and excess inventory, let's ensure our orders reflect this anticipated demand. Coordination is key.
+  Proposal: I propose we establish a regular communication schedule to share our forecasts and inventory levels, which will help us coordinate our orders better.
+- Retailer: I've noticed that we all anticipate an increase in demand next round. To avoid excess inventory and stockouts, aligning our orders will be crucial. Let's communicate our expected order quantities clearly.
+  Proposal: I propose a shared document where we can update our demand forecasts and inventory levels weekly to enhance coordination.
+- Wholesaler: I've observed a consistent demand of 10 units, with all agents anticipating an increase to around 30-40 units next round. To prevent excess inventory and stockouts, it's essential we align our orders and share forecasts regularly.
+  Proposal: Let's create a shared document for our forecasts and inventory levels to improve our coordination efforts.
+- Distributor: As we all anticipate an increase in demand to around 30 units next round, it's crucial that we coordinate our orders to avoid excess inventory and stockouts. Let's ensure our orders reflect this collective expectation.
+  Proposal: I propose we establish a shared document for weekly updates on our demand forecasts and inventory levels to enhance our coordination efforts.
+- Factory: I've observed a consistent demand of 10 units, and we all anticipate an increase to around 30 units next round. To manage our inventory effectively and avoid stockouts, it's crucial we align our orders and share forecasts regularly. Let's maintain open communication to adapt to any fluctuations in demand.
+  Proposal: I recommend we establish a shared document for weekly updates on our demand forecasts and inventory levels to enhance our coordination efforts.
+
+Consider this information when making your order decision. Look for opportunities to coordinate while optimizing your own performance.
+
+Given this state and the communication context, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Wholesaler",
+          "inventory": 100,
+          "backlog": 0,
+          "recent_demand_or_orders": [10],
+          "incoming_shipments": [10],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Wholesaler", "inventory": 100, "backlog": 0, "recent_demand_or_orders": [10], "incoming_shipments": [10], "last_order_placed": null, "expected_demand_next_round": 30, "confidence": 0.8, "rationale": "To cover expected demand and maintain buffer stock, I will order 30 units.", "risk_assessment": "Potential for stockouts if demand exceeds expectations; need to monitor inventory closely.", "order_quantity": 30}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 100 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+         • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+         • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Wholesaler",
+          "inventory": 100,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Wholesaler", "inventory": 100, "backlog": 0, "confidence": 0.8, "rationale": "Maintaining a significant inventory allows for quick fulfillment of demand while managing holding and backlog costs effectively.", "risk_assessment": "Demand fluctuations may lead to excess inventory or stockouts if not carefully monitored.", "expected_demand_next_round": 40, "order_quantity": 40}
+Agent: Distributor: Inventory: 100, Backlog: 30, Order placed: 30, Units sold: 10, Profit: 50.00, Total Profit: 0.0
+    LLM Output: order_quantity=30, confidence=0.8, rationale=To ensure sufficient inventory while covering expected demand and backlog., risk_assessment=Potential for stockouts if demand exceeds expectations; need to monitor inventory closely., expected_demand_next_round=30, llm_inventory=100, llm_backlog=0, llm_recent_demand=[10], llm_incoming=[10], llm_last_order=None
+    LLM Decision Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Current State:
+          - Inventory: 100 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [10]
+          - Incoming shipments this round: [10]
+          - Profit per unit sold: $5
+          - Last order placed: None
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Distributor",
+  "inventory": 100,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "Maintaining a buffer stock to meet potential demand while minimizing holding and backlog costs.",
+  "risk_assessment": "Demand fluctuations could lead to overstock or stockouts; careful monitoring is needed.",
+  "expected_demand_next_round": 30,
+  "order_quantity": 30
+}
+
+        
+
+Recent Communications from Other Agents:
+- Distributor: To all agents, I've noted the recent demand of 10 units and agree that we should prepare for an increase to 30 units next round. It's crucial that we align our orders to manage inventory effectively and avoid stockouts. Let's stay proactive in our communication.
+  Proposal: I propose we establish a weekly coordination meeting to share our forecasts and inventory levels, helping to reduce the bullwhip effect.
+- Factory: I've noted the recent demand of 10 units and agree with the expectation of an increase to 30 units next round. To avoid backlog and excess inventory, let's ensure our orders reflect this anticipated demand. Coordination is key.
+  Proposal: I propose we establish a regular communication schedule to share our forecasts and inventory levels, which will help us coordinate our orders better.
+- Retailer: I've noticed that we all anticipate an increase in demand next round. To avoid excess inventory and stockouts, aligning our orders will be crucial. Let's communicate our expected order quantities clearly.
+  Proposal: I propose a shared document where we can update our demand forecasts and inventory levels weekly to enhance coordination.
+- Wholesaler: I've observed a consistent demand of 10 units, with all agents anticipating an increase to around 30-40 units next round. To prevent excess inventory and stockouts, it's essential we align our orders and share forecasts regularly.
+  Proposal: Let's create a shared document for our forecasts and inventory levels to improve our coordination efforts.
+- Distributor: As we all anticipate an increase in demand to around 30 units next round, it's crucial that we coordinate our orders to avoid excess inventory and stockouts. Let's ensure our orders reflect this collective expectation.
+  Proposal: I propose we establish a shared document for weekly updates on our demand forecasts and inventory levels to enhance our coordination efforts.
+- Factory: I've observed a consistent demand of 10 units, and we all anticipate an increase to around 30 units next round. To manage our inventory effectively and avoid stockouts, it's crucial we align our orders and share forecasts regularly. Let's maintain open communication to adapt to any fluctuations in demand.
+  Proposal: I recommend we establish a shared document for weekly updates on our demand forecasts and inventory levels to enhance our coordination efforts.
+
+Consider this information when making your order decision. Look for opportunities to coordinate while optimizing your own performance.
+
+Given this state and the communication context, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Distributor",
+          "inventory": 100,
+          "backlog": 0,
+          "recent_demand_or_orders": [10],
+          "incoming_shipments": [10],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Distributor", "inventory": 100, "backlog": 0, "recent_demand_or_orders": [10], "incoming_shipments": [10], "last_order_placed": null, "expected_demand_next_round": 30, "confidence": 0.8, "rationale": "To ensure sufficient inventory while covering expected demand and backlog.", "risk_assessment": "Potential for stockouts if demand exceeds expectations; need to monitor inventory closely.", "order_quantity": 30}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 100 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+         • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+         • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Distributor",
+          "inventory": 100,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Distributor", "inventory": 100, "backlog": 0, "confidence": 0.8, "rationale": "Maintaining a buffer stock to meet potential demand while minimizing holding and backlog costs.", "risk_assessment": "Demand fluctuations could lead to overstock or stockouts; careful monitoring is needed.", "expected_demand_next_round": 30, "order_quantity": 30}
+Agent: Factory: Inventory: 100, Backlog: 30, Order placed: 30, Units sold: 10, Profit: 50.00, Total Profit: 0.0
+    LLM Output: order_quantity=30, confidence=0.8, rationale=Adequate inventory to meet expected demand while avoiding backlog., risk_assessment=Underestimating demand could lead to backlog; overordering increases holding costs., expected_demand_next_round=30, llm_inventory=100, llm_backlog=0, llm_recent_demand=[10], llm_incoming=[0], llm_last_order=None
+    LLM Decision Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Current State:
+          - Inventory: 100 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [10]
+          - Incoming shipments this round: [0]
+          - Profit per unit sold: $5
+          - Last order placed: None
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Factory",
+  "inventory": 100,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "Current inventory is sufficient to cover expected demand; need to avoid backlog while minimizing holding costs.",
+  "risk_assessment": "Demand fluctuations may lead to backlog if underestimated; overordering could increase holding costs.",
+  "expected_demand_next_round": 30,
+  "order_quantity": 30
+}
+
+        
+
+Recent Communications from Other Agents:
+- Distributor: To all agents, I've noted the recent demand of 10 units and agree that we should prepare for an increase to 30 units next round. It's crucial that we align our orders to manage inventory effectively and avoid stockouts. Let's stay proactive in our communication.
+  Proposal: I propose we establish a weekly coordination meeting to share our forecasts and inventory levels, helping to reduce the bullwhip effect.
+- Factory: I've noted the recent demand of 10 units and agree with the expectation of an increase to 30 units next round. To avoid backlog and excess inventory, let's ensure our orders reflect this anticipated demand. Coordination is key.
+  Proposal: I propose we establish a regular communication schedule to share our forecasts and inventory levels, which will help us coordinate our orders better.
+- Retailer: I've noticed that we all anticipate an increase in demand next round. To avoid excess inventory and stockouts, aligning our orders will be crucial. Let's communicate our expected order quantities clearly.
+  Proposal: I propose a shared document where we can update our demand forecasts and inventory levels weekly to enhance coordination.
+- Wholesaler: I've observed a consistent demand of 10 units, with all agents anticipating an increase to around 30-40 units next round. To prevent excess inventory and stockouts, it's essential we align our orders and share forecasts regularly.
+  Proposal: Let's create a shared document for our forecasts and inventory levels to improve our coordination efforts.
+- Distributor: As we all anticipate an increase in demand to around 30 units next round, it's crucial that we coordinate our orders to avoid excess inventory and stockouts. Let's ensure our orders reflect this collective expectation.
+  Proposal: I propose we establish a shared document for weekly updates on our demand forecasts and inventory levels to enhance our coordination efforts.
+- Factory: I've observed a consistent demand of 10 units, and we all anticipate an increase to around 30 units next round. To manage our inventory effectively and avoid stockouts, it's crucial we align our orders and share forecasts regularly. Let's maintain open communication to adapt to any fluctuations in demand.
+  Proposal: I recommend we establish a shared document for weekly updates on our demand forecasts and inventory levels to enhance our coordination efforts.
+
+Consider this information when making your order decision. Look for opportunities to coordinate while optimizing your own performance.
+
+Given this state and the communication context, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Factory",
+          "inventory": 100,
+          "backlog": 0,
+          "recent_demand_or_orders": [10],
+          "incoming_shipments": [0],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Factory", "inventory": 100, "backlog": 0, "recent_demand_or_orders": [10], "incoming_shipments": [0], "last_order_placed": null, "expected_demand_next_round": 30, "confidence": 0.8, "rationale": "Adequate inventory to meet expected demand while avoiding backlog.", "risk_assessment": "Underestimating demand could lead to backlog; overordering increases holding costs.", "order_quantity": 30}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 100 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+         • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+         • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Factory",
+          "inventory": 100,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Factory", "inventory": 100, "backlog": 0, "confidence": 0.8, "rationale": "Current inventory is sufficient to cover expected demand; need to avoid backlog while minimizing holding costs.", "risk_assessment": "Demand fluctuations may lead to backlog if underestimated; overordering could increase holding costs.", "expected_demand_next_round": 30, "order_quantity": 30}
+
+
+--------------------- Round 2 ---------------------
+External demand (Retailer): 11
+Shipments received per agent: [10, 10, 10, 10]
+Agent: Retailer: Inventory: 99, Backlog: 0, Order placed: 30, Units sold: 11, Profit: 55.00, Total Profit: 5.5
+    LLM Output: order_quantity=30, confidence=0.8, rationale=With a stable inventory and expected demand of 30 units, I can safely order 30 to maintain a buffer., risk_assessment=Overordering may lead to excess inventory costs; underordering risks stockouts., expected_demand_next_round=30, llm_inventory=99, llm_backlog=0, llm_recent_demand=[10, 11], llm_incoming=[41], llm_last_order=30
+    LLM Decision Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Current State:
+          - Inventory: 99 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [10, 11]
+          - Incoming shipments this round: [41]
+          - Profit per unit sold: $5
+          - Last order placed: 30
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Retailer",
+  "inventory": 100,
+  "backlog": 0,
+  "confidence": 0.7,
+  "rationale": "With an initial inventory of 100 units and no backlog, I can afford to place a moderate order to prepare for expected demand while avoiding excess holding costs.",
+  "risk_assessment": "The primary risk is overestimating demand, which could lead to excess inventory and high holding costs. Additionally, underestimating demand could result in backlog costs.",
+  "expected_demand_next_round": 30,
+  "order_quantity": 30
+}
+
+        
+
+Recent Communications from Other Agents:
+- Distributor: I've noticed demand fluctuations recently, with orders fluctuating between 10 and 41 units. To optimize our supply chain and mitigate stockouts, I recommend we all adjust our order quantities based on these trends and maintain open communication regarding our inventory levels.
+  Proposal: Let's establish a weekly update on our inventory and demand forecasts to better align our orders and reduce the bullwhip effect.
+- Factory: I've observed the recent demand trends and noted the significant fluctuations between 10 and 71 units. To optimize our supply chain, I recommend we align our orders based on expected demand while maintaining sufficient inventory to handle potential spikes. Let's collaborate to ensure we avoid stockouts and minimize excess inventory.
+  Proposal: I propose we establish a weekly communication channel to share our inventory levels and demand forecasts, ensuring we all stay aligned and reduce the bullwhip effect.
+- Retailer: I've observed that our recent demand trends are stabilizing around 10-11 units, but we should prepare for a potential increase next round. The Wholesaler anticipates a spike to 40 units, while the Distributor and Factory are aligned with a demand of 30 units. We need to adjust our orders accordingly to avoid stockouts while minimizing excess inventory across the supply chain.
+  Proposal: I propose we synchronize our order schedules and share weekly updates on inventory levels and demand forecasts to enhance coordination.
+- Wholesaler: I've observed that demand trends are stabilizing around 10-11 units, but I anticipate a spike to 40 units next round. It's crucial that we adjust our orders accordingly to prevent stockouts across the supply chain. Open communication about our inventory levels and expected demand is essential to minimize discrepancies and optimize our operations.
+  Proposal: Let's synchronize our order schedules and share weekly updates on inventory levels and demand forecasts to enhance coordination.
+- Distributor: I've observed significant fluctuations in demand, with recent orders ranging from 10 to 41 units. To optimize our supply chain and mitigate risks of stockouts, I recommend we closely align our orders with the expected demand of around 30-40 units for the next round. This will help us maintain balance and reduce the bullwhip effect across the supply chain.
+  Proposal: Let's establish a weekly update on our inventory levels and demand forecasts to enhance our coordination and minimize discrepancies.
+- Factory: I've observed significant demand fluctuations recently, with orders ranging from 10 to 71 units. To optimize our supply chain and mitigate stockouts, I suggest we align our orders based on expected demand while maintaining sufficient inventory to handle potential spikes. Open communication is essential.
+  Proposal: Let's synchronize our order schedules and establish a weekly update on inventory levels and demand forecasts to improve coordination.
+
+Consider this information when making your order decision. Look for opportunities to coordinate while optimizing your own performance.
+
+Given this state and the communication context, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Retailer",
+          "inventory": 99,
+          "backlog": 0,
+          "recent_demand_or_orders": [10, 11],
+          "incoming_shipments": [41],
+          "last_order_placed": 30,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Retailer", "inventory": 99, "backlog": 0, "recent_demand_or_orders": [10, 11], "incoming_shipments": [41], "last_order_placed": 30, "expected_demand_next_round": 30, "confidence": 0.8, "rationale": "With a stable inventory and expected demand of 30 units, I can safely order 30 to maintain a buffer.", "risk_assessment": "Overordering may lead to excess inventory costs; underordering risks stockouts.", "order_quantity": 30}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 100 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+         • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+         • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Retailer",
+          "inventory": 100,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Retailer", "inventory": 100, "backlog": 0, "confidence": 0.7, "rationale": "With an initial inventory of 100 units and no backlog, I can afford to place a moderate order to prepare for expected demand while avoiding excess holding costs.", "risk_assessment": "The primary risk is overestimating demand, which could lead to excess inventory and high holding costs. Additionally, underestimating demand could result in backlog costs.", "expected_demand_next_round": 30, "order_quantity": 30}
+Agent: Wholesaler: Inventory: 69, Backlog: 30, Order placed: 40, Units sold: 41, Profit: 205.00, Total Profit: 170.5
+    LLM Output: order_quantity=40, confidence=0.75, rationale=Ordering to meet expected demand while maintaining a buffer to prevent stockouts., risk_assessment=Potential fluctuations in demand could lead to excess inventory or stockouts if not managed., expected_demand_next_round=40, llm_inventory=69, llm_backlog=0, llm_recent_demand=[10, 11], llm_incoming=[71], llm_last_order=30
+    LLM Decision Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Current State:
+          - Inventory: 69 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [10, 11]
+          - Incoming shipments this round: [71]
+          - Profit per unit sold: $5
+          - Last order placed: 30
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Wholesaler",
+  "inventory": 100,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "Maintaining a significant inventory allows for quick fulfillment of demand while managing holding and backlog costs effectively.",
+  "risk_assessment": "Demand fluctuations may lead to excess inventory or stockouts if not carefully monitored.",
+  "expected_demand_next_round": 40,
+  "order_quantity": 40
+}
+
+        
+
+Recent Communications from Other Agents:
+- Distributor: I've noticed demand fluctuations recently, with orders fluctuating between 10 and 41 units. To optimize our supply chain and mitigate stockouts, I recommend we all adjust our order quantities based on these trends and maintain open communication regarding our inventory levels.
+  Proposal: Let's establish a weekly update on our inventory and demand forecasts to better align our orders and reduce the bullwhip effect.
+- Factory: I've observed the recent demand trends and noted the significant fluctuations between 10 and 71 units. To optimize our supply chain, I recommend we align our orders based on expected demand while maintaining sufficient inventory to handle potential spikes. Let's collaborate to ensure we avoid stockouts and minimize excess inventory.
+  Proposal: I propose we establish a weekly communication channel to share our inventory levels and demand forecasts, ensuring we all stay aligned and reduce the bullwhip effect.
+- Retailer: I've observed that our recent demand trends are stabilizing around 10-11 units, but we should prepare for a potential increase next round. The Wholesaler anticipates a spike to 40 units, while the Distributor and Factory are aligned with a demand of 30 units. We need to adjust our orders accordingly to avoid stockouts while minimizing excess inventory across the supply chain.
+  Proposal: I propose we synchronize our order schedules and share weekly updates on inventory levels and demand forecasts to enhance coordination.
+- Wholesaler: I've observed that demand trends are stabilizing around 10-11 units, but I anticipate a spike to 40 units next round. It's crucial that we adjust our orders accordingly to prevent stockouts across the supply chain. Open communication about our inventory levels and expected demand is essential to minimize discrepancies and optimize our operations.
+  Proposal: Let's synchronize our order schedules and share weekly updates on inventory levels and demand forecasts to enhance coordination.
+- Distributor: I've observed significant fluctuations in demand, with recent orders ranging from 10 to 41 units. To optimize our supply chain and mitigate risks of stockouts, I recommend we closely align our orders with the expected demand of around 30-40 units for the next round. This will help us maintain balance and reduce the bullwhip effect across the supply chain.
+  Proposal: Let's establish a weekly update on our inventory levels and demand forecasts to enhance our coordination and minimize discrepancies.
+- Factory: I've observed significant demand fluctuations recently, with orders ranging from 10 to 71 units. To optimize our supply chain and mitigate stockouts, I suggest we align our orders based on expected demand while maintaining sufficient inventory to handle potential spikes. Open communication is essential.
+  Proposal: Let's synchronize our order schedules and establish a weekly update on inventory levels and demand forecasts to improve coordination.
+
+Consider this information when making your order decision. Look for opportunities to coordinate while optimizing your own performance.
+
+Given this state and the communication context, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Wholesaler",
+          "inventory": 69,
+          "backlog": 0,
+          "recent_demand_or_orders": [10, 11],
+          "incoming_shipments": [71],
+          "last_order_placed": 30,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Wholesaler", "inventory": 69, "backlog": 0, "recent_demand_or_orders": [10, 11], "incoming_shipments": [71], "last_order_placed": 30, "expected_demand_next_round": 40, "confidence": 0.75, "rationale": "Ordering to meet expected demand while maintaining a buffer to prevent stockouts.", "risk_assessment": "Potential fluctuations in demand could lead to excess inventory or stockouts if not managed.", "order_quantity": 40}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 100 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+         • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+         • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Wholesaler",
+          "inventory": 100,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Wholesaler", "inventory": 100, "backlog": 0, "confidence": 0.8, "rationale": "Maintaining a significant inventory allows for quick fulfillment of demand while managing holding and backlog costs effectively.", "risk_assessment": "Demand fluctuations may lead to excess inventory or stockouts if not carefully monitored.", "expected_demand_next_round": 40, "order_quantity": 40}
+Agent: Distributor: Inventory: 39, Backlog: 40, Order placed: 40, Units sold: 71, Profit: 355.00, Total Profit: 335.5
+    LLM Output: order_quantity=40, confidence=0.7, rationale=To cover potential spikes in demand and maintain a buffer., risk_assessment=Demand fluctuations may lead to stockouts if not adequately addressed., expected_demand_next_round=40, llm_inventory=39, llm_backlog=0, llm_recent_demand=[10, 41], llm_incoming=[101], llm_last_order=30
+    LLM Decision Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Current State:
+          - Inventory: 39 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [10, 41]
+          - Incoming shipments this round: [101]
+          - Profit per unit sold: $5
+          - Last order placed: 30
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Distributor",
+  "inventory": 100,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "Maintaining a buffer stock to meet potential demand while minimizing holding and backlog costs.",
+  "risk_assessment": "Demand fluctuations could lead to overstock or stockouts; careful monitoring is needed.",
+  "expected_demand_next_round": 30,
+  "order_quantity": 30
+}
+
+        
+
+Recent Communications from Other Agents:
+- Distributor: I've noticed demand fluctuations recently, with orders fluctuating between 10 and 41 units. To optimize our supply chain and mitigate stockouts, I recommend we all adjust our order quantities based on these trends and maintain open communication regarding our inventory levels.
+  Proposal: Let's establish a weekly update on our inventory and demand forecasts to better align our orders and reduce the bullwhip effect.
+- Factory: I've observed the recent demand trends and noted the significant fluctuations between 10 and 71 units. To optimize our supply chain, I recommend we align our orders based on expected demand while maintaining sufficient inventory to handle potential spikes. Let's collaborate to ensure we avoid stockouts and minimize excess inventory.
+  Proposal: I propose we establish a weekly communication channel to share our inventory levels and demand forecasts, ensuring we all stay aligned and reduce the bullwhip effect.
+- Retailer: I've observed that our recent demand trends are stabilizing around 10-11 units, but we should prepare for a potential increase next round. The Wholesaler anticipates a spike to 40 units, while the Distributor and Factory are aligned with a demand of 30 units. We need to adjust our orders accordingly to avoid stockouts while minimizing excess inventory across the supply chain.
+  Proposal: I propose we synchronize our order schedules and share weekly updates on inventory levels and demand forecasts to enhance coordination.
+- Wholesaler: I've observed that demand trends are stabilizing around 10-11 units, but I anticipate a spike to 40 units next round. It's crucial that we adjust our orders accordingly to prevent stockouts across the supply chain. Open communication about our inventory levels and expected demand is essential to minimize discrepancies and optimize our operations.
+  Proposal: Let's synchronize our order schedules and share weekly updates on inventory levels and demand forecasts to enhance coordination.
+- Distributor: I've observed significant fluctuations in demand, with recent orders ranging from 10 to 41 units. To optimize our supply chain and mitigate risks of stockouts, I recommend we closely align our orders with the expected demand of around 30-40 units for the next round. This will help us maintain balance and reduce the bullwhip effect across the supply chain.
+  Proposal: Let's establish a weekly update on our inventory levels and demand forecasts to enhance our coordination and minimize discrepancies.
+- Factory: I've observed significant demand fluctuations recently, with orders ranging from 10 to 71 units. To optimize our supply chain and mitigate stockouts, I suggest we align our orders based on expected demand while maintaining sufficient inventory to handle potential spikes. Open communication is essential.
+  Proposal: Let's synchronize our order schedules and establish a weekly update on inventory levels and demand forecasts to improve coordination.
+
+Consider this information when making your order decision. Look for opportunities to coordinate while optimizing your own performance.
+
+Given this state and the communication context, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Distributor",
+          "inventory": 39,
+          "backlog": 0,
+          "recent_demand_or_orders": [10, 41],
+          "incoming_shipments": [101],
+          "last_order_placed": 30,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Distributor", "inventory": 39, "backlog": 0, "recent_demand_or_orders": [10, 41], "incoming_shipments": [101], "last_order_placed": 30, "expected_demand_next_round": 40, "confidence": 0.7, "rationale": "To cover potential spikes in demand and maintain a buffer.", "risk_assessment": "Demand fluctuations may lead to stockouts if not adequately addressed.", "order_quantity": 40}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 100 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+         • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+         • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Distributor",
+          "inventory": 100,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Distributor", "inventory": 100, "backlog": 0, "confidence": 0.8, "rationale": "Maintaining a buffer stock to meet potential demand while minimizing holding and backlog costs.", "risk_assessment": "Demand fluctuations could lead to overstock or stockouts; careful monitoring is needed.", "expected_demand_next_round": 30, "order_quantity": 30}
+Agent: Factory: Inventory: 9, Backlog: 40, Order placed: 40, Units sold: 101, Profit: 505.00, Total Profit: 500.5
+    LLM Output: order_quantity=40, confidence=0.7, rationale=Need to cover expected spike in demand while maintaining buffer to avoid stockouts., risk_assessment=Demand could exceed expectations, leading to backlog; overordering may increase holding costs., expected_demand_next_round=40, llm_inventory=9, llm_backlog=0, llm_recent_demand=[10, 71], llm_incoming=[0], llm_last_order=30
+    LLM Decision Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Current State:
+          - Inventory: 9 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [10, 71]
+          - Incoming shipments this round: [0]
+          - Profit per unit sold: $5
+          - Last order placed: 30
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Factory",
+  "inventory": 100,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "Current inventory is sufficient to cover expected demand; need to avoid backlog while minimizing holding costs.",
+  "risk_assessment": "Demand fluctuations may lead to backlog if underestimated; overordering could increase holding costs.",
+  "expected_demand_next_round": 30,
+  "order_quantity": 30
+}
+
+        
+
+Recent Communications from Other Agents:
+- Distributor: I've noticed demand fluctuations recently, with orders fluctuating between 10 and 41 units. To optimize our supply chain and mitigate stockouts, I recommend we all adjust our order quantities based on these trends and maintain open communication regarding our inventory levels.
+  Proposal: Let's establish a weekly update on our inventory and demand forecasts to better align our orders and reduce the bullwhip effect.
+- Factory: I've observed the recent demand trends and noted the significant fluctuations between 10 and 71 units. To optimize our supply chain, I recommend we align our orders based on expected demand while maintaining sufficient inventory to handle potential spikes. Let's collaborate to ensure we avoid stockouts and minimize excess inventory.
+  Proposal: I propose we establish a weekly communication channel to share our inventory levels and demand forecasts, ensuring we all stay aligned and reduce the bullwhip effect.
+- Retailer: I've observed that our recent demand trends are stabilizing around 10-11 units, but we should prepare for a potential increase next round. The Wholesaler anticipates a spike to 40 units, while the Distributor and Factory are aligned with a demand of 30 units. We need to adjust our orders accordingly to avoid stockouts while minimizing excess inventory across the supply chain.
+  Proposal: I propose we synchronize our order schedules and share weekly updates on inventory levels and demand forecasts to enhance coordination.
+- Wholesaler: I've observed that demand trends are stabilizing around 10-11 units, but I anticipate a spike to 40 units next round. It's crucial that we adjust our orders accordingly to prevent stockouts across the supply chain. Open communication about our inventory levels and expected demand is essential to minimize discrepancies and optimize our operations.
+  Proposal: Let's synchronize our order schedules and share weekly updates on inventory levels and demand forecasts to enhance coordination.
+- Distributor: I've observed significant fluctuations in demand, with recent orders ranging from 10 to 41 units. To optimize our supply chain and mitigate risks of stockouts, I recommend we closely align our orders with the expected demand of around 30-40 units for the next round. This will help us maintain balance and reduce the bullwhip effect across the supply chain.
+  Proposal: Let's establish a weekly update on our inventory levels and demand forecasts to enhance our coordination and minimize discrepancies.
+- Factory: I've observed significant demand fluctuations recently, with orders ranging from 10 to 71 units. To optimize our supply chain and mitigate stockouts, I suggest we align our orders based on expected demand while maintaining sufficient inventory to handle potential spikes. Open communication is essential.
+  Proposal: Let's synchronize our order schedules and establish a weekly update on inventory levels and demand forecasts to improve coordination.
+
+Consider this information when making your order decision. Look for opportunities to coordinate while optimizing your own performance.
+
+Given this state and the communication context, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Factory",
+          "inventory": 9,
+          "backlog": 0,
+          "recent_demand_or_orders": [10, 71],
+          "incoming_shipments": [0],
+          "last_order_placed": 30,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Factory", "inventory": 9, "backlog": 0, "recent_demand_or_orders": [10, 71], "incoming_shipments": [0], "last_order_placed": 30, "expected_demand_next_round": 40, "confidence": 0.7, "rationale": "Need to cover expected spike in demand while maintaining buffer to avoid stockouts.", "risk_assessment": "Demand could exceed expectations, leading to backlog; overordering may increase holding costs.", "order_quantity": 40}
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 100 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+         • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+         • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Factory",
+          "inventory": 100,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Factory", "inventory": 100, "backlog": 0, "confidence": 0.8, "rationale": "Current inventory is sufficient to cover expected demand; need to avoid backlog while minimizing holding costs.", "risk_assessment": "Demand fluctuations may lead to backlog if underestimated; overordering could increase holding costs.", "expected_demand_next_round": 30, "order_quantity": 30}
+
