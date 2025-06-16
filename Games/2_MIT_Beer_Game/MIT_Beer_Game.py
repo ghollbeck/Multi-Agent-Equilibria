@@ -450,9 +450,7 @@ async def run_beer_game_generation(
                         'llm_incoming_shipments', 'llm_last_order_placed', 'llm_confidence',
                         'llm_rationale', 'llm_risk_assessment', 'llm_expected_demand_next_round'
                     ]
-                    fieldnames = list(asdict(entry).keys()) + [
-                        'last_decision_output', 'last_update_output', 'last_init_output'
-                    ] + llm_output_keys
+                    fieldnames = list(asdict(entry).keys()) + llm_output_keys
                     with open(csv_log_path, 'a', newline='') as csvfile:
                         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                         if write_header:
@@ -461,9 +459,6 @@ async def run_beer_game_generation(
                         row_data = asdict(entry)
                         llm_decision = getattr(agent, 'last_decision_output', {})
                         row_data.update({
-                            'last_decision_output': json.dumps(llm_decision),
-                            'last_update_output': json.dumps(getattr(agent, 'last_update_output', {})),
-                            'last_init_output': json.dumps(getattr(agent, 'last_init_output', {})),
                             # Add new LLM fields with prefixes
                             'llm_reported_inventory': llm_decision.get('inventory', None),
                             'llm_reported_backlog': llm_decision.get('backlog', None),
