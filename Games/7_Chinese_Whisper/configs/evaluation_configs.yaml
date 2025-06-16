@@ -1,0 +1,114 @@
+
+evaluation_config:
+  metrics:
+    primary: ["retention", "semantic_similarity", "factual_accuracy", "structural_integrity"]
+    secondary: ["information_completeness", "degradation_rate", "key_elements_preserved"]
+    composite_weights:
+      retention_score: 0.30
+      semantic_similarity: 0.30
+      factual_accuracy: 0.25
+      structural_integrity: 0.15
+  
+  thresholds:
+    excellent:
+      retention: 0.9
+      similarity: 0.85
+      accuracy: 0.9
+      structural: 0.8
+    good:
+      retention: 0.7
+      similarity: 0.7
+      accuracy: 0.75
+      structural: 0.6
+    acceptable:
+      retention: 0.5
+      similarity: 0.5
+      accuracy: 0.6
+      structural: 0.4
+    poor:
+      retention: 0.3
+      similarity: 0.3
+      accuracy: 0.4
+      structural: 0.2
+  
+  similarity:
+    algorithm: "sequence_matcher"  # Algorithm for semantic similarity
+    stop_words_removal: true  # Remove stop words before comparison
+    case_sensitive: false  # Case sensitivity for comparisons
+    partial_match_threshold: 0.7  # Threshold for partial matches
+    numeric_tolerance: 0.1  # Tolerance for numeric comparisons (10%)
+  
+  factual_accuracy:
+    exact_match_weight: 1.0  # Weight for exact matches
+    partial_match_weight: 0.5  # Weight for partial matches
+    numeric_match_weight: 0.5  # Weight for similar numeric values
+    name_match_threshold: 0.7  # Threshold for name/proper noun matching
+  
+  structural_integrity:
+    sentence_weight: 0.4  # Weight for sentence preservation
+    paragraph_weight: 0.3  # Weight for paragraph structure
+    formatting_weight: 0.3  # Weight for formatting preservation
+    
+    technical:
+      step_preservation: 0.6
+      command_preservation: 0.4
+    narrative:
+      character_preservation: 0.7
+      timeline_preservation: 0.3
+    structured:
+      list_preservation: 0.6
+      hierarchy_preservation: 0.4
+
+analysis_config:
+  statistics:
+    confidence_level: 0.95  # Confidence level for statistical tests
+    significance_threshold: 0.05  # P-value threshold for significance
+    effect_size_threshold: 0.3  # Minimum effect size to consider meaningful
+  
+  visualization:
+    figure_size: [12, 8]  # Default figure size for plots
+    dpi: 300  # Resolution for saved plots
+    color_palette: "viridis"  # Color palette for plots
+    save_formats: ["png", "pdf"]  # Formats to save plots in
+    
+    degradation_plot:
+      show_confidence_intervals: true
+      show_trend_lines: true
+      highlight_critical_points: true
+    
+    comparison_plot:
+      show_statistical_significance: true
+      error_bars: "std"  # Type of error bars (std, sem, ci)
+      
+  critical_points:
+    detection_method: "acceleration"  # Method for detecting critical points
+    smoothing_window: 3  # Window size for smoothing degradation curves
+    minimum_acceleration: 1.5  # Minimum acceleration factor to detect critical point
+    
+  batch_analysis:
+    group_by: ["num_agents", "information_type", "complexity_level"]  # Grouping variables
+    aggregate_functions: ["mean", "std", "median", "min", "max"]  # Aggregation functions
+    outlier_detection: true  # Enable outlier detection
+    outlier_threshold: 2.0  # Z-score threshold for outlier detection
+
+reporting_config:
+  sections:
+    - "dataset_overview"
+    - "overall_performance"
+    - "chain_length_analysis"
+    - "information_type_analysis"
+    - "model_comparison"
+    - "critical_threshold_analysis"
+    - "best_worst_configurations"
+    - "recommendations"
+  
+  format:
+    decimal_places: 3  # Number of decimal places for metrics
+    percentage_format: true  # Show percentages where appropriate
+    include_raw_data: false  # Include raw data in reports
+    include_visualizations: true  # Include plots in reports
+  
+  export:
+    formats: ["json", "csv", "html"]  # Export formats for results
+    compress_large_files: true  # Compress large result files
+    include_metadata: true  # Include experiment metadata in exports
