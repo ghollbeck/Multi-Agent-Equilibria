@@ -148,4 +148,78 @@ class BeerGamePrompts:
         }}
 
         IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
-        """ 
+        """
+
+    @staticmethod
+    def get_communication_prompt(role_name: str, inventory: int, backlog: int, 
+                               recent_demand_or_orders: List[int], current_strategy: dict,
+                               message_history: List[Dict], other_agent_roles: List[str],
+                               round_index: int, last_order_placed: int = None,
+                               profit_accumulated: float = 0.0) -> str:
+        return f"""
+        You are the {role_name} in the MIT Beer Game, Round {round_index}.
+        
+        Your Current State:
+          - Inventory: {inventory} units
+          - Backlog: {backlog} units  
+          - Recent demand/orders: {recent_demand_or_orders}
+          - Last order placed: {last_order_placed}
+          - Total profit so far: ${profit_accumulated:.2f}
+          - Current strategy: {json.dumps(current_strategy, indent=2)}
+        
+        Other agents in the supply chain: {', '.join(other_agent_roles)}
+        
+        Previous communication history:
+        {json.dumps(message_history[-6:], indent=2) if message_history else "No previous messages"}
+        
+        You can now send a message to all other agents before this round's order decisions.
+        Your goal is to share information that helps everyone optimize the supply chain while
+        still maximizing your own profit. Consider:
+        
+        - What demand patterns or trends you've observed
+        - Suggestions for coordination to reduce bullwhip effect
+        - Your capacity constraints or inventory situation
+        - Proposals for information sharing or collaboration
+        - Strategic hints that benefit everyone (including yourself)
+        
+        Be strategic - share information that encourages good collaboration but maintains
+        your competitive advantage. Keep messages concise but informative.
+        
+        Return only valid JSON with these fields:
+        
+        {{
+          "message": "<your message to other agents>",
+          "strategy_hint": "<brief hint about your approach>", 
+          "collaboration_proposal": "<specific proposal for working together>",
+          "information_shared": "<key information you're willing to share>",
+          "confidence": <float between 0 and 1>
+        }}
+        
+        IMPORTANT: Output ONLY the JSON object, no markdown, no code fences. Keep it concise.
+        """
+
+    @staticmethod
+    def get_decision_prompt_with_communication(role_name: str, inventory: int, backlog: int,
+                                            recent_demand_or_orders: List[int], incoming_shipments: List[int],
+                                            current_strategy: dict, profit_per_unit_sold: float = 5,
+                                            last_order_placed: int = None, last_profit: float = None,
+                                            recent_communications: List[Dict] = None) -> str:
+        base_prompt = BeerGamePrompts.get_decision_prompt(
+            role_name, inventory, backlog, recent_demand_or_orders, incoming_shipments,
+            current_strategy, profit_per_unit_sold, last_order_placed, last_profit
+        )
+        
+        if recent_communications:
+            comm_context = "\n\nRecent Communications from Other Agents:\n"
+            for msg in recent_communications[-6:]:  # Last 6 messages
+                comm_context += f"- {msg['sender']}: {msg['message']}\n"
+                if msg.get('collaboration_proposal'):
+                    comm_context += f"  Proposal: {msg['collaboration_proposal']}\n"
+            
+            comm_context += "\nConsider this information when making your order decision. Look for opportunities to coordinate while optimizing your own performance.\n"
+            
+            prompt_parts = base_prompt.split("Given this state, return valid JSON")
+            enhanced_prompt = prompt_parts[0] + comm_context + "\nGiven this state and the communication context, return valid JSON" + prompt_parts[1]
+            return enhanced_prompt
+        
+        return base_prompt    
