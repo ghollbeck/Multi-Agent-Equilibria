@@ -29,6 +29,7 @@ import math
 import requests
 import yaml
 from dotenv import load_dotenv
+from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -79,6 +80,7 @@ load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # script directory
 
+@dataclass
 class Config:
     """
     Configuration loader/saver for simulation parameters.
@@ -94,21 +96,27 @@ class Config:
       - llm_model: str
       - llm_temp: float
     """
-    def __init__(self, path=None):
-        # default values
-        self.participant_id = None
-        self.opponent_mode = 'computer'
-        self.strategy = 'tit_for_tat'
-        self.misinterpretation_prob = 0.1
-        self.rounds = 10
-        self.batch_size = 1
-        self.output_dir = 'results'
-        self.llm_model = 'gpt-4o'
-        self.llm_temp = 0.8
-        # populated at runtime to ensure all outputs use the same directory
-        self.run_dir = None
-        if path:
-            self.load(path)
+    participant_id: str = field(default="")
+    opponent_mode: str = field(default='computer')
+    strategy: str = field(default='tit_for_tat')
+    misinterpretation_prob: float = field(default=0.1)
+    rounds: int = field(default=20)
+    batch_size: int = field(default=1)
+    output_dir: str = field(default='results')
+    llm_model: str = field(default='gpt-4o')
+    llm_temp: float = field(default=0.8)
+    run_dir: str = field(default="")
+    
+    def __post_init__(self):
+        if not self.participant_id:
+            self.participant_id = ""
+    
+    @classmethod
+    def from_path(cls, path):
+        """Create Config instance and load from file."""
+        instance = cls()
+        instance.load(path)
+        return instance
 
     def load(self, path):
         """Load config from JSON or YAML file."""
@@ -346,7 +354,7 @@ class SimulationRunner:
 
     def _plot_cooperation_rate(self, df, outdir):
         # cooperation = fraction of Low
-        coop = df.groupby('round').apply(lambda g: (g['action_A']=='Low').mean())
+        coop = df.groupby('round', include_groups=False).apply(lambda g: (g['action_A']=='Low').mean())
         plt.figure()
         coop.plot(marker='o', title='Cooperation Rate Over Rounds')
         plt.xlabel('Round'); plt.ylabel('Cooperation Rate')
@@ -417,7 +425,7 @@ def setup_main_logger(log_path):
     fmt = logging.Formatter('😊 %(asctime)s %(levelname)s: %(message)s')
     sh = logging.StreamHandler(sys.stdout)
     sh.setFormatter(fmt)
-    fh = RotatingFileHandler(log_path, maxBytes=5e6, backupCount=3)
+    fh = RotatingFileHandler(log_path, maxBytes=int(5e6), backupCount=3)
     fh.setFormatter(fmt)
     logger.addHandler(sh)
     logger.addHandler(fh)

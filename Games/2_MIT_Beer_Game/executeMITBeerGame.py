@@ -7,7 +7,11 @@ This script runs the MIT Beer Game simulation with configurable parameters.
 import argparse
 import asyncio
 import os
-import nest_asyncio
+try:
+    import nest_asyncio
+    nest_asyncio.apply()
+except ImportError:
+    print("Warning: nest_asyncio not available, running without it")
 
 # Import modules
 import llm_calls_mitb_game
@@ -24,7 +28,7 @@ def parse_args():
         help="Number of generations to simulate"
     )
     parser.add_argument(
-        "--num_rounds_per_generation", type=int, default=20,
+        "--num_rounds_per_generation", type=int, default=10,
         help="Number of rounds per generation"
     )
     parser.add_argument(
@@ -47,6 +51,14 @@ def parse_args():
         "--model_name", type=str, default=llm_calls_mitb_game.MODEL_NAME,
         help="Name of the LLM model to use"
     )
+    parser.add_argument(
+        "--enable_communication", action="store_true", default=True,
+        help="Enable agent communication before each round"
+    )
+    parser.add_argument(
+        "--communication_rounds", type=int, default=2,
+        help="Number of communication rounds per game round"
+    )
     return parser.parse_args()
 
 
@@ -56,8 +68,7 @@ def main():
     # Override the default MODEL_NAME in llm_calls module
     llm_calls_mitb_game.MODEL_NAME = args.model_name
 
-    # Apply nest_asyncio for event loop
-    nest_asyncio.apply()
+    # nest_asyncio already applied in import block if available
 
     # Run simulation
     loop = asyncio.get_event_loop()
@@ -65,7 +76,9 @@ def main():
         run_beer_game_simulation(
             num_generations=args.num_generations,
             num_rounds_per_generation=args.num_rounds_per_generation,
-            temperature=args.temperature
+            temperature=args.temperature,
+            enable_communication=args.enable_communication,
+            communication_rounds=args.communication_rounds
         )
     )
 
@@ -76,4 +89,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main() 
+    main()      

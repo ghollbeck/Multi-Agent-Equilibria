@@ -71,7 +71,11 @@ import datetime
 import random
 import asyncio
 import requests
-import nest_asyncio  # required to apply asyncio loops in scripts
+try:
+    import nest_asyncio  # required to apply asyncio loops in scripts
+    nest_asyncio.apply()
+except ImportError:
+    print("Warning: nest_asyncio not available, running without it")
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -271,7 +275,9 @@ async def run_beer_game_generation(
     human_log_file = None,
     logger: BeerGameLogger = None,
     csv_log_path: str = None,
-    json_log_path: str = None
+    json_log_path: str = None,
+    enable_communication: bool = False,
+    communication_rounds: int = 2
 ):
     """
     Runs one generation of the Beer Game with the provided agents.
@@ -405,10 +411,59 @@ async def run_beer_game_generation(
             if logger:
                 logger.log(f"Agent {agent.role_name}: Holding cost: {holding_cost}, Backlog cost: {backlog_cost}, Revenue: {profit}, Net profit: {round_profit}")
 
-        # 5. Each role decides on new order quantity from upstream
+        communication_messages = []
+        if enable_communication:
+            if logger:
+                logger.log(f"Starting communication phase with {communication_rounds} rounds")
+            
+            for comm_round in range(communication_rounds):
+                if logger:
+                    logger.log(f"Communication round {comm_round + 1}/{communication_rounds}")
+                
+                round_messages = []
+                # Each agent sends a message sequentially
+                for agent in agents:
+                    message_response = await agent.generate_communication_message(
+                        round_index=round_index,
+                        other_agents=[a for a in agents if a != agent],
+                        message_history=communication_messages,
+                        temperature=temperature
+                    )
+                    
+                    message_entry = {
+                        "round": round_index,
+                        "communication_round": comm_round + 1,
+                        "sender": agent.role_name,
+                        "message": message_response.get("message", ""),
+                        "strategy_hint": message_response.get("strategy_hint", ""),
+                        "collaboration_proposal": message_response.get("collaboration_proposal", ""),
+                        "information_shared": message_response.get("information_shared", ""),
+                        "confidence": message_response.get("confidence", 0.5)
+                    }
+                    
+                    round_messages.append(message_entry)
+                    communication_messages.append(message_entry)
+                    
+                    if logger:
+                        logger.log(f"[{agent.role_name}] Message: {message_response.get('message', '')}")
+                
+                for agent in agents:
+                    agent.message_history.extend(round_messages)
+
+        # 5. Each role decides on new order quantity from upstream (modified to include communication context)
         order_decision_tasks = []
         for agent in agents:
-            order_decision_tasks.append(agent.decide_order_quantity(temperature=temperature, profit_per_unit_sold=profit_per_unit_sold))
+            recent_messages = communication_messages[-len(agents)*2:] if enable_communication else []
+            if enable_communication and recent_messages:
+                order_decision_tasks.append(
+                    agent.decide_order_quantity_with_communication(
+                        temperature=temperature, 
+                        profit_per_unit_sold=profit_per_unit_sold,
+                        recent_communications=recent_messages
+                    )
+                )
+            else:
+                order_decision_tasks.append(agent.decide_order_quantity(temperature=temperature, profit_per_unit_sold=profit_per_unit_sold))
         decisions = await asyncio.gather(*order_decision_tasks)
 
         # 6. Place orders upstream => those orders become supplier's backlog
@@ -441,6 +496,11 @@ async def run_beer_game_generation(
                     profit = agent.profit_accumulated
                 )
                 sim_data.add_round_entry(entry)
+                
+                if enable_communication and communication_messages:
+                    for msg in communication_messages:
+                        if msg["round"] == round_index:
+                            sim_data.add_communication_entry(msg)
                 # Write to CSV after each round
                 if csv_log_path:
                     write_header = not os.path.exists(csv_log_path) or os.path.getsize(csv_log_path) == 0
@@ -450,9 +510,7 @@ async def run_beer_game_generation(
                         'llm_incoming_shipments', 'llm_last_order_placed', 'llm_confidence',
                         'llm_rationale', 'llm_risk_assessment', 'llm_expected_demand_next_round'
                     ]
-                    fieldnames = list(asdict(entry).keys()) + [
-                        'last_decision_output', 'last_update_output', 'last_init_output'
-                    ] + llm_output_keys
+                    fieldnames = list(asdict(entry).keys()) + llm_output_keys
                     with open(csv_log_path, 'a', newline='') as csvfile:
                         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                         if write_header:
@@ -461,9 +519,6 @@ async def run_beer_game_generation(
                         row_data = asdict(entry)
                         llm_decision = getattr(agent, 'last_decision_output', {})
                         row_data.update({
-                            'last_decision_output': json.dumps(llm_decision),
-                            'last_update_output': json.dumps(getattr(agent, 'last_update_output', {})),
-                            'last_init_output': json.dumps(getattr(agent, 'last_init_output', {})),
                             # Add new LLM fields with prefixes
                             'llm_reported_inventory': llm_decision.get('inventory', None),
                             'llm_reported_backlog': llm_decision.get('backlog', None),
@@ -518,6 +573,21 @@ async def run_beer_game_generation(
             human_log_file.write("\n--------------------- Round {} ---------------------\n".format(round_index))
             human_log_file.write("External demand (Retailer): {}\n".format(retailer_demand))
             human_log_file.write("Shipments received per agent: {}\n".format(shipments_received_list))
+            
+            # Log communication messages if they exist for this round
+            if enable_communication and communication_messages:
+                round_comm_messages = [msg for msg in communication_messages if msg["round"] == round_index]
+                if round_comm_messages:
+                    human_log_file.write("\n--- Communication Messages ---\n")
+                    for msg in round_comm_messages:
+                        human_log_file.write("Communication Round {}: {} says: {}\n".format(
+                            msg["communication_round"], msg["sender"], msg["message"]
+                        ))
+                        human_log_file.write("  Strategy Hint: {}\n".format(msg["strategy_hint"]))
+                        human_log_file.write("  Collaboration Proposal: {}\n".format(msg["collaboration_proposal"]))
+                        human_log_file.write("  Information Shared: {}\n".format(msg["information_shared"]))
+                        human_log_file.write("  Confidence: {}\n".format(msg["confidence"]))
+                    human_log_file.write("\n")
             for idx, agent in enumerate(agents):
                 human_log_file.write("Agent: {}: Inventory: {}, Backlog: {}, Order placed: {}, Units sold: {}, Profit: {:.2f}, Total Profit: {}\n".format(
                     agent.role_name, agent.inventory, agent.backlog, orders_placed[idx], shipments_sent_downstream[idx], 
@@ -544,6 +614,9 @@ async def run_beer_game_generation(
                 # Log the LLM prompt and output (Decision Output is now more detailed)
                 human_log_file.write("    LLM Decision Prompt: {}\n".format(getattr(agent, 'last_decision_prompt', '')))
                 human_log_file.write("    LLM Decision Output: {}\n".format(json.dumps(getattr(agent, 'last_decision_output', {}))))
+                if enable_communication:
+                    human_log_file.write("    LLM Communication Prompt: {}\n".format(getattr(agent, 'last_communication_prompt', '')))
+                    human_log_file.write("    LLM Communication Output: {}\n".format(json.dumps(getattr(agent, 'last_communication_output', {}))))
                 human_log_file.write("    LLM Update Prompt: {}\n".format(getattr(agent, 'last_update_prompt', '')))
                 human_log_file.write("    LLM Update Output: {}\n".format(json.dumps(getattr(agent, 'last_update_output', {}))))
                 human_log_file.write("    LLM Init Prompt: {}\n".format(getattr(agent, 'last_init_prompt', '')))
@@ -565,7 +638,9 @@ async def run_beer_game_simulation(
     num_generations: int = 1,
     num_rounds_per_generation: int = 20,
     temperature: float = 0.7,
-    logger: BeerGameLogger = None
+    logger: BeerGameLogger = None,
+    enable_communication: bool = False,
+    communication_rounds: int = 2
 ):
     """
     Orchestrates multiple generations of the Beer Game. 
@@ -661,7 +736,9 @@ async def run_beer_game_simulation(
             human_log_file=human_log_file,
             logger=logger,
             csv_log_path=csv_log_path,
-            json_log_path=json_log_path
+            json_log_path=json_log_path,
+            enable_communication=enable_communication,
+            communication_rounds=communication_rounds
         )
 
         # After the generation, collect performance logs for each agent,
@@ -678,9 +755,11 @@ async def run_beer_game_simulation(
     # Simple visualizations (inventory/backlog over time, cost, etc.)
     # Ensure df_rounds is defined for saving and plotting
     df_rounds = pd.DataFrame([asdict(r) for r in sim_data.rounds_log])
-    # Persist aggregated logs
-    # df_rounds.to_csv(csv_log_path, index=False)
-    # df_rounds.to_json(json_log_path, orient="records", indent=2)
+    
+    complete_sim_data = sim_data.to_dict()
+    with open(json_log_path, 'w') as jsonfile:
+        json.dump(complete_sim_data, jsonfile, indent=2)
+    
     # Generate visualizations
     plot_beer_game_results(df_rounds, results_folder)
 
@@ -700,6 +779,43 @@ async def run_beer_game_simulation(
     human_log_file.write("\n----- Nash Equilibrium Analysis -----\n")
     for role, dev in deviations.items():
         human_log_file.write("Role: {} - Average Absolute Deviation: {:.2f}\n".format(role, dev))
+
+    # Log LLM session summary
+    from llm_calls_mitb_game import lite_client
+    session_summary = lite_client.get_session_summary()
+    
+    print(f"\n🎯 [LLM SESSION SUMMARY]")
+    print(f"   📞 Total LLM Calls: {session_summary['total_calls']}")
+    print(f"   💰 Total Cost: ${session_summary['total_cost_usd']}")
+    print(f"   📝 Total Tokens: {session_summary['total_tokens']} ({session_summary['total_input_tokens']} in + {session_summary['total_output_tokens']} out)")
+    print(f"   ⏱️  Total Inference Time: {session_summary['total_inference_time_seconds']}s")
+    print(f"   📊 Average per Call: {session_summary['average_inference_time_seconds']:.3f}s, ${session_summary['average_cost_per_call_usd']:.6f}")
+    
+    human_log_file.write("\n----- LLM Session Summary -----\n")
+    human_log_file.write("Total LLM Calls: {}\n".format(session_summary['total_calls']))
+    human_log_file.write("Total Cost: ${}\n".format(session_summary['total_cost_usd']))
+    human_log_file.write("Total Tokens: {} ({} input + {} output)\n".format(
+        session_summary['total_tokens'], 
+        session_summary['total_input_tokens'], 
+        session_summary['total_output_tokens']
+    ))
+    human_log_file.write("Total Inference Time: {}s\n".format(session_summary['total_inference_time_seconds']))
+    human_log_file.write("Average per Call: {:.3f}s, ${:.6f}\n".format(
+        session_summary['average_inference_time_seconds'], 
+        session_summary['average_cost_per_call_usd']
+    ))
+    
+    # Save session summary to JSON
+    session_summary_path = os.path.join(results_folder, "llm_session_summary.json")
+    with open(session_summary_path, 'w') as f:
+        json.dump(session_summary, f, indent=2)
+    
+    # Move LLM metrics file to results folder if it exists
+    metrics_file = "llm_inference_metrics.json"
+    if os.path.exists(metrics_file):
+        metrics_dest = os.path.join(results_folder, "llm_inference_metrics.json")
+        os.rename(metrics_file, metrics_dest)
+        print(f"📋 LLM metrics saved to: {metrics_dest}")
 
     human_log_file.close()
     logger.log("\nSimulation complete. Results saved to: {}".format(results_folder))

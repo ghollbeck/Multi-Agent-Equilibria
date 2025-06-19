@@ -25,14 +25,19 @@ class RoundData:
 class SimulationData:
     hyperparameters: dict
     rounds_log: List[RoundData] = field(default_factory=list)
+    communication_log: List[Dict] = field(default_factory=list)
 
     def add_round_entry(self, entry: RoundData):
         self.rounds_log.append(entry)
 
+    def add_communication_entry(self, entry: Dict):
+        self.communication_log.append(entry)
+
     def to_dict(self):
         return {
             'hyperparameters': self.hyperparameters,
-            'rounds_log': [asdict(r) for r in self.rounds_log]
+            'rounds_log': [asdict(r) for r in self.rounds_log],
+            'communication_log': self.communication_log
         }
 
 class BeerGameLogger:
@@ -72,6 +77,9 @@ class BeerGameAgent(BaseModel):
     last_update_output: dict = Field(default_factory=dict)
     last_init_prompt: str = ""
     last_init_output: dict = Field(default_factory=dict)
+    message_history: List[Dict[str, str]] = Field(default_factory=list)
+    last_communication_prompt: str = ""
+    last_communication_output: dict = Field(default_factory=dict)
 
     class Config:
         arbitrary_types_allowed = True
@@ -187,4 +195,104 @@ class BeerGameAgent(BaseModel):
             response = default_decision
         self.last_decision_output = response
         self.last_profit = response.get('profit', None)
-        return response 
+        return response
+
+    async def generate_communication_message(self, round_index: int, other_agents: List['BeerGameAgent'], 
+                                          message_history: List[Dict], temperature: float = 0.7) -> dict:
+        """Generate a message to communicate with other agents about strategy and collaboration."""
+        if self.logger:
+            self.logger.log(f"[Agent {self.role_name}] Generating communication message for round {round_index}")
+        
+        prompt = self.prompts.get_communication_prompt(
+            role_name=self.role_name,
+            inventory=self.inventory,
+            backlog=self.backlog,
+            recent_demand_or_orders=self.downstream_orders_history[-3:],
+            current_strategy=self.strategy,
+            message_history=message_history,
+            other_agent_roles=[agent.role_name for agent in other_agents],
+            round_index=round_index,
+            last_order_placed=self.last_order_placed,
+            profit_accumulated=self.profit_accumulated
+        )
+        
+        self.last_communication_prompt = prompt
+        system_prompt = "You are an expert supply chain manager. Return valid JSON only."
+        
+        try:
+            response_str = await lite_client.chat_completion(
+                model=MODEL_NAME,
+                system_prompt=system_prompt,
+                user_prompt=prompt,
+                temperature=temperature
+            )
+        except Exception as e:
+            print(f"❌ [Agent {self.role_name}] generate_communication_message: LLM call failed. Error: {e}")
+            response_str = ''
+        
+        default_message = {
+            "message": f"Hello from {self.role_name}. Let's work together efficiently.",
+            "strategy_hint": "Maintaining steady orders",
+            "collaboration_proposal": "Share demand information",
+            "information_shared": "Current inventory and backlog status",
+            "confidence": 0.5
+        }
+        
+        try:
+            response = safe_parse_json(response_str)
+        except Exception:
+            response = default_message
+        
+        self.last_communication_output = response
+        return response
+
+    async def decide_order_quantity_with_communication(self, temperature: float = 0.7, 
+                                                     profit_per_unit_sold: float = 5,
+                                                     recent_communications: List[Dict] = None) -> dict:
+        """Enhanced decision making that incorporates communication messages."""
+        if recent_communications:
+            prompt = self.prompts.get_decision_prompt_with_communication(
+                role_name=self.role_name,
+                inventory=self.inventory,
+                backlog=self.backlog,
+                recent_demand_or_orders=self.downstream_orders_history[-3:],
+                incoming_shipments=[self.shipments_in_transit[1]],
+                current_strategy=self.strategy,
+                profit_per_unit_sold=profit_per_unit_sold,
+                last_order_placed=self.last_order_placed,
+                last_profit=self.last_profit,
+                recent_communications=recent_communications
+            )
+            
+            self.last_decision_prompt = prompt
+            system_prompt = "You are an expert supply chain manager. Return valid JSON only."
+            
+            try:
+                response_str = await lite_client.chat_completion(
+                    model=MODEL_NAME,
+                    system_prompt=system_prompt,
+                    user_prompt=prompt,
+                    temperature=temperature
+                )
+            except Exception as e:
+                print(f"❌ [Agent {self.role_name}] decide_order_quantity_with_communication: LLM call failed. Error: {e}")
+                response_str = ''
+            
+            default_decision = {
+                "order_quantity": 10,
+                "confidence": 1.0,
+                "rationale": "Default decision with communication context",
+                "risk_assessment": "No risk",
+                "expected_demand_next_round": 10
+            }
+            
+            try:
+                response = safe_parse_json(response_str)
+            except Exception:
+                response = default_decision
+            
+            self.last_decision_output = response
+            self.last_profit = response.get('profit', None)
+            return response
+        else:
+            return await self.decide_order_quantity(temperature, profit_per_unit_sold)      
