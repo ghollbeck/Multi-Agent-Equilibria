@@ -92,6 +92,8 @@ from prompts_mitb_game import BeerGamePrompts
 from llm_calls_mitb_game import MODEL_NAME, lite_client
 from models_mitb_game import BeerGameAgent, RoundData, SimulationData, BeerGameLogger
 from analysis_mitb_game import plot_beer_game_results, calculate_nash_deviation
+from memory_storage import MemoryManager
+from langraph_workflow import BeerGameWorkflow
 
 # --------------------------------------------------------------------
 # 4. Agent Class: BeerGameAgent
@@ -277,7 +279,10 @@ async def run_beer_game_generation(
     csv_log_path: str = None,
     json_log_path: str = None,
     enable_communication: bool = False,
-    communication_rounds: int = 2
+    communication_rounds: int = 2,
+    enable_memory: bool = False,
+    memory_retention_rounds: int = 5,
+    enable_shared_memory: bool = False
 ):
     """
     Runs one generation of the Beer Game with the provided agents.
@@ -292,6 +297,35 @@ async def run_beer_game_generation(
 
     Returns: None (logs are recorded in sim_data).
     """
+    # Initialize memory system if enabled
+    memory_manager = None
+    if enable_memory:
+        memory_manager = MemoryManager(
+            retention_rounds=memory_retention_rounds,
+            enable_shared_memory=enable_shared_memory
+        )
+        # Initialize agent memories
+        for agent in agents:
+            agent.memory = memory_manager.create_agent_memory(agent.role_name)
+        
+        if logger:
+            logger.log(f"Memory system initialized with retention_rounds={memory_retention_rounds}, shared_memory={enable_shared_memory}")
+
+    # Initialize LangGraph workflow if memory is enabled
+    workflow = None
+    if enable_memory and memory_manager:
+        workflow = BeerGameWorkflow(
+            agents=agents,
+            simulation_data=sim_data,
+            memory_manager=memory_manager,
+            enable_memory=enable_memory,
+            enable_shared_memory=enable_shared_memory,
+            enable_communication=enable_communication,
+            communication_rounds=communication_rounds
+        )
+        if logger:
+            logger.log("LangGraph workflow initialized for memory-enabled simulation")
+
     # For convenience, create references:
     retailer = agents[0]
     wholesaler = agents[1] if len(agents) > 1 else None
@@ -450,21 +484,34 @@ async def run_beer_game_generation(
                 for agent in agents:
                     agent.message_history.extend(round_messages)
 
-        # 5. Each role decides on new order quantity from upstream (modified to include communication context)
-        order_decision_tasks = []
-        for agent in agents:
-            recent_messages = communication_messages[-len(agents)*2:] if enable_communication else []
-            if enable_communication and recent_messages:
-                order_decision_tasks.append(
-                    agent.decide_order_quantity_with_communication(
-                        temperature=temperature, 
-                        profit_per_unit_sold=profit_per_unit_sold,
-                        recent_communications=recent_messages
+        # 5. Each role decides on new order quantity from upstream
+        if workflow:
+            initial_state = workflow.create_initial_state(
+                round_index=round_index,
+                generation=1,
+                total_rounds=3,
+                external_demand=retailer_demand,
+                temperature=temperature,
+                profit_per_unit_sold=profit_per_unit_sold
+            )
+            final_state = await workflow.run_round(initial_state)
+            decisions = [final_state["agent_states"][agent.role_name]["decision_output"] 
+                        for agent in agents if agent.role_name in final_state["agent_states"]]
+        else:
+            order_decision_tasks = []
+            for agent in agents:
+                recent_messages = communication_messages[-len(agents)*2:] if enable_communication else []
+                if enable_communication and recent_messages:
+                    order_decision_tasks.append(
+                        agent.decide_order_quantity_with_communication(
+                            temperature=temperature, 
+                            profit_per_unit_sold=profit_per_unit_sold,
+                            recent_communications=recent_messages
+                        )
                     )
-                )
-            else:
-                order_decision_tasks.append(agent.decide_order_quantity(temperature=temperature, profit_per_unit_sold=profit_per_unit_sold))
-        decisions = await asyncio.gather(*order_decision_tasks)
+                else:
+                    order_decision_tasks.append(agent.decide_order_quantity(temperature=temperature, profit_per_unit_sold=profit_per_unit_sold))
+            decisions = await asyncio.gather(*order_decision_tasks)
 
         # 6. Place orders upstream => those orders become supplier's backlog
         orders_placed = []
@@ -640,7 +687,10 @@ async def run_beer_game_simulation(
     temperature: float = 0.7,
     logger: BeerGameLogger = None,
     enable_communication: bool = False,
-    communication_rounds: int = 2
+    communication_rounds: int = 2,
+    enable_memory: bool = False,
+    memory_retention_rounds: int = 5,
+    enable_shared_memory: bool = False
 ):
     """
     Orchestrates multiple generations of the Beer Game. 
@@ -738,7 +788,10 @@ async def run_beer_game_simulation(
             csv_log_path=csv_log_path,
             json_log_path=json_log_path,
             enable_communication=enable_communication,
-            communication_rounds=communication_rounds
+            communication_rounds=communication_rounds,
+            enable_memory=enable_memory,
+            memory_retention_rounds=memory_retention_rounds,
+            enable_shared_memory=enable_shared_memory
         )
 
         # After the generation, collect performance logs for each agent,
