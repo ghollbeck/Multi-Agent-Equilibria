@@ -52,7 +52,7 @@ def parse_args():
         help="Name of the LLM model to use"
     )
     parser.add_argument(
-        "--enable_communication", action="store_true",
+        "--enable_communication", action="store_true", default=True,
         help="Enable agent communication before each round"
     )
     parser.add_argument(

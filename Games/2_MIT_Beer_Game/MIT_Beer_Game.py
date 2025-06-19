@@ -780,6 +780,43 @@ async def run_beer_game_simulation(
     for role, dev in deviations.items():
         human_log_file.write("Role: {} - Average Absolute Deviation: {:.2f}\n".format(role, dev))
 
+    # Log LLM session summary
+    from llm_calls_mitb_game import lite_client
+    session_summary = lite_client.get_session_summary()
+    
+    print(f"\n🎯 [LLM SESSION SUMMARY]")
+    print(f"   📞 Total LLM Calls: {session_summary['total_calls']}")
+    print(f"   💰 Total Cost: ${session_summary['total_cost_usd']}")
+    print(f"   📝 Total Tokens: {session_summary['total_tokens']} ({session_summary['total_input_tokens']} in + {session_summary['total_output_tokens']} out)")
+    print(f"   ⏱️  Total Inference Time: {session_summary['total_inference_time_seconds']}s")
+    print(f"   📊 Average per Call: {session_summary['average_inference_time_seconds']:.3f}s, ${session_summary['average_cost_per_call_usd']:.6f}")
+    
+    human_log_file.write("\n----- LLM Session Summary -----\n")
+    human_log_file.write("Total LLM Calls: {}\n".format(session_summary['total_calls']))
+    human_log_file.write("Total Cost: ${}\n".format(session_summary['total_cost_usd']))
+    human_log_file.write("Total Tokens: {} ({} input + {} output)\n".format(
+        session_summary['total_tokens'], 
+        session_summary['total_input_tokens'], 
+        session_summary['total_output_tokens']
+    ))
+    human_log_file.write("Total Inference Time: {}s\n".format(session_summary['total_inference_time_seconds']))
+    human_log_file.write("Average per Call: {:.3f}s, ${:.6f}\n".format(
+        session_summary['average_inference_time_seconds'], 
+        session_summary['average_cost_per_call_usd']
+    ))
+    
+    # Save session summary to JSON
+    session_summary_path = os.path.join(results_folder, "llm_session_summary.json")
+    with open(session_summary_path, 'w') as f:
+        json.dump(session_summary, f, indent=2)
+    
+    # Move LLM metrics file to results folder if it exists
+    metrics_file = "llm_inference_metrics.json"
+    if os.path.exists(metrics_file):
+        metrics_dest = os.path.join(results_folder, "llm_inference_metrics.json")
+        os.rename(metrics_file, metrics_dest)
+        print(f"📋 LLM metrics saved to: {metrics_dest}")
+
     human_log_file.close()
     logger.log("\nSimulation complete. Results saved to: {}".format(results_folder))
     logger.close()

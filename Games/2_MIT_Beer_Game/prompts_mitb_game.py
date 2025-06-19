@@ -174,16 +174,25 @@ class BeerGamePrompts:
         
         You can now send a message to all other agents before this round's order decisions.
         Your goal is to share information that helps everyone optimize the supply chain while
-        still maximizing your own profit. Consider:
+        still maximizing your own profit.
         
+        IMPORTANT: If other agents have spoken before you in this round, you MUST:
+        1. Reflect on what they specifically said and how it affects you
+        2. React by mentioning what you heard: "I hear [Agent X] said [specific point]..."
+        3. State your conclusion and response: "Based on this, my conclusion is..."
+        4. Explain how you will react: "Therefore, I will..."
+        
+        Consider sharing:
         - What demand patterns or trends you've observed
         - Suggestions for coordination to reduce bullwhip effect
         - Your capacity constraints or inventory situation
         - Proposals for information sharing or collaboration
         - Strategic hints that benefit everyone (including yourself)
+        - Your specific reactions to what other agents have shared
         
-        Be strategic - share information that encourages good collaboration but maintains
-        your competitive advantage. Keep messages concise but informative.
+        Be strategic - acknowledge what others have said, share helpful information that 
+        encourages good collaboration, but maintain your competitive advantage. Keep messages 
+        concise but informative.
         
         Return only valid JSON with these fields:
         
