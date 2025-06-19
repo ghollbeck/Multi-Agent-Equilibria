@@ -40,11 +40,11 @@ def parse_args():
         help="Backlog cost per unit per round"
     )
     parser.add_argument(
-        "--profit_per_unit_sold", type=float, default=5.0,
+        "--profit_per_unit_sold", type=float, default=3.0,
         help="Profit earned per unit sold"
     )
     parser.add_argument(
-        "--temperature", type=float, default=0.7,
+        "--temperature", type=float, default=0.0,
         help="Sampling temperature for the LLM"
     )
     parser.add_argument(
@@ -56,7 +56,7 @@ def parse_args():
         help="Enable agent communication before each round"
     )
     parser.add_argument(
-        "--communication_rounds", type=int, default=2,
+        "--communication_rounds", type=int, default=4,
         help="Number of communication rounds per game round"
     )
     return parser.parse_args()
