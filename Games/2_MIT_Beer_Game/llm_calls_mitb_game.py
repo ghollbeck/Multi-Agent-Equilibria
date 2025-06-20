@@ -7,6 +7,18 @@ from datetime import datetime
 from dotenv import load_dotenv
 import re  # for JSON parsing
 
+try:
+    from langsmith import traceable
+    LANGSMITH_AVAILABLE = True
+    print("✓ LangSmith successfully imported and available for tracing")
+except (ImportError, TypeError, Exception) as e:
+    print(f"Warning: LangSmith not available ({type(e).__name__}: {str(e)[:100]}...), running without tracing")
+    LANGSMITH_AVAILABLE = False
+    def traceable(name=None, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+
 # Load environment variables for API key
 load_dotenv()
 
@@ -79,9 +91,17 @@ class LiteLLMClient:
         self.total_input_tokens = 0
         self.total_output_tokens = 0
         self.total_inference_time = 0.0
+        
+        # Configure LangSmith project if available
+        if LANGSMITH_AVAILABLE:
+            os.environ.setdefault("LANGSMITH_PROJECT", "MIT_beer_game_Langsmith")
+            print("✓ LangSmith project configured as MIT_beer_game_Langsmith")
 
+    @traceable(name="llm_chat_completion")
     async def chat_completion(self, model: str, system_prompt: str, user_prompt: str,
-                              temperature: float = 0.7, max_tokens: int = 450):
+                              temperature: float = 0.7, max_tokens: int = 450,
+                              agent_role: str = None, round_index: int = None, 
+                              decision_type: str = None):
         # Start timing
         start_time = time.time()
         timestamp = datetime.now().isoformat()
@@ -211,7 +231,10 @@ class LiteLLMClient:
             "cumulative_cost": round(self.total_cost, 6),
             "cumulative_input_tokens": self.total_input_tokens,
             "cumulative_output_tokens": self.total_output_tokens,
-            "cumulative_inference_time": round(self.total_inference_time, 3)
+            "cumulative_inference_time": round(self.total_inference_time, 3),
+            "agent_role": agent_role,
+            "round_index": round_index,
+            "decision_type": decision_type
         }
         
         # Log to terminal
@@ -281,4 +304,4 @@ class LiteLLMClient:
         return summary
 
 
-lite_client = LiteLLMClient() 
+lite_client = LiteLLMClient()           

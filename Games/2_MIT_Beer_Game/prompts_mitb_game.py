@@ -231,4 +231,79 @@ class BeerGamePrompts:
             enhanced_prompt = prompt_parts[0] + comm_context + "\nGiven this state and the communication context, return valid JSON" + prompt_parts[1]
             return enhanced_prompt
         
-        return base_prompt    
+        return base_prompt
+
+    @staticmethod
+    def get_memory_context_prompt(agent_memory, num_rounds: int = 5) -> str:
+        """Format agent memory into a prompt context section for LLM input."""
+        if not agent_memory or not hasattr(agent_memory, 'get_memory_context_for_decision'):
+            return ""
+        
+        decision_context = agent_memory.get_memory_context_for_decision()
+        communication_context = agent_memory.get_memory_context_for_communication()
+        
+        if not decision_context and not communication_context:
+            return ""
+        
+        memory_context = "\n\n## Your Past Experiences and Learning\n\n"
+        
+        if decision_context:
+            memory_context += "**Past Decision Patterns:**\n"
+            memory_context += decision_context + "\n\n"
+        
+        if communication_context:
+            memory_context += "**Past Communication Patterns:**\n"
+            memory_context += communication_context + "\n\n"
+        
+        memory_context += "Use these past experiences to inform your current decision, but adapt to changing conditions.\n"
+        
+        return memory_context
+
+    @staticmethod
+    def get_decision_prompt_with_memory(role_name: str, inventory: int, backlog: int,
+                                      recent_demand_or_orders: List[int], incoming_shipments: List[int],
+                                      current_strategy: dict, profit_per_unit_sold: float = 5,
+                                      last_order_placed: int = None, last_profit: float = None,
+                                      agent_memory = None, memory_retention_rounds: int = 5) -> str:
+        """Enhanced decision prompt that incorporates agent memory if available."""
+        base_prompt = BeerGamePrompts.get_decision_prompt(
+            role_name, inventory, backlog, recent_demand_or_orders, incoming_shipments,
+            current_strategy, profit_per_unit_sold, last_order_placed, last_profit
+        )
+        
+        if agent_memory:
+            memory_context = BeerGamePrompts.get_memory_context_prompt(
+                agent_memory, memory_retention_rounds
+            )
+            
+            if memory_context:
+                prompt_parts = base_prompt.split("Given this state, return valid JSON")
+                enhanced_prompt = prompt_parts[0] + memory_context + "\nGiven this state and your past experiences, return valid JSON" + prompt_parts[1]
+                return enhanced_prompt
+        
+        return base_prompt
+
+    @staticmethod
+    def get_communication_prompt_with_memory(role_name: str, inventory: int, backlog: int, 
+                                           recent_demand_or_orders: List[int], current_strategy: dict,
+                                           message_history: List[Dict], other_agent_roles: List[str],
+                                           round_index: int, last_order_placed: int = None,
+                                           profit_accumulated: float = 0.0, agent_memory = None,
+                                           memory_retention_rounds: int = 5) -> str:
+        """Enhanced communication prompt that incorporates agent memory if available."""
+        base_prompt = BeerGamePrompts.get_communication_prompt(
+            role_name, inventory, backlog, recent_demand_or_orders, current_strategy,
+            message_history, other_agent_roles, round_index, last_order_placed, profit_accumulated
+        )
+        
+        if agent_memory:
+            memory_context = BeerGamePrompts.get_memory_context_prompt(
+                agent_memory, memory_retention_rounds
+            )
+            
+            if memory_context:
+                prompt_parts = base_prompt.split("Return only valid JSON with these fields:")
+                enhanced_prompt = prompt_parts[0] + memory_context + "\nReturn only valid JSON with these fields:" + prompt_parts[1]
+                return enhanced_prompt
+        
+        return base_prompt       

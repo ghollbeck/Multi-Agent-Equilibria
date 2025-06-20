@@ -59,6 +59,22 @@ def parse_args():
         "--communication_rounds", type=int, default=2,
         help="Number of communication rounds per game round"
     )
+    parser.add_argument(
+        "--enable_memory", action="store_true",
+        help="Enable agent memory storage for strategies and reasoning"
+    )
+    parser.add_argument(
+        "--memory_retention_rounds", type=int, default=5,
+        help="Number of previous rounds to retain in agent memory (default: 5)"
+    )
+    parser.add_argument(
+        "--enable_shared_memory", action="store_true",
+        help="Enable shared memory pool accessible by all agents"
+    )
+    parser.add_argument(
+        "--langsmith_project", type=str, default="MIT_beer_game_Langsmith",
+        help="LangSmith project name for tracing (default: MIT_beer_game_Langsmith)"
+    )
     return parser.parse_args()
 
 
@@ -67,6 +83,10 @@ def main():
 
     # Override the default MODEL_NAME in llm_calls module
     llm_calls_mitb_game.MODEL_NAME = args.model_name
+
+    if args.langsmith_project:
+        import os
+        os.environ["LANGSMITH_PROJECT"] = args.langsmith_project
 
     # nest_asyncio already applied in import block if available
 
@@ -78,7 +98,10 @@ def main():
             num_rounds_per_generation=args.num_rounds_per_generation,
             temperature=args.temperature,
             enable_communication=args.enable_communication,
-            communication_rounds=args.communication_rounds
+            communication_rounds=args.communication_rounds,
+            enable_memory=args.enable_memory,
+            memory_retention_rounds=args.memory_retention_rounds,
+            enable_shared_memory=args.enable_shared_memory
         )
     )
 
@@ -89,4 +112,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()      
+    main()            

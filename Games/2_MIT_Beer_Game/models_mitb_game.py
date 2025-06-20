@@ -5,6 +5,7 @@ from dataclasses import dataclass, field, asdict
 from typing import List, Dict, Optional, ClassVar
 from prompts_mitb_game import BeerGamePrompts
 from llm_calls_mitb_game import lite_client, safe_parse_json, MODEL_NAME
+from memory_storage import AgentMemory
 
 @dataclass
 class RoundData:
@@ -80,6 +81,7 @@ class BeerGameAgent(BaseModel):
     message_history: List[Dict[str, str]] = Field(default_factory=list)
     last_communication_prompt: str = ""
     last_communication_output: dict = Field(default_factory=dict)
+    memory: Optional[AgentMemory] = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -96,7 +98,9 @@ class BeerGameAgent(BaseModel):
                 model=MODEL_NAME,
                 system_prompt=system_prompt,
                 user_prompt=prompt,
-                temperature=temperature
+                temperature=temperature,
+                agent_role=self.role_name,
+                decision_type="strategy_initialization"
             )
         except Exception as e:
             print(f"❌ [Agent {self.role_name}] initialize_strategy: LLM call failed. Error: {e}")
@@ -131,7 +135,9 @@ class BeerGameAgent(BaseModel):
                 model=MODEL_NAME,
                 system_prompt=system_prompt,
                 user_prompt=prompt,
-                temperature=temperature
+                temperature=temperature,
+                agent_role=self.role_name,
+                decision_type="strategy_update"
             )
         except Exception as e:
             print(f"❌ [Agent {self.role_name}] update_strategy: LLM call failed. Error: {e}")
@@ -175,7 +181,9 @@ class BeerGameAgent(BaseModel):
                 model=MODEL_NAME,
                 system_prompt=system_prompt,
                 user_prompt=prompt,
-                temperature=temperature
+                temperature=temperature,
+                agent_role=self.role_name,
+                decision_type="order_decision"
             )
         except Exception as e:
             print(f"❌ [Agent {self.role_name}] decide_order_quantity: LLM call failed. Error: {e}")
@@ -224,7 +232,9 @@ class BeerGameAgent(BaseModel):
                 model=MODEL_NAME,
                 system_prompt=system_prompt,
                 user_prompt=prompt,
-                temperature=temperature
+                temperature=temperature,
+                agent_role=self.role_name,
+                decision_type="communication"
             )
         except Exception as e:
             print(f"❌ [Agent {self.role_name}] generate_communication_message: LLM call failed. Error: {e}")
@@ -272,7 +282,9 @@ class BeerGameAgent(BaseModel):
                     model=MODEL_NAME,
                     system_prompt=system_prompt,
                     user_prompt=prompt,
-                    temperature=temperature
+                    temperature=temperature,
+                    agent_role=self.role_name,
+                    decision_type="order_decision_with_communication"
                 )
             except Exception as e:
                 print(f"❌ [Agent {self.role_name}] decide_order_quantity_with_communication: LLM call failed. Error: {e}")
@@ -295,4 +307,62 @@ class BeerGameAgent(BaseModel):
             self.last_profit = response.get('profit', None)
             return response
         else:
-            return await self.decide_order_quantity(temperature, profit_per_unit_sold)      
+            return await self.decide_order_quantity(temperature, profit_per_unit_sold)
+    
+    def load_memory_context(self) -> Dict[str, str]:
+        """Retrieve relevant past experiences from memory if available."""
+        if not self.memory:
+            return {
+                'decision_context': 'No memory context available.',
+                'communication_context': 'No memory context available.'
+            }
+        
+        return {
+            'decision_context': self.memory.get_memory_context_for_decision(),
+            'communication_context': self.memory.get_memory_context_for_communication()
+        }
+    
+    def update_memory(self, round_number: int, decision_output: Dict[str, any] = None, 
+                     communication_output: Dict[str, any] = None, 
+                     performance_data: Dict[str, any] = None) -> None:
+        """Store new experiences in memory after each decision."""
+        if not self.memory:
+            return
+        
+        if decision_output:
+            self.memory.add_decision_memory(
+                round_number=round_number,
+                order_quantity=decision_output.get('order_quantity', 0),
+                inventory=self.inventory,
+                backlog=self.backlog,
+                reasoning=decision_output.get('rationale', ''),
+                confidence=decision_output.get('confidence', 0.5)
+            )
+            
+            if 'strategy_description' in decision_output or self.strategy:
+                self.memory.add_strategy_memory(
+                    round_number=round_number,
+                    strategy_description=decision_output.get('strategy_description', str(self.strategy)),
+                    strategy_rationale=decision_output.get('rationale', ''),
+                    expected_outcome=decision_output.get('expected_demand_next_round', 'Unknown')
+                )
+        
+        if communication_output:
+            self.memory.add_communication_memory(
+                round_number=round_number,
+                message=communication_output.get('message', ''),
+                strategy_hint=communication_output.get('strategy_hint', ''),
+                collaboration_proposal=communication_output.get('collaboration_proposal', ''),
+                information_shared=communication_output.get('information_shared', '')
+            )
+        
+        if performance_data:
+            self.memory.add_performance_memory(
+                round_number=round_number,
+                profit=performance_data.get('profit', self.profit_accumulated),
+                inventory=self.inventory,
+                backlog=self.backlog,
+                units_sold=performance_data.get('units_sold', 0),
+                holding_cost=performance_data.get('holding_cost', 0.0),
+                backlog_cost=performance_data.get('backlog_cost', 0.0)
+            )               
