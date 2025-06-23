@@ -28,7 +28,7 @@ def parse_args():
         help="Number of generations to simulate"
     )
     parser.add_argument(
-        "--num_rounds_per_generation", type=int, default=10,
+        "--num_rounds_per_generation", type=int, default=2,
         help="Number of rounds per generation"
     )
     parser.add_argument(
@@ -87,12 +87,13 @@ def main():
     if args.langsmith_project:
         import os
         os.environ["LANGSMITH_PROJECT"] = args.langsmith_project
+        # Set Pydantic serialization mode to handle type conversion
+        os.environ["LANGSMITH_SERIALIZATION_MODE"] = "python"
 
     # nest_asyncio already applied in import block if available
 
     # Run simulation
-    loop = asyncio.get_event_loop()
-    sim_data: SimulationData = loop.run_until_complete(
+    sim_data: SimulationData = asyncio.run(
         run_beer_game_simulation(
             num_generations=args.num_generations,
             num_rounds_per_generation=args.num_rounds_per_generation,

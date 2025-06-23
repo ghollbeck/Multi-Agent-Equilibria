@@ -23,7 +23,7 @@ except (ImportError, TypeError, Exception) as e:
 load_dotenv()
 
 # Default LLM model name
-MODEL_NAME: str = "gpt-4o"
+MODEL_NAME: str = "gpt-4o-mini"
 
 # Utility for robust JSON extraction from LLM responses
 def safe_parse_json(response_str: str) -> dict:
@@ -99,7 +99,7 @@ class LiteLLMClient:
 
     @traceable(name="llm_chat_completion")
     async def chat_completion(self, model: str, system_prompt: str, user_prompt: str,
-                              temperature: float = 0.7, max_tokens: int = 450,
+                              temperature: float = 0.7, max_tokens: int = 800,
                               agent_role: str = None, round_index: int = None, 
                               decision_type: str = None):
         # Start timing

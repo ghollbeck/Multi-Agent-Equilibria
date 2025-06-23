@@ -1,0 +1,37 @@
+# Chinese Whispers SQL Configuration
+
+# LLM settings
+model: "gpt-3.5-turbo"
+temperature: 0.7
+max_tokens: 300
+
+# SQL generation settings (can override main settings)
+sql_model: "gpt-3.5-turbo"
+sql_temperature: 0.0
+sql_max_tokens: 500
+
+# Chain settings
+num_agents: 5
+
+# Initial story
+initial_story: |
+  Find all high school students who speak English and have passed all their subjects, 
+  but are currently marked as inactive in the system.
+
+# Prompt templates
+prompts:
+  base_agent: |
+    You are agent {i} of {N} in a chain. Your task is to carefully read the following 
+    description and rewrite it in your own words while preserving the essential meaning.
+    
+    Description: {story}
+    
+    Please rewrite this description clearly and concisely.
+  
+  final_agent: |
+    You are the final agent ({i} of {N}) in a chain. Your task is to read the following 
+    description and provide a clear, final version that captures what is being requested.
+    
+    Description: {story}
+    
+    Please provide a clear and precise rewrite of this description. 

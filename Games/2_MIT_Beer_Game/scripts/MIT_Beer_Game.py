@@ -267,7 +267,7 @@ from langraph_workflow import BeerGameWorkflow
 async def run_beer_game_generation(
     agents: List[BeerGameAgent],
     external_demand: List[int],
-    num_rounds: int = 20,
+    num_rounds: int = 2,
     holding_cost_per_unit: float = 0.5,
     backlog_cost_per_unit: float = 1.5,
     profit_per_unit_sold: float = 5,
@@ -530,6 +530,8 @@ async def run_beer_game_generation(
 
         # Store round logs
         if sim_data:
+            # Collect all entries for this round
+            round_entries = []
             for idx, agent in enumerate(agents):
                 entry = RoundData(
                     generation = generation_index,
@@ -544,24 +546,32 @@ async def run_beer_game_generation(
                 )
                 sim_data.add_round_entry(entry)
                 
+                # Collect entry for CSV/JSON writing
+                round_entries.append((entry, agent))
+                
                 if enable_communication and communication_messages:
                     for msg in communication_messages:
                         if msg["round"] == round_index:
                             sim_data.add_communication_entry(msg)
-                # Write to CSV after each round
-                if csv_log_path:
-                    write_header = not os.path.exists(csv_log_path) or os.path.getsize(csv_log_path) == 0
-                    # Define the new fieldnames based on LLM decision output
-                    llm_output_keys = [
-                        'llm_reported_inventory', 'llm_reported_backlog', 'llm_recent_demand_or_orders',
-                        'llm_incoming_shipments', 'llm_last_order_placed', 'llm_confidence',
-                        'llm_rationale', 'llm_risk_assessment', 'llm_expected_demand_next_round'
-                    ]
-                    fieldnames = list(asdict(entry).keys()) + llm_output_keys
-                    with open(csv_log_path, 'a', newline='') as csvfile:
-                        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                        if write_header:
-                            writer.writeheader()
+            
+            # Write all entries to CSV after collecting them (outside the agent loop)
+            if csv_log_path and round_entries:
+                write_header = not os.path.exists(csv_log_path) or os.path.getsize(csv_log_path) == 0
+                # Define the new fieldnames based on LLM decision output
+                llm_output_keys = [
+                    'llm_reported_inventory', 'llm_reported_backlog', 'llm_recent_demand_or_orders',
+                    'llm_incoming_shipments', 'llm_last_order_placed', 'llm_confidence',
+                    'llm_rationale', 'llm_risk_assessment', 'llm_expected_demand_next_round'
+                ]
+                fieldnames = list(asdict(round_entries[0][0]).keys()) + llm_output_keys
+                
+                with open(csv_log_path, 'a', newline='') as csvfile:
+                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                    if write_header:
+                        writer.writeheader()
+                    
+                    # Write all agent entries for this round
+                    for entry, agent in round_entries:
                         # Prepare the row data including new LLM fields
                         row_data = asdict(entry)
                         llm_decision = getattr(agent, 'last_decision_output', {})
@@ -578,26 +588,27 @@ async def run_beer_game_generation(
                             'llm_expected_demand_next_round': llm_decision.get('expected_demand_next_round', None)
                         })
                         writer.writerow(row_data)
-                # Write to JSON after each round (reconstruct the logic to append new fields)
-                if json_log_path:
-                    # Read existing data
-                    all_entries = []
-                    if os.path.exists(json_log_path) and os.path.getsize(json_log_path) > 0:
-                        try:
-                            with open(json_log_path, 'r') as jf:
-                                all_entries = json.load(jf)
-                        except json.JSONDecodeError:
-                            print(f"Warning: Could not decode existing JSON file {json_log_path}. Starting fresh.")
-                            all_entries = []
+            
+            # Write all entries to JSON after collecting them (outside the agent loop)
+            if json_log_path and round_entries:
+                # Read existing data
+                all_entries = []
+                if os.path.exists(json_log_path) and os.path.getsize(json_log_path) > 0:
+                    try:
+                        with open(json_log_path, 'r') as jf:
+                            all_entries = json.load(jf)
+                    except json.JSONDecodeError:
+                        print(f"Warning: Could not decode existing JSON file {json_log_path}. Starting fresh.")
+                        all_entries = []
 
-                    # Prepare the new entry with LLM data
-                    agent_obj = agent # Use current agent in the loop
-                    entry_dict = asdict(entry) # Use the current entry
-                    llm_decision = getattr(agent_obj, 'last_decision_output', {})
+                # Prepare all new entries with LLM data
+                for entry, agent in round_entries:
+                    entry_dict = asdict(entry)
+                    llm_decision = getattr(agent, 'last_decision_output', {})
                     entry_dict.update({
-                        'last_decision_output': llm_decision, # Store as dict
-                        'last_update_output': getattr(agent_obj, 'last_update_output', {}),
-                        'last_init_output': getattr(agent_obj, 'last_init_output', {}),
+                        'last_decision_output': llm_decision,
+                        'last_update_output': getattr(agent, 'last_update_output', {}),
+                        'last_init_output': getattr(agent, 'last_init_output', {}),
                         # Add new LLM fields with prefixes
                         'llm_reported_inventory': llm_decision.get('inventory', None),
                         'llm_reported_backlog': llm_decision.get('backlog', None),
@@ -611,9 +622,9 @@ async def run_beer_game_generation(
                     })
                     all_entries.append(entry_dict)
 
-                    # Write updated list back to JSON
-                    with open(json_log_path, 'w') as jsonfile:
-                        json.dump(all_entries, jsonfile, indent=2)
+                # Write updated list back to JSON
+                with open(json_log_path, 'w') as jsonfile:
+                    json.dump(all_entries, jsonfile, indent=2)
 
         # Write human-readable log for the round
         if human_log_file:
@@ -683,7 +694,7 @@ async def run_beer_game_generation(
 
 async def run_beer_game_simulation(
     num_generations: int = 1,
-    num_rounds_per_generation: int = 20,
+    num_rounds_per_generation: int = 2,
     temperature: float = 0.7,
     logger: BeerGameLogger = None,
     enable_communication: bool = False,
@@ -815,17 +826,6 @@ async def run_beer_game_simulation(
     
     # Generate visualizations
     plot_beer_game_results(df_rounds, results_folder)
-
-    # --- Convert CSV to Markdown table automatically ---
-    md_log_path = os.path.join(results_folder, "beer_game_detailed_log.md")
-    try:
-        with open(md_log_path, "w") as mdfile:
-            subprocess.run(["csvtomd", csv_log_path], check=True, stdout=mdfile)
-    except FileNotFoundError:
-        print("[Warning] csvtomd is not installed. Run 'pip install csvtomd' to enable CSV to Markdown conversion.")
-    except Exception as e:
-        print(f"[Warning] Could not convert CSV to Markdown: {e}")
-    # --- End CSV to Markdown ---
 
     # Calculate Nash equilibrium deviations (assumed equilibrium order quantity = 10)
     deviations = calculate_nash_deviation(df_rounds, equilibrium_order=10)
