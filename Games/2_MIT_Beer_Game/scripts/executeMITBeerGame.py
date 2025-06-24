@@ -11,7 +11,7 @@ try:
     import nest_asyncio
     nest_asyncio.apply()
 except ImportError:
-    print("Warning: nest_asyncio not available, running without it")
+    pass  # print("Warning: nest_asyncio not available, running without it")  # Commented out
 
 # Import modules
 import llm_calls_mitb_game
@@ -24,12 +24,8 @@ def parse_args():
         description="Execute the MIT Beer Game simulation with custom parameters"
     )
     parser.add_argument(
-        "--num_generations", type=int, default=1,
-        help="Number of generations to simulate"
-    )
-    parser.add_argument(
-        "--num_rounds_per_generation", type=int, default=2,
-        help="Number of rounds per generation"
+        "--num_rounds", type=int, default=10,
+        help="Number of rounds to simulate"
     )
     parser.add_argument(
         "--holding_cost_per_unit", type=float, default=0.5,
@@ -95,8 +91,7 @@ def main():
     # Run simulation
     sim_data: SimulationData = asyncio.run(
         run_beer_game_simulation(
-            num_generations=args.num_generations,
-            num_rounds_per_generation=args.num_rounds_per_generation,
+            num_rounds=args.num_rounds,
             temperature=args.temperature,
             enable_communication=args.enable_communication,
             communication_rounds=args.communication_rounds,
@@ -108,9 +103,36 @@ def main():
 
     # Output summary
     results = sim_data.to_dict()
-    print("Simulation complete. Summary:")
-    print(results)
+    print("\n✅ Simulation complete!")
+    # print("Simulation complete. Summary:")  # Commented out
+    # print(results)  # Commented out
 
 
 if __name__ == "__main__":
     main()            
+
+
+
+# Example usage:
+# python Games/2_MIT_Beer_Game/scripts/executeMITBeerGame.py \
+#   --num_rounds 30 \
+#   --temperature 0.8 \
+#   --enable_memory \
+#   --memory_retention_rounds 7 \
+#   --communication_rounds 3
+
+# python Games/2_MIT_Beer_Game/scripts/executeMITBeerGame.py \
+#   --num_rounds 50 \
+#   --holding_cost_per_unit 0.75 \
+#   --backlog_cost_per_unit 2.0 \
+#   --profit_per_unit_sold 6.0 \
+#   --temperature 0.9 \
+#   --model_name "gpt-4o-mini" \
+#   --enable_communication \   
+#   --communication_rounds 4 \
+#   --enable_memory \
+#   --memory_retention_rounds 10 \
+#   --enable_shared_memory \
+#   --langsmith_project "my_beer_game_experiment"
+
+

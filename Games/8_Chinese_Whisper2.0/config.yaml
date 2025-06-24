@@ -1,37 +1,42 @@
 # Chinese Whispers SQL Configuration
+# Configuration for LLM chain simulation and SQL generation
 
-# LLM settings
-model: "gpt-3.5-turbo"
+# Model Configuration
+model: "gpt-4o-mini"
 temperature: 0.7
-max_tokens: 300
+max_tokens: 800
 
-# SQL generation settings (can override main settings)
-sql_model: "gpt-3.5-turbo"
-sql_temperature: 0.0
+# SQL Generation Configuration
+sql_model: "gpt-4o-mini"  # Can be different from main model
+sql_temperature: 0.0      # Lower temperature for more consistent SQL
 sql_max_tokens: 500
 
-# Chain settings
+# Chain Configuration
 num_agents: 5
 
-# Initial story
+# Initial story for the Chinese Whispers chain
 initial_story: |
-  Find all high school students who speak English and have passed all their subjects, 
-  but are currently marked as inactive in the system.
+  Find all inactive high school students who speak English and have passed their English class but failed at least one other subject (math or science).
 
-# Prompt templates
+# Prompt Templates
 prompts:
   base_agent: |
-    You are agent {i} of {N} in a chain. Your task is to carefully read the following 
-    description and rewrite it in your own words while preserving the essential meaning.
+    You are agent {i} of {N} in a story rewriting chain. Your task is to rewrite the following story to make it more interesting and engaging while preserving its core meaning and intent.
     
-    Description: {story}
+    Original story: {story}
     
-    Please rewrite this description clearly and concisely.
+    Please rewrite this story in your own words, making it more vivid and engaging while keeping the same essential request. Be creative but don't change the fundamental meaning.
   
   final_agent: |
-    You are the final agent ({i} of {N}) in a chain. Your task is to read the following 
-    description and provide a clear, final version that captures what is being requested.
+    You are the final agent ({i} of {N}) in a story rewriting chain. Your task is to create a polished, final version of the story that captures the essence of the request in an engaging way.
     
-    Description: {story}
+    Story to finalize: {story}
     
-    Please provide a clear and precise rewrite of this description. 
+    Please provide a well-crafted final version that is clear, engaging, and preserves the original intent of the request.
+
+# Evaluation Configuration
+baseline_step: 0  # Use step 0 (original story) as baseline, or specify another step
+
+# LangSmith Configuration
+langsmith_project: "chinese_whispers_sql"
+langsmith_tracing: true 

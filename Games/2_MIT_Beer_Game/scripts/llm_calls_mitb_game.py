@@ -10,9 +10,9 @@ import re  # for JSON parsing
 try:
     from langsmith import traceable
     LANGSMITH_AVAILABLE = True
-    print("✓ LangSmith successfully imported and available for tracing")
+    # print("✓ LangSmith successfully imported and available for tracing")  # Commented out
 except (ImportError, TypeError, Exception) as e:
-    print(f"Warning: LangSmith not available ({type(e).__name__}: {str(e)[:100]}...), running without tracing")
+    # print(f"Warning: LangSmith not available ({type(e).__name__}: {str(e)[:100]}...), running without tracing")  # Commented out
     LANGSMITH_AVAILABLE = False
     def traceable(name=None, **kwargs):
         def decorator(func):
@@ -40,7 +40,7 @@ def safe_parse_json(response_str: str) -> dict:
         try:
             return json.loads(s)
         except Exception as e:
-            print(f"❌ [safe_parse_json] Could not find '{{' in response. Error: {e}. Response: {s}")
+            # print(f"❌ [safe_parse_json] Could not find '{{' in response. Error: {e}. Response: {s}")  # Commented out
             raise
     substring = s[start:]
     brace_count = 0
@@ -61,7 +61,7 @@ def safe_parse_json(response_str: str) -> dict:
     try:
         return json.loads(json_text)
     except Exception as e:
-        print(f"❌ [safe_parse_json] Failed to parse JSON. Error: {e}. Extracted: {json_text}")
+        # print(f"❌ [safe_parse_json] Failed to parse JSON. Error: {e}. Extracted: {json_text}")  # Commented out
         raise
 
 
@@ -70,12 +70,12 @@ def parse_json_with_default(response_str: str, default: dict, context: str) -> d
     try:
         return safe_parse_json(response_str)
     except Exception as e:
-        print(f"❌ [parse_json_with_default] Error parsing JSON in {context}: {e}. Response was: {response_str!r}")
+        # print(f"❌ [parse_json_with_default] Error parsing JSON in {context}: {e}. Response was: {response_str!r}")  # Commented out
         m = re.search(r'"order_quantity"\s*:\s*(\d+)', response_str)
         if m:
             salvaged = default.copy()
             salvaged['order_quantity'] = int(m.group(1))
-            print(f"❌ [parse_json_with_default] Salvaged order_quantity={m.group(1)} in {context}.")
+            # print(f"❌ [parse_json_with_default] Salvaged order_quantity={m.group(1)} in {context}.")  # Commented out
             return salvaged
         return default
 
@@ -95,7 +95,7 @@ class LiteLLMClient:
         # Configure LangSmith project if available
         if LANGSMITH_AVAILABLE:
             os.environ.setdefault("LANGSMITH_PROJECT", "MIT_beer_game_Langsmith")
-            print("✓ LangSmith project configured as MIT_beer_game_Langsmith")
+            # print("✓ LangSmith project configured as MIT_beer_game_Langsmith")  # Commented out
 
     @traceable(name="llm_chat_completion")
     async def chat_completion(self, model: str, system_prompt: str, user_prompt: str,
@@ -106,8 +106,15 @@ class LiteLLMClient:
         start_time = time.time()
         timestamp = datetime.now().isoformat()
         
-        print(f"[LLM SYSTEM PROMPT]: {system_prompt}")
-        print(f"[LLM USER PROMPT]: {user_prompt}")
+        # Minimal logging - only show action being performed
+        if agent_role and decision_type:
+            if decision_type == "strategy_initialization":
+                print(f"🔥 [{agent_role}] {decision_type}")
+            else:
+                print(f"✅ [{agent_role}] {decision_type}")
+        
+        # print(f"[LLM SYSTEM PROMPT]: {system_prompt}")  # Commented out
+        # print(f"[LLM USER PROMPT]: {user_prompt}")  # Commented out
         if self.logger:
             self.logger.log(f"[LLM SYSTEM PROMPT]: {system_prompt}")
             self.logger.log(f"[LLM USER PROMPT]: {user_prompt}")
@@ -151,9 +158,9 @@ class LiteLLMClient:
         content = data.get("choices", [{}])[0].get("message", {}).get("content", "No response from LiteLLM.")
         
         # Debug: Print response structure to see if cost is in body
-        print(f"🔍 [DEBUG] Response Body Keys: {list(data.keys())}")
-        if "usage" in data:
-            print(f"🔍 [DEBUG] Usage Keys: {list(data['usage'].keys())}")
+        # print(f"🔍 [DEBUG] Response Body Keys: {list(data.keys())}")  # Commented out
+        # if "usage" in data:  # Commented out
+        #     print(f"🔍 [DEBUG] Usage Keys: {list(data['usage'].keys())}")  # Commented out
         
         # Extract token usage and cost information
         usage = data.get("usage", {})
@@ -171,9 +178,9 @@ class LiteLLMClient:
             try:
                 cost = float(response_cost_header)
                 cost_source = "response_header"
-                print(f"💰 [COST] Found cost in headers: ${cost:.6f}")
+                # print(f"💰 [COST] Found cost in headers: ${cost:.6f}")  # Commented out
             except (ValueError, TypeError):
-                print(f"⚠️  [COST] Invalid cost format in headers: {response_cost_header}")
+                pass  # print(f"⚠️  [COST] Invalid cost format in headers: {response_cost_header}")  # Commented out
         
         # 2. Check if cost is in usage section of response body
         if cost == 0.0 and "usage" in data:
@@ -182,9 +189,9 @@ class LiteLLMClient:
                 try:
                     cost = float(usage_cost)
                     cost_source = "usage_body"
-                    print(f"💰 [COST] Found cost in usage body: ${cost:.6f}")
+                    # print(f"💰 [COST] Found cost in usage body: ${cost:.6f}")  # Commented out
                 except (ValueError, TypeError):
-                    print(f"⚠️  [COST] Invalid cost format in usage: {usage_cost}")
+                    pass  # print(f"⚠️  [COST] Invalid cost format in usage: {usage_cost}")  # Commented out
         
         # 3. Check if cost is in top-level response body
         if cost == 0.0:
@@ -193,20 +200,20 @@ class LiteLLMClient:
                 try:
                     cost = float(body_cost)
                     cost_source = "response_body"
-                    print(f"💰 [COST] Found cost in response body: ${cost:.6f}")
+                    # print(f"💰 [COST] Found cost in response body: ${cost:.6f}")  # Commented out
                 except (ValueError, TypeError):
-                    print(f"⚠️  [COST] Invalid cost format in body: {body_cost}")
+                    pass  # print(f"⚠️  [COST] Invalid cost format in body: {body_cost}")  # Commented out
         
         # 4. Fallback cost calculation if no cost found
         if cost == 0.0:
             # GPT-4o: $5.00 per 1M input tokens, $15.00 per 1M output tokens
             cost = (prompt_tokens * 5.00 / 1_000_000) + (completion_tokens * 15.00 / 1_000_000)
             cost_source = "calculated_fallback"
-            print(f"💰 [COST] Using fallback calculation: ${cost:.6f} (${5.00}/1M input + ${15.00}/1M output)")
+            # print(f"💰 [COST] Using fallback calculation: ${cost:.6f} (${5.00}/1M input + ${15.00}/1M output)")  # Commented out
         
         # Debug: Print all response headers to see what's available
-        print(f"🔍 [DEBUG] Response Headers: {dict(response.headers)}")
-        print(f"🔍 [DEBUG] Cost Source: {cost_source}")
+        # print(f"🔍 [DEBUG] Response Headers: {dict(response.headers)}")  # Commented out
+        # print(f"🔍 [DEBUG] Cost Source: {cost_source}")  # Commented out
         
         # Update running totals
         self.total_calls += 1
@@ -237,13 +244,13 @@ class LiteLLMClient:
             "decision_type": decision_type
         }
         
-        # Log to terminal
-        print(f"\n🔍 [LLM INFERENCE METRICS]")
-        print(f"   📊 Call #{self.total_calls} | Model: {model}")
-        print(f"   ⏱️  Inference Time: {inference_time:.3f}s")
-        print(f"   📝 Tokens: {prompt_tokens} in → {completion_tokens} out → {total_tokens} total")
-        print(f"   💰 Cost: ${cost:.6f} (Total: ${self.total_cost:.6f})")
-        print(f"   🎯 Temperature: {temperature} | Max Tokens: {max_tokens}")
+        # Log to terminal - simplified version
+        # print(f"\n🔍 [LLM INFERENCE METRICS]")  # Commented out
+        # print(f"   📊 Call #{self.total_calls} | Model: {model}")  # Commented out
+        # print(f"   ⏱️  Inference Time: {inference_time:.3f}s")  # Commented out
+        # print(f"   📝 Tokens: {prompt_tokens} in → {completion_tokens} out → {total_tokens} total")  # Commented out
+        # print(f"   💰 Cost: ${cost:.6f} (Total: ${self.total_cost:.6f})")  # Commented out
+        # print(f"   🎯 Temperature: {temperature} | Max Tokens: {max_tokens}")  # Commented out
         
         # Log to file logger if available
         if self.logger:
@@ -252,7 +259,7 @@ class LiteLLMClient:
         # Save metrics to JSON file
         self._save_metrics_to_file(metrics)
         
-        print(f"[LLM RAW RESPONSE]: {content}")
+        # print(f"[LLM RAW RESPONSE]: {content}")  # Commented out
         if self.logger:
             self.logger.log(f"[LLM RAW RESPONSE]: {content}")
         
@@ -280,7 +287,7 @@ class LiteLLMClient:
                 json.dump(existing_metrics, f, indent=2)
                 
         except Exception as e:
-            print(f"⚠️  Warning: Could not save metrics to file: {e}")
+            pass  # print(f"⚠️  Warning: Could not save metrics to file: {e}")  # Commented out
     
     def get_session_summary(self):
         """Get a summary of all LLM calls in this session"""

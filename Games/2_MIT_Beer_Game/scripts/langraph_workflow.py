@@ -10,13 +10,15 @@ try:
     from langgraph.graph import StateGraph, END
     from langchain_core.runnables import RunnableConfig
     from langsmith import traceable
+    LANGRAPH_AVAILABLE = True
 except ImportError as e:
-    print(f"Warning: LangGraph/LangSmith imports failed: {e}")
-    print("Workflow will run without LangGraph integration")
+    # print(f"Warning: LangGraph/LangSmith imports failed: {e}")  # Commented out
+    # print("Workflow will run without LangGraph integration")  # Commented out
     StateGraph = None
     END = None
     RunnableConfig = None
     traceable = lambda x: x
+    LANGRAPH_AVAILABLE = False
 
 from models_mitb_game import BeerGameAgent, SimulationData, RoundData
 from memory_storage import AgentMemory, SharedMemory, MemoryManager
@@ -144,11 +146,13 @@ class BeerGameWorkflow:
                     round_messages.append(message_entry)
                     
                 except Exception as e:
-                    print(f"Communication error for {agent.role_name}: {e}")
+                    # print(f"Communication error for {agent.role_name}: {e}")  # Commented out
+                    # Skip this agent's communication on error
+                    pass
             
             for agent in state["agents"]:
                 agent.message_history.extend(comm_round_messages)
-        
+
         state["communication_history"].extend(round_messages)
         
         for msg in round_messages:
@@ -185,7 +189,8 @@ class BeerGameWorkflow:
         try:
             decisions = await asyncio.gather(*decision_tasks)
         except Exception as e:
-            print(f"Decision making error: {e}")
+            # print(f"Decision making error: {e}")  # Commented out
+            # Return safe defaults
             decisions = [{"order_quantity": 10, "confidence": 0.5, "rationale": "Default fallback"} 
                         for _ in state["agents"]]
         
@@ -340,8 +345,17 @@ class BeerGameWorkflow:
                 final_state = await self.graph.ainvoke(initial_state, config)
                 return final_state
             except Exception as e:
-                print(f"LangGraph workflow error: {e}")
-                print("Falling back to direct execution")
+                # print(f"LangGraph workflow error: {e}")  # Commented out
+                # print("Falling back to direct execution")  # Commented out
+                # Fallback to direct execution without workflow
+                state = initial_state
+                state = await self._retrieve_memory_node(state)
+                state = await self._communication_phase_node(state)
+                state = await self._decision_making_node(state)
+                state = await self._process_orders_node(state)
+                state = await self._update_memory_node(state)
+                
+                return state
         
         state = initial_state
         state = await self._retrieve_memory_node(state)

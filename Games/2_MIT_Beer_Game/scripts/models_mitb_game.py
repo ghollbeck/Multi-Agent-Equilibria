@@ -27,6 +27,7 @@ class SimulationData:
     hyperparameters: dict
     rounds_log: List[RoundData] = field(default_factory=list)
     communication_log: List[Dict] = field(default_factory=list)
+    aggregated_rounds: List[Dict] = field(default_factory=list)
 
     def add_round_entry(self, entry: RoundData):
         self.rounds_log.append(entry)
@@ -34,11 +35,16 @@ class SimulationData:
     def add_communication_entry(self, entry: Dict):
         self.communication_log.append(entry)
 
+    def add_aggregated_round(self, round_dict: Dict):
+        """Store combined information for one round (agents + comms)."""
+        self.aggregated_rounds.append(round_dict)
+
     def to_dict(self):
         return {
             'hyperparameters': self.hyperparameters,
             'rounds_log': [asdict(r) for r in self.rounds_log],
-            'communication_log': self.communication_log
+            'communication_log': self.communication_log,
+            'aggregated_rounds': self.aggregated_rounds
         }
 
 class BeerGameLogger:
@@ -103,10 +109,11 @@ class BeerGameAgent(BaseModel):
                 decision_type="strategy_initialization"
             )
         except Exception as e:
-            print(f"❌ [Agent {self.role_name}] initialize_strategy: LLM call failed. Error: {e}")
-            response_str = ''
+            # print(f"❌ [Agent {self.role_name}] initialize_strategy: LLM call failed. Error: {e}")  # Commented out
+            response_str = "{}"
         if self.logger:
-            self.logger.log(f"[Agent {self.role_name}] Strategy response: {response_str}")
+            # self.logger.log(f"[Agent {self.role_name}] Strategy response: {response_str}")  # Commented out
+            pass
         default_strategy = {
             "order_quantity": 10,
             "confidence": 1.0,
@@ -140,8 +147,8 @@ class BeerGameAgent(BaseModel):
                 decision_type="strategy_update"
             )
         except Exception as e:
-            print(f"❌ [Agent {self.role_name}] update_strategy: LLM call failed. Error: {e}")
-            response_str = ''
+            # print(f"❌ [Agent {self.role_name}] update_strategy: LLM call failed. Error: {e}")  # Commented out
+            response_str = "{}"
         if self.logger:
             self.logger.log(f"[Agent {self.role_name}] Update response: {response_str}")
         default_update = {
@@ -186,8 +193,8 @@ class BeerGameAgent(BaseModel):
                 decision_type="order_decision"
             )
         except Exception as e:
-            print(f"❌ [Agent {self.role_name}] decide_order_quantity: LLM call failed. Error: {e}")
-            response_str = ''
+            # print(f"❌ [Agent {self.role_name}] decide_order_quantity: LLM call failed. Error: {e}")  # Commented out
+            response_str = "{}"
         if self.logger:
             self.logger.log(f"[Agent {self.role_name}] Decision response: {response_str}")
         default_decision = {
@@ -237,8 +244,8 @@ class BeerGameAgent(BaseModel):
                 decision_type="communication"
             )
         except Exception as e:
-            print(f"❌ [Agent {self.role_name}] generate_communication_message: LLM call failed. Error: {e}")
-            response_str = ''
+            # print(f"❌ [Agent {self.role_name}] generate_communication_message: LLM call failed. Error: {e}")  # Commented out
+            response_str = "{}"
         
         default_message = {
             "message": f"Hello from {self.role_name}. Let's work together efficiently.",
@@ -287,8 +294,8 @@ class BeerGameAgent(BaseModel):
                     decision_type="order_decision_with_communication"
                 )
             except Exception as e:
-                print(f"❌ [Agent {self.role_name}] decide_order_quantity_with_communication: LLM call failed. Error: {e}")
-                response_str = ''
+                # print(f"❌ [Agent {self.role_name}] decide_order_quantity_with_communication: LLM call failed. Error: {e}")  # Commented out
+                response_str = "{}"
             
             default_decision = {
                 "order_quantity": 10,

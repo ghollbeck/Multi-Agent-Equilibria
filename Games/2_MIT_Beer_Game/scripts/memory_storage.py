@@ -385,7 +385,7 @@ class MemoryManager:
             
             return True
         except Exception as e:
-            print(f"Error loading memories from {filepath}: {e}")
+            # print(f"Error loading memories from {filepath}: {e}")  # Commented out
             return False
     
     def clear_all_memories(self) -> None:

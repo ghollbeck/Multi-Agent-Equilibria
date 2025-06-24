@@ -72,10 +72,10 @@ import random
 import asyncio
 import requests
 try:
-    import nest_asyncio  # required to apply asyncio loops in scripts
+    import nest_asyncio
     nest_asyncio.apply()
 except ImportError:
-    print("Warning: nest_asyncio not available, running without it")
+    pass  # print("Warning: nest_asyncio not available, running without it")  # Commented out
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -313,7 +313,7 @@ async def run_beer_game_generation(
 
     # Initialize LangGraph workflow if memory is enabled
     workflow = None
-    if enable_memory and memory_manager:
+    if enable_memory or enable_shared_memory:
         workflow = BeerGameWorkflow(
             agents=agents,
             simulation_data=sim_data,
@@ -323,8 +323,6 @@ async def run_beer_game_generation(
             enable_communication=enable_communication,
             communication_rounds=communication_rounds
         )
-        if logger:
-            logger.log("LangGraph workflow initialized for memory-enabled simulation")
 
     # For convenience, create references:
     retailer = agents[0]
@@ -333,14 +331,13 @@ async def run_beer_game_generation(
     factory = agents[3] if len(agents) > 3 else None
 
     # Each round, do the Beer Game steps:
-    for r in range(num_rounds):
-        round_index = r + 1
-        if logger:
-            logger.log(f"\n--------------------- Round {round_index} ---------------------")
-            logger.log(f"External demand (Retailer): {external_demand[r]}")
+    for round_index in range(num_rounds):
+        logger.log(f"\n--- Starting Round {round_index+1} ---")
+        print(f"   🎲 Round {round_index+1}/{num_rounds} - External demand: {external_demand[round_index]}")
+        retailer_demand = external_demand[round_index]
 
         # 1. Retailer sees external demand
-        retailer_demand = external_demand[r]
+        retailer_demand = external_demand[round_index]
 
         # 2. Each role receives shipments that arrive this round
         shipments_received_list = []
@@ -416,20 +413,34 @@ async def run_beer_game_generation(
         if factory and distributor:
             incoming_factory = shipments_received_list[3]
             factory.inventory += incoming_factory
-            # Clear backlog first
+
+            # Clear backlog first with available inventory
             amt_to_backlog = min(factory.inventory, factory.backlog)
             factory.inventory -= amt_to_backlog
             factory.backlog -= amt_to_backlog
-            # Satisfy today's demand
+
+            # Satisfy today's demand with remaining inventory
             amt_to_demand = min(factory.inventory, dist_order)
             factory.inventory -= amt_to_demand
             leftover_demand = dist_order - amt_to_demand
             factory.backlog += leftover_demand
-            ship_down = amt_to_backlog + amt_to_demand  # everything that left the door
+
+            ship_down = amt_to_backlog + amt_to_demand
             shipments_sent_downstream[3] = ship_down
-            fact_order = ship_down  # order equals what you shipped
+            fact_order = ship_down
             factory.downstream_orders_history.append(dist_order)
             distributor.shipments_in_transit[1] += ship_down
+
+            # --- Infinite reservoir production *with* 1-round delay ---
+            # Whatever quantity factory *orders* for next round is guaranteed to arrive (no upstream cap).
+            # We ensure that the factory schedules enough production to cover its backlog so it never grows unbounded.
+            required_next_round = factory.backlog  # at minimum, clear backlog next round
+            # Add a safety buffer equal to expected demand (here: current dist_order) so inventory doesn't oscillate.
+            required_next_round += dist_order
+            scheduled_production = max(required_next_round, 0)
+            factory.shipments_in_transit[1] += scheduled_production
+            if logger:
+                logger.log(f"🔥 [Factory] Scheduled {scheduled_production} units for production (delivered next round)")
 
         # 4. Each role pays holding + backlog cost
         for idx, agent in enumerate(agents):
@@ -449,6 +460,7 @@ async def run_beer_game_generation(
         if enable_communication:
             if logger:
                 logger.log(f"Starting communication phase with {communication_rounds} rounds")
+            print(f"   💬 Communication phase ({communication_rounds} rounds)")
             
             for comm_round in range(communication_rounds):
                 if logger:
@@ -479,12 +491,13 @@ async def run_beer_game_generation(
                     communication_messages.append(message_entry)
                     
                     if logger:
-                        logger.log(f"[{agent.role_name}] Message: {message_response.get('message', '')}")
+                        logger.log(f"💬 [{agent.role_name}] message_sent (round {round_index+1}, comm {comm_round+1})")
                 
                 for agent in agents:
                     agent.message_history.extend(round_messages)
 
         # 5. Each role decides on new order quantity from upstream
+        print(f"   🤔 Agents making ordering decisions...")
         if workflow:
             initial_state = workflow.create_initial_state(
                 round_index=round_index,
@@ -566,7 +579,7 @@ async def run_beer_game_generation(
                 fieldnames = list(asdict(round_entries[0][0]).keys()) + llm_output_keys
                 
                 with open(csv_log_path, 'a', newline='') as csvfile:
-                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
                     if write_header:
                         writer.writeheader()
                     
@@ -598,7 +611,7 @@ async def run_beer_game_generation(
                         with open(json_log_path, 'r') as jf:
                             all_entries = json.load(jf)
                     except json.JSONDecodeError:
-                        print(f"Warning: Could not decode existing JSON file {json_log_path}. Starting fresh.")
+                        # print(f"Warning: Could not decode existing JSON file {json_log_path}. Starting fresh.")  # Commented out
                         all_entries = []
 
                 # Prepare all new entries with LLM data
@@ -626,9 +639,18 @@ async def run_beer_game_generation(
                 with open(json_log_path, 'w') as jsonfile:
                     json.dump(all_entries, jsonfile, indent=2)
 
+                # ---- Aggregated round structure for nested logging ----
+                aggregated_round = {
+                    "round_index": round_index,
+                    "communication": communication_messages,
+                    "agents": {e.role_name: asdict(e) for (e, _a) in round_entries}
+                }
+                if sim_data:
+                    sim_data.add_aggregated_round(aggregated_round)
+
         # Write human-readable log for the round
         if human_log_file:
-            human_log_file.write("\n--------------------- Round {} ---------------------\n".format(round_index))
+            human_log_file.write("\n--------------------- Round {} ---------------------\n".format(round_index+1))
             human_log_file.write("External demand (Retailer): {}\n".format(retailer_demand))
             human_log_file.write("Shipments received per agent: {}\n".format(shipments_received_list))
             
@@ -693,8 +715,7 @@ async def run_beer_game_generation(
 # --------------------------------------------------------------------
 
 async def run_beer_game_simulation(
-    num_generations: int = 1,
-    num_rounds_per_generation: int = 2,
+    num_rounds: int = 20,
     temperature: float = 0.7,
     logger: BeerGameLogger = None,
     enable_communication: bool = False,
@@ -704,17 +725,18 @@ async def run_beer_game_simulation(
     enable_shared_memory: bool = False
 ):
     """
-    Orchestrates multiple generations of the Beer Game. 
-    Each generation:
-      - Resets agent state or creates new agents
-      - Runs num_rounds_per_generation
-      - Agents update their strategy
+    Orchestrates the Beer Game simulation with multiple rounds.
+    Runs the specified number of rounds with agents adapting their strategies.
     """
     # Prepare folder for logs
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    base_results_folder = os.path.join(os.path.dirname(__file__), "simulation_results")
+    # Updated path to point to simulation_results in parent directory
+    base_results_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), "simulation_results")
 
     # --- New logic for run_N_date folder naming ---
+    # Create the base results folder if it doesn't exist
+    os.makedirs(base_results_folder, exist_ok=True)
+    
     existing_folders = [f for f in os.listdir(base_results_folder) if os.path.isdir(os.path.join(base_results_folder, f))]
     run_numbers = []
     for folder in existing_folders:
@@ -748,12 +770,11 @@ async def run_beer_game_simulation(
     # Generate external demand using a normal distribution centered at 10, clipped to [0, 20] and rounded to int
     external_demand_pattern = [
         int(min(20, max(0, round(random.gauss(10, 3)))))
-        for _ in range(num_rounds_per_generation)
+        for _ in range(num_rounds)
     ]
 
     sim_data = SimulationData(hyperparameters={
-        "num_generations": num_generations,
-        "num_rounds_per_generation": num_rounds_per_generation,
+        "num_rounds": num_rounds,
         "holding_cost_per_unit": 0.5,
         "backlog_cost_per_unit": 1.5,
         "profit_per_unit_sold": 5,
@@ -769,52 +790,33 @@ async def run_beer_game_simulation(
     with open(json_log_path, 'w') as jsonfile:
         json.dump([], jsonfile)
 
-    for gen_idx in range(num_generations):
-        logger.log(f"\n--- Starting Generation {gen_idx+1} ---")
+    logger.log(f"\n--- Starting Simulation ---")
+    print(f"\n🎮 Starting Beer Game Simulation with {num_rounds} rounds")
 
-        # Reset each agent's state if you want them to start "fresh" each generation 
-        # (except for the strategy).
-        for agent in agents:
-            agent.inventory = 100
-            agent.backlog = 0
-            agent.profit_accumulated = 0.0
-            # Also reset shipments in transit:
-            agent.shipments_in_transit = {0:10,1:10}
-            agent.downstream_orders_history = []
+    logger.log(f"\n============================================================\nBeer Game Simulation - {num_rounds} Rounds\n============================================================")
 
-        logger.log(f"\n============================================================\nGeneration {gen_idx+1}\n============================================================")
+    await run_beer_game_generation(
+        agents=agents,
+        external_demand=external_demand_pattern,
+        num_rounds=num_rounds,
+        holding_cost_per_unit=0.5,
+        backlog_cost_per_unit=1.5,
+        profit_per_unit_sold=5,
+        temperature=temperature,
+        generation_index=1,
+        sim_data=sim_data,
+        human_log_file=human_log_file,
+        logger=logger,
+        csv_log_path=csv_log_path,
+        json_log_path=json_log_path,
+        enable_communication=enable_communication,
+        communication_rounds=communication_rounds,
+        enable_memory=enable_memory,
+        memory_retention_rounds=memory_retention_rounds,
+        enable_shared_memory=enable_shared_memory
+    )
 
-        await run_beer_game_generation(
-            agents=agents,
-            external_demand=external_demand_pattern,
-            num_rounds=num_rounds_per_generation,
-            holding_cost_per_unit=0.5,
-            backlog_cost_per_unit=1.5,
-            profit_per_unit_sold=5,
-            temperature=temperature,
-            generation_index=gen_idx+1,
-            sim_data=sim_data,
-            human_log_file=human_log_file,
-            logger=logger,
-            csv_log_path=csv_log_path,
-            json_log_path=json_log_path,
-            enable_communication=enable_communication,
-            communication_rounds=communication_rounds,
-            enable_memory=enable_memory,
-            memory_retention_rounds=memory_retention_rounds,
-            enable_shared_memory=enable_shared_memory
-        )
-
-        # After the generation, collect performance logs for each agent,
-        # then ask them to update their strategy if desired.
-        for agent in agents:
-            # Summarize performance
-            performance_log = (
-                f"Final Inventory: {agent.inventory}, "
-                f"Final Backlog: {agent.backlog}, "
-                f"Total Profit: {agent.profit_accumulated:.2f}"
-            )
-            await agent.update_strategy(performance_log, temperature=temperature, profit_per_unit_sold=5)
+    print(f"✅ Simulation complete")
 
     # Simple visualizations (inventory/backlog over time, cost, etc.)
     # Ensure df_rounds is defined for saving and plotting
@@ -837,12 +839,19 @@ async def run_beer_game_simulation(
     from llm_calls_mitb_game import lite_client
     session_summary = lite_client.get_session_summary()
     
-    print(f"\n🎯 [LLM SESSION SUMMARY]")
-    print(f"   📞 Total LLM Calls: {session_summary['total_calls']}")
-    print(f"   💰 Total Cost: ${session_summary['total_cost_usd']}")
-    print(f"   📝 Total Tokens: {session_summary['total_tokens']} ({session_summary['total_input_tokens']} in + {session_summary['total_output_tokens']} out)")
-    print(f"   ⏱️  Total Inference Time: {session_summary['total_inference_time_seconds']}s")
-    print(f"   📊 Average per Call: {session_summary['average_inference_time_seconds']:.3f}s, ${session_summary['average_cost_per_call_usd']:.6f}")
+    print(f"\n📈 Simulation Summary:")
+    print(f"   Total Rounds: {num_rounds}")
+    print(f"   Total LLM Calls: {session_summary['total_calls']}")
+    print(f"   Total Cost: ${session_summary['total_cost_usd']:.2f}")
+    print(f"   Results saved to: {results_folder}")
+    
+    # Keep detailed logging only in files
+    # print(f"\n🎯 [LLM SESSION SUMMARY]")  # Commented out
+    # print(f"   📞 Total LLM Calls: {session_summary['total_calls']}")  # Commented out
+    # print(f"   💰 Total Cost: ${session_summary['total_cost_usd']}")  # Commented out
+    # print(f"   📝 Total Tokens: {session_summary['total_tokens']} ({session_summary['total_input_tokens']} in + {session_summary['total_output_tokens']} out)")  # Commented out
+    # print(f"   ⏱️  Total Inference Time: {session_summary['total_inference_time_seconds']}s")  # Commented out
+    # print(f"   📊 Average per Call: {session_summary['average_inference_time_seconds']:.3f}s, ${session_summary['average_cost_per_call_usd']:.6f}")  # Commented out
     
     human_log_file.write("\n----- LLM Session Summary -----\n")
     human_log_file.write("Total LLM Calls: {}\n".format(session_summary['total_calls']))
@@ -857,7 +866,7 @@ async def run_beer_game_simulation(
         session_summary['average_inference_time_seconds'], 
         session_summary['average_cost_per_call_usd']
     ))
-    
+
     # Save session summary to JSON
     session_summary_path = os.path.join(results_folder, "llm_session_summary.json")
     with open(session_summary_path, 'w') as f:
@@ -868,7 +877,7 @@ async def run_beer_game_simulation(
     if os.path.exists(metrics_file):
         metrics_dest = os.path.join(results_folder, "llm_inference_metrics.json")
         os.rename(metrics_file, metrics_dest)
-        print(f"📋 LLM metrics saved to: {metrics_dest}")
+        # print(f"📋 LLM metrics saved to: {metrics_dest}")  # Commented out
 
     human_log_file.close()
     logger.log("\nSimulation complete. Results saved to: {}".format(results_folder))
