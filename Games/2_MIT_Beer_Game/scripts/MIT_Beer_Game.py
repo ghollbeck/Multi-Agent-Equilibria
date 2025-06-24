@@ -271,7 +271,7 @@ async def run_beer_game_generation(
     holding_cost_per_unit: float = 0.5,
     backlog_cost_per_unit: float = 1.5,
     profit_per_unit_sold: float = 5,
-    temperature: float = 0.7,
+    temperature: float = 0,
     generation_index: int = 1,
     sim_data: SimulationData = None,
     human_log_file = None,
@@ -716,7 +716,7 @@ async def run_beer_game_generation(
 
 async def run_beer_game_simulation(
     num_rounds: int = 20,
-    temperature: float = 0.7,
+    temperature: float = 0,
     logger: BeerGameLogger = None,
     enable_communication: bool = False,
     communication_rounds: int = 2,

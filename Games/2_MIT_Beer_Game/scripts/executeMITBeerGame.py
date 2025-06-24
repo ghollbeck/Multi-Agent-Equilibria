@@ -40,7 +40,7 @@ def parse_args():
         help="Profit earned per unit sold"
     )
     parser.add_argument(
-        "--temperature", type=float, default=0.7,
+        "--temperature", type=float, default=0,
         help="Sampling temperature for the LLM"
     )
     parser.add_argument(
@@ -128,7 +128,7 @@ if __name__ == "__main__":
 #   --profit_per_unit_sold 6.0 \
 #   --temperature 0.9 \
 #   --model_name "gpt-4o-mini" \
-#   --enable_communication \   
+#   --enable_communication \
 #   --communication_rounds 4 \
 #   --enable_memory \
 #   --memory_retention_rounds 10 \

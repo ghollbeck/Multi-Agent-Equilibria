@@ -77,7 +77,7 @@ class BeerGameAgent(BaseModel):
     downstream_orders_history: List[int] = Field(default_factory=list)
     strategy: dict = Field(default_factory=dict)
     prompts: ClassVar[BeerGamePrompts] = BeerGamePrompts
-    logger: BeerGameLogger = None
+    logger: BeerGameLogger = Field(default=None, exclude=True)
     last_decision_prompt: str = ""
     last_decision_output: dict = Field(default_factory=dict)
     last_update_prompt: str = ""
@@ -92,7 +92,7 @@ class BeerGameAgent(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    async def initialize_strategy(self, temperature=0.7, profit_per_unit_sold=5):
+    async def initialize_strategy(self, temperature=0, profit_per_unit_sold=5):
         if self.logger:
             self.logger.log(f"[Agent {self.role_name}] Initializing strategy...")
         prompt = self.prompts.get_strategy_generation_prompt(
