@@ -59,6 +59,7 @@ class BeerGamePrompts:
           • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
           • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
           • Never let the inventory go to zero.
+          • **If your profits are negative or consistently low, consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
 
         Please return only valid JSON with the following fields in order:
 
@@ -104,6 +105,7 @@ class BeerGamePrompts:
           • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
           • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
           • Never let the inventory go to zero.
+          • **If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.**
           
         Return only valid JSON with the following fields in order:
 
@@ -150,6 +152,7 @@ class BeerGamePrompts:
           - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
           - Profit: ${profit_per_unit_sold} per unit sold
           - Never let the inventory go to zero.
+          - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
 
         **Important Supply Chain Rules:**
         - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
@@ -389,6 +392,8 @@ The upcoming USER message will always provide:
 • Your current strategy JSON and any relevant hyper-parameters.
 • When enabled, a short history of other agents' communications.
 • When enabled, a summary of your past memories/experiences.
+
+**IMPORTANT PROFITABILITY NOTE:** If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.
 
 Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
 """       
