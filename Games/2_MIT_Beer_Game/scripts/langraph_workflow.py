@@ -1,29 +1,26 @@
 """
-LangGraph workflow definition for MIT Beer Game simulation.
+Simple workflow for MIT Beer Game simulation without LangGraph dependencies.
 Coordinates agent communication, memory retrieval, decision making, and memory updates.
 """
+import os
+import json
 import asyncio
 import warnings
 from typing import Dict, List, Any, Optional, TypedDict
 from datetime import datetime
+from dataclasses import dataclass, field
 
-# Suppress Pydantic serialization warnings from LangSmith tracing
+# Suppress Pydantic serialization warnings
 warnings.filterwarnings("ignore", message=".*PydanticSerializationUnexpectedValue.*")
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic.*")
 
-try:
-    from langgraph.graph import StateGraph, END
-    from langchain_core.runnables import RunnableConfig
-    from langsmith import traceable
-    LANGRAPH_AVAILABLE = True
-except ImportError as e:
-    # print(f"Warning: LangGraph/LangSmith imports failed: {e}")  # Commented out
-    # print("Workflow will run without LangGraph integration")  # Commented out
-    StateGraph = None
-    END = None
-    RunnableConfig = None
-    traceable = lambda x: x
-    LANGRAPH_AVAILABLE = False
+# Force disable LangSmith to avoid rate limit issues
+LANGSMITH_AVAILABLE = False
+
+def traceable(name=None, **kwargs):
+    def decorator(func):
+        return func
+    return decorator
 
 from models_mitb_game import BeerGameAgent, SimulationData, RoundData
 from memory_storage import AgentMemory, SharedMemory, MemoryManager
@@ -52,7 +49,7 @@ class BeerGameState(TypedDict):
 
 
 class BeerGameWorkflow:
-    """LangGraph workflow for MIT Beer Game simulation with memory and communication."""
+    """Simple workflow for MIT Beer Game simulation with memory and communication."""
     
     def __init__(self, agents: List[BeerGameAgent], simulation_data: SimulationData,
                  memory_manager: Optional[MemoryManager] = None,
@@ -72,28 +69,6 @@ class BeerGameWorkflow:
         
         if self.enable_shared_memory and self.memory_manager:
             self.memory_manager.initialize_shared_memory()
-        
-        self.graph = self._build_graph() if StateGraph else None
-    
-    def _build_graph(self) -> StateGraph:
-        """Build the LangGraph workflow."""
-        graph = StateGraph(BeerGameState)
-        
-        graph.add_node("retrieve_memory", self._retrieve_memory_node)
-        graph.add_node("communication_phase", self._communication_phase_node)
-        graph.add_node("decision_making", self._decision_making_node)
-        graph.add_node("process_orders", self._process_orders_node)
-        graph.add_node("update_memory", self._update_memory_node)
-        
-        graph.add_edge("retrieve_memory", "communication_phase")
-        graph.add_edge("communication_phase", "decision_making")
-        graph.add_edge("decision_making", "process_orders")
-        graph.add_edge("process_orders", "update_memory")
-        graph.add_edge("update_memory", END)
-        
-        graph.set_entry_point("retrieve_memory")
-        
-        return graph.compile()
     
     @traceable
     async def _retrieve_memory_node(self, state: BeerGameState) -> BeerGameState:
@@ -151,7 +126,6 @@ class BeerGameWorkflow:
                     round_messages.append(message_entry)
                     
                 except Exception as e:
-                    # print(f"Communication error for {agent.role_name}: {e}")  # Commented out
                     # Skip this agent's communication on error
                     pass
             
@@ -194,7 +168,6 @@ class BeerGameWorkflow:
         try:
             decisions = await asyncio.gather(*decision_tasks)
         except Exception as e:
-            # print(f"Decision making error: {e}")  # Commented out
             # Return safe defaults
             decisions = [{"order_quantity": 10, "confidence": 0.5, "rationale": "Default fallback"} 
                         for _ in state["agents"]]
@@ -342,26 +315,9 @@ class BeerGameWorkflow:
         
         return state
     
-    async def run_round(self, initial_state: BeerGameState, 
-                       config: Optional[RunnableConfig] = None) -> BeerGameState:
+    async def run_round(self, initial_state: BeerGameState) -> BeerGameState:
         """Run a single round of the Beer Game workflow."""
-        if self.graph:
-            try:
-                final_state = await self.graph.ainvoke(initial_state, config)
-                return final_state
-            except Exception as e:
-                # print(f"LangGraph workflow error: {e}")  # Commented out
-                # print("Falling back to direct execution")  # Commented out
-                # Fallback to direct execution without workflow
-                state = initial_state
-                state = await self._retrieve_memory_node(state)
-                state = await self._communication_phase_node(state)
-                state = await self._decision_making_node(state)
-                state = await self._process_orders_node(state)
-                state = await self._update_memory_node(state)
-                
-                return state
-        
+        # Simple sequential execution without LangGraph
         state = initial_state
         state = await self._retrieve_memory_node(state)
         state = await self._communication_phase_node(state)
@@ -395,45 +351,3 @@ class BeerGameWorkflow:
             temperature=temperature,
             profit_per_unit_sold=profit_per_unit_sold
         )
-
-
-async def run_beer_game_round_with_workflow(
-    agents: List[BeerGameAgent],
-    simulation_data: SimulationData,
-    round_index: int,
-    generation: int,
-    total_rounds: int,
-    external_demand: int,
-    memory_manager: Optional[MemoryManager] = None,
-    enable_memory: bool = False,
-    enable_shared_memory: bool = False,
-    enable_communication: bool = False,
-    communication_rounds: int = 2,
-    temperature: float = 0.7,
-    profit_per_unit_sold: float = 5.0
-) -> BeerGameState:
-    """
-    Run a single round using the LangGraph workflow.
-    This function provides a bridge between the existing simulation code and the new workflow.
-    """
-    workflow = BeerGameWorkflow(
-        agents=agents,
-        simulation_data=simulation_data,
-        memory_manager=memory_manager,
-        enable_memory=enable_memory,
-        enable_shared_memory=enable_shared_memory,
-        enable_communication=enable_communication,
-        communication_rounds=communication_rounds
-    )
-    
-    initial_state = workflow.create_initial_state(
-        round_index=round_index,
-        generation=generation,
-        total_rounds=total_rounds,
-        external_demand=external_demand,
-        temperature=temperature,
-        profit_per_unit_sold=profit_per_unit_sold
-    )
-    
-    final_state = await workflow.run_round(initial_state)
-    return final_state

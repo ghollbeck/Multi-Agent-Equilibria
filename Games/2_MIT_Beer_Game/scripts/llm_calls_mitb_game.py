@@ -7,17 +7,26 @@ from datetime import datetime
 from dotenv import load_dotenv
 import re  # for JSON parsing
 
-try:
-    from langsmith import traceable
-    LANGSMITH_AVAILABLE = True
-    # print("✓ LangSmith successfully imported and available for tracing")  # Commented out
-except (ImportError, TypeError, Exception) as e:
-    # print(f"Warning: LangSmith not available ({type(e).__name__}: {str(e)[:100]}...), running without tracing")  # Commented out
-    LANGSMITH_AVAILABLE = False
-    def traceable(name=None, **kwargs):
-        def decorator(func):
-            return func
-        return decorator
+# Force disable LangSmith to avoid rate limit issues
+LANGSMITH_AVAILABLE = False
+
+def traceable(name=None, **kwargs):
+    def decorator(func):
+        return func
+    return decorator
+
+# Commented out LangSmith import to prevent any tracing
+# try:
+#     from langsmith import traceable
+#     LANGSMITH_AVAILABLE = True
+#     # print("✓ LangSmith successfully imported and available for tracing")  # Commented out
+# except (ImportError, TypeError, Exception) as e:
+#     # print(f"Warning: LangSmith not available ({type(e).__name__}: {str(e)[:100]}...), running without tracing")  # Commented out
+#     LANGSMITH_AVAILABLE = False
+#     def traceable(name=None, **kwargs):
+#         def decorator(func):
+#             return func
+#         return decorator
 
 # Load environment variables for API key
 load_dotenv()

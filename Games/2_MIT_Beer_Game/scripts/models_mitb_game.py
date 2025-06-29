@@ -22,6 +22,11 @@ class RoundData:
     shipment_received: int
     shipment_sent_downstream: int
     profit: float
+    # NEW: Track order and production delays
+    orders_in_transit_0: int = 0  # Orders arriving this round
+    orders_in_transit_1: int = 0  # Orders arriving next round
+    production_queue_0: int = 0   # Production completing this round (Factory only)
+    production_queue_1: int = 0   # Production completing next round (Factory only)
 
 @dataclass
 class SimulationData:
@@ -75,6 +80,8 @@ class BeerGameAgent(BaseModel):
     last_profit: Optional[float] = None
     last_order_placed: Optional[int] = None
     shipments_in_transit: Dict[int,int] = Field(default_factory=lambda: {0:0, 1:0})
+    orders_in_transit: Dict[int,int] = Field(default_factory=lambda: {0:0, 1:0})  # NEW: Order delay pipeline
+    production_queue: Dict[int,int] = Field(default_factory=lambda: {0:0, 1:0})  # NEW: Factory production delay
     downstream_orders_history: List[int] = Field(default_factory=list)
     strategy: dict = Field(default_factory=dict)
     prompts: ClassVar[BeerGamePrompts] = BeerGamePrompts
@@ -104,6 +111,8 @@ class BeerGameAgent(BaseModel):
             inventory=initial_inventory,
             backlog=initial_backlog,
             shipments_in_transit={0: 0, 1: 0},  # Start with no shipments in transit
+            orders_in_transit={0: 0, 1: 0},    # NEW: Start with no orders in transit
+            production_queue={0: 0, 1: 0},     # NEW: Start with no production in queue
             logger=logger
         )
 
@@ -193,7 +202,7 @@ class BeerGameAgent(BaseModel):
 
     async def decide_order_quantity(self, temperature=0.7, profit_per_unit_sold=2.5) -> dict:
         if self.logger:
-            self.logger.log(f"[Agent {self.role_name}] Deciding order quantity. Inventory: {self.inventory}, Backlog: {self.backlog}, Downstream: {self.downstream_orders_history[-3:]}, Shipments: {[self.shipments_in_transit[1]]}")
+            self.logger.log(f"[Agent {self.role_name}] Deciding order quantity. Inventory: {self.inventory}, Backlog: {self.backlog}, Downstream: {self.downstream_orders_history[-3:]}, Shipments: {[self.shipments_in_transit[1]]}, Orders arriving: {[self.orders_in_transit[0]]}")
         last_order_placed = self.last_order_placed
         last_profit = self.last_profit
         prompt = self.prompts.get_decision_prompt(

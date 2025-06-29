@@ -24,8 +24,8 @@ def parse_args():
         description="Execute the MIT Beer Game simulation with custom parameters"
     )
     parser.add_argument(
-        "--num_rounds", type=int, default=10,
-        help="Number of rounds to simulate"
+        "--num_rounds", type=int, default=40,
+        help="Number of rounds to simulate (canonical MIT Beer Game uses 36-50 rounds)"
     )
     parser.add_argument(
         "--holding_cost_per_unit", type=float, default=0.5,

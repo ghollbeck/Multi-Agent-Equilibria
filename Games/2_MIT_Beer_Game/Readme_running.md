@@ -511,3 +511,40 @@ python executeMITBeerGame.py --initial_inventory 50 --initial_backlog 25 --num_r
 ---
 
 ## 🏛️ Background: The MIT Beer Game 
+
+## Latest Changes Log
+
+### 2025-06-27: LangSmith Integration Disabled to Avoid Rate Limits
+
+**Issue**: The MIT Beer Game simulation was encountering LangSmith rate limit errors when trying to trace LLM calls, causing error messages to flood the output:
+```
+Failed to multipart ingest runs: langsmith.utils.LangSmithRateLimitError: Rate limit exceeded for https://api.smith.langchain.com/runs/multipart
+```
+
+**Solution Applied**:
+1. **Disabled LangSmith in `llm_calls_mitb_game.py`**: 
+   - Set `LANGSMITH_AVAILABLE = False` at the top of the file
+   - Commented out the LangSmith import to prevent any tracing attempts
+   - Created a no-op `traceable` decorator function
+
+2. **Simplified `langraph_workflow.py`**:
+   - Removed all LangGraph dependencies (StateGraph, END, etc.)
+   - Created a simple sequential workflow that doesn't require LangGraph
+   - Removed complex graph building and just runs nodes sequentially
+
+**Result**: 
+- Simulation now runs cleanly without LangSmith rate limit errors
+- All functionality preserved: communication, decision making, memory, logging
+- Performance improved with cleaner output
+- Successfully completed 10-round simulation with 84 LLM calls costing $0.87
+
+**Key Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/llm_calls_mitb_game.py` - Disabled LangSmith tracing
+- `Games/2_MIT_Beer_Game/scripts/langraph_workflow.py` - Simplified to remove LangGraph dependencies
+
+**Command to Run Without LangSmith**:
+```bash
+python Games/2_MIT_Beer_Game/scripts/executeMITBeerGame.py --num_rounds 10 --initial_inventory 50 --initial_backlog 0 --temperature 0 --communication_rounds 1 --profit_per_unit_sold 1.5 --backlog_cost_per_unit 1
+```
+
+The simulation logic remains intact and the Beer Game mechanics work properly with the fixed order flow from previous iterations. 

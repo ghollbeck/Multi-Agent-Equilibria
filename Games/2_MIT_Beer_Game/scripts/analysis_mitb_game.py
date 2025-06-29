@@ -65,8 +65,21 @@ def plot_beer_game_results(rounds_df: pd.DataFrame, results_folder: str, externa
     plt.savefig(os.path.join(results_folder, "cost_over_time.png"))
     plt.close()
 
-    # Combined plot with subplots for Inventory, Backlog, Profit, and External Demand
-    num_subplots = 4 if external_demand else 3
+    # Order quantities by role (stand-alone)
+    plt.figure(figsize=(10, 6))
+    for role in rounds_df["role_name"].unique():
+        subset = rounds_df[rounds_df["role_name"] == role]
+        plt.plot(subset["global_round"], subset["order_placed"], label=role)
+    plt.title("Order Quantity Over Rounds")
+    plt.xlabel("Round")
+    plt.ylabel("Units Ordered Upstream")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(os.path.join(results_folder, "orders_over_time.png"))
+    plt.close()
+
+    # Combined plot with subplots for Inventory, Backlog, Profit, Orders, and External Demand
+    num_subplots = 5 if external_demand else 4
     fig, axes = plt.subplots(num_subplots, 1, figsize=(10, 6 * num_subplots))
 
     # Subplot 1: Inventory
@@ -99,19 +112,29 @@ def plot_beer_game_results(rounds_df: pd.DataFrame, results_folder: str, externa
     axes[2].legend()
     axes[2].grid(True)
 
-    # Subplot 4: External Demand (if provided)
+    # Subplot 4: Orders
+    for role in rounds_df["role_name"].unique():
+        subset = rounds_df[rounds_df["role_name"] == role]
+        axes[3].plot(subset["global_round"], subset["order_placed"], label=role)
+    axes[3].set_title("Order Quantity Over Rounds")
+    axes[3].set_xlabel("Round")
+    axes[3].set_ylabel("Units Ordered Upstream")
+    axes[3].legend()
+    axes[3].grid(True)
+
+    # Subplot 5: External Demand (if provided)
     if external_demand:
         rounds = list(range(len(external_demand)))
-        axes[3].plot(rounds, external_demand, 'ko-', linewidth=2, markersize=6, label="External Demand")
-        axes[3].set_title("External Customer Demand")
-        axes[3].set_xlabel("Round")
-        axes[3].set_ylabel("Demand (Units)")
-        axes[3].legend()
-        axes[3].grid(True)
+        axes[4].plot(rounds, external_demand, 'ko-', linewidth=2, markersize=6, label="External Demand")
+        axes[4].set_title("External Customer Demand")
+        axes[4].set_xlabel("Round")
+        axes[4].set_ylabel("Demand (Units)")
+        axes[4].legend()
+        axes[4].grid(True)
         # Add average demand line
         avg_demand = sum(external_demand) / len(external_demand)
-        axes[3].axhline(y=avg_demand, color='r', linestyle='--', alpha=0.5, label=f"Average: {avg_demand:.1f}")
-        axes[3].legend()
+        axes[4].axhline(y=avg_demand, color='r', linestyle='--', alpha=0.5, label=f"Average: {avg_demand:.1f}")
+        axes[4].legend()
 
     fig.tight_layout()
     combined_plot_path = os.path.join(results_folder, "combined_plots.png")

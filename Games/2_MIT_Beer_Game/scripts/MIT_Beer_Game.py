@@ -396,30 +396,17 @@ async def run_beer_game_generation(
             incoming_wholesaler = shipments_received_list[1]
             wholesaler.inventory += incoming_wholesaler
             
-            # Calculate maximum allowed shipment: retailer order + current backlog
-            max_allowed_shipment = retailer_order + wholesaler.backlog
-            available_to_ship = min(wholesaler.inventory, max_allowed_shipment)
+            # Add retailer's new order to wholesaler's backlog
+            wholesaler.backlog += retailer_order
             
-            if logger and wholesaler.inventory > max_allowed_shipment:
-                logger.log(f"📦 [Wholesaler] Shipment constraint applied: inventory={wholesaler.inventory}, max_allowed={max_allowed_shipment}")
-            
-            # Clear backlog first
-            amt_to_backlog = min(available_to_ship, wholesaler.backlog)
-            wholesaler.inventory -= amt_to_backlog
-            wholesaler.backlog -= amt_to_backlog
-            available_to_ship -= amt_to_backlog
-            
-            # Satisfy today's demand with remaining allowed shipment
-            amt_to_demand = min(available_to_ship, retailer_order)
-            wholesaler.inventory -= amt_to_demand
-            leftover_demand = retailer_order - amt_to_demand
-            wholesaler.backlog += leftover_demand
-            
-            ship_down = amt_to_backlog + amt_to_demand  # everything that left the door
+            # Ship from backlog (which now includes the new order)
+            ship_down = min(wholesaler.inventory, wholesaler.backlog)
+            wholesaler.inventory -= ship_down
+            wholesaler.backlog -= ship_down
+
             shipments_sent_downstream[1] = ship_down
-            wh_order = ship_down  # order equals what you shipped
             wholesaler.downstream_orders_history.append(retailer_order)
-            orders_received_from_downstream[1] = retailer_order  # Wholesaler receives order from Retailer
+            orders_received_from_downstream[1] = retailer_order
             retailer.shipments_in_transit[1] += ship_down
 
         # 3. Distributor
@@ -427,70 +414,43 @@ async def run_beer_game_generation(
             incoming_distributor = shipments_received_list[2]
             distributor.inventory += incoming_distributor
             
-            # Calculate maximum allowed shipment: wholesaler order + current backlog
-            max_allowed_shipment = wh_order + distributor.backlog
-            available_to_ship = min(distributor.inventory, max_allowed_shipment)
+            # Add wholesaler's new order to distributor's backlog
+            wh_order = shipments_sent_downstream[1]  # What wholesaler just shipped
+            distributor.backlog += wh_order
             
-            if logger and distributor.inventory > max_allowed_shipment:
-                logger.log(f"📦 [Distributor] Shipment constraint applied: inventory={distributor.inventory}, max_allowed={max_allowed_shipment}")
-            
-            # Clear backlog first
-            amt_to_backlog = min(available_to_ship, distributor.backlog)
-            distributor.inventory -= amt_to_backlog
-            distributor.backlog -= amt_to_backlog
-            available_to_ship -= amt_to_backlog
-            
-            # Satisfy today's demand with remaining allowed shipment
-            amt_to_demand = min(available_to_ship, wh_order)
-            distributor.inventory -= amt_to_demand
-            leftover_demand = wh_order - amt_to_demand
-            distributor.backlog += leftover_demand
-            
-            ship_down = amt_to_backlog + amt_to_demand  # everything that left the door
+            # Ship from backlog (which now includes the new order)
+            ship_down = min(distributor.inventory, distributor.backlog)
+            distributor.inventory -= ship_down
+            distributor.backlog -= ship_down
+
             shipments_sent_downstream[2] = ship_down
-            dist_order = ship_down  # order equals what you shipped
             distributor.downstream_orders_history.append(wh_order)
-            orders_received_from_downstream[2] = wh_order  # Distributor receives order from Wholesaler
+            orders_received_from_downstream[2] = wh_order
             wholesaler.shipments_in_transit[1] += ship_down
 
         # 4. Factory
         if factory and distributor:
             incoming_factory = shipments_received_list[3]
             factory.inventory += incoming_factory
+            
+            # Add distributor's new order to factory's backlog
+            dist_order = shipments_sent_downstream[2]  # What distributor just shipped
+            factory.backlog += dist_order
+            
+            # Ship from backlog (which now includes the new order)
+            ship_down = min(factory.inventory, factory.backlog)
+            factory.inventory -= ship_down
+            factory.backlog -= ship_down
 
-            # Calculate maximum allowed shipment: distributor order + current backlog
-            max_allowed_shipment = dist_order + factory.backlog
-            available_to_ship = min(factory.inventory, max_allowed_shipment)
-
-            if logger and factory.inventory > max_allowed_shipment:
-                logger.log(f"📦 [Factory] Shipment constraint applied: inventory={factory.inventory}, max_allowed={max_allowed_shipment}")
-
-            # Clear backlog first with available shipment allowance
-            amt_to_backlog = min(available_to_ship, factory.backlog)
-            factory.inventory -= amt_to_backlog
-            factory.backlog -= amt_to_backlog
-            available_to_ship -= amt_to_backlog
-
-            # Satisfy today's demand with remaining allowed shipment
-            amt_to_demand = min(available_to_ship, dist_order)
-            factory.inventory -= amt_to_demand
-            leftover_demand = dist_order - amt_to_demand
-            factory.backlog += leftover_demand
-
-            ship_down = amt_to_backlog + amt_to_demand
             shipments_sent_downstream[3] = ship_down
-            fact_order = ship_down
             factory.downstream_orders_history.append(dist_order)
-            orders_received_from_downstream[3] = dist_order  # Factory receives order from Distributor
+            orders_received_from_downstream[3] = dist_order
             distributor.shipments_in_transit[1] += ship_down
 
             # --- Infinite reservoir production *with* 1-round delay ---
             # Whatever quantity factory *orders* for next round is guaranteed to arrive (no upstream cap).
             # We ensure that the factory schedules enough production to cover its backlog so it never grows unbounded.
-            required_next_round = factory.backlog  # at minimum, clear backlog next round
-            # Add a safety buffer equal to expected demand (here: current dist_order) so inventory doesn't oscillate.
-            required_next_round += dist_order
-            scheduled_production = max(required_next_round, 0)
+            scheduled_production = max(factory.backlog, 0)  # produce enough to clear backlog only
             factory.shipments_in_transit[1] += scheduled_production
             if logger:
                 logger.log(f"🔥 [Factory] Scheduled {scheduled_production} units for production (delivered next round)")
@@ -579,20 +539,14 @@ async def run_beer_game_generation(
                     order_decision_tasks.append(agent.decide_order_quantity(temperature=temperature, profit_per_unit_sold=profit_per_unit_sold))
             decisions = await asyncio.gather(*order_decision_tasks)
 
-        # 6. Place orders upstream => those orders become supplier's backlog
+        # 6. LLM decisions for strategic planning (logged but not used for immediate orders)
         orders_placed = []
         for idx, (agent, dec) in enumerate(zip(agents, decisions)):
             order_qty = dec.get("order_quantity", 10)
             orders_placed.append(order_qty)
             # store last order placed for context
             agent.last_order_placed = order_qty
-            if idx < len(agents) - 1:
-                # normal agent places order to its supplier
-                upstream_agent = agents[idx + 1]
-                upstream_agent.backlog += order_qty
-            else:
-                # Factory "produces" on a 1-round lead time by scheduling its own production
-                agent.shipments_in_transit[1] += order_qty
+            # Note: Orders are now processed during shipping phase, not here
 
         # Store round logs
         if sim_data:
@@ -630,7 +584,10 @@ async def run_beer_game_generation(
                     'llm_incoming_shipments', 'llm_last_order_placed', 'llm_confidence',
                     'llm_rationale', 'llm_risk_assessment', 'llm_expected_demand_next_round'
                 ]
-                fieldnames = list(asdict(round_entries[0][0]).keys()) + llm_output_keys
+                base_fields = list(asdict(round_entries[0][0]).keys())
+                if 'external_demand' not in base_fields:
+                    base_fields.append('external_demand')
+                fieldnames = base_fields + llm_output_keys
                 
                 with open(csv_log_path, 'a', newline='') as csvfile:
                     writer = csv.DictWriter(csvfile, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
@@ -641,6 +598,8 @@ async def run_beer_game_generation(
                     for entry, agent in round_entries:
                         # Prepare the row data including new LLM fields
                         row_data = asdict(entry)
+                        # Add external demand for this round (same for all agents)
+                        row_data['external_demand'] = retailer_demand
                         llm_decision = getattr(agent, 'last_decision_output', {})
                         row_data.update({
                             # Add new LLM fields with prefixes
