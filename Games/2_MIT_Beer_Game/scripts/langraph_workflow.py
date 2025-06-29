@@ -3,8 +3,13 @@ LangGraph workflow definition for MIT Beer Game simulation.
 Coordinates agent communication, memory retrieval, decision making, and memory updates.
 """
 import asyncio
+import warnings
 from typing import Dict, List, Any, Optional, TypedDict
 from datetime import datetime
+
+# Suppress Pydantic serialization warnings from LangSmith tracing
+warnings.filterwarnings("ignore", message=".*PydanticSerializationUnexpectedValue.*")
+warnings.filterwarnings("ignore", category=UserWarning, module="pydantic.*")
 
 try:
     from langgraph.graph import StateGraph, END

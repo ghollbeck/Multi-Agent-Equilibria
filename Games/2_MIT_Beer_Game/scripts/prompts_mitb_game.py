@@ -10,10 +10,36 @@ class BeerGamePrompts:
       3. Decide on a new order quantity each round.
     """
 
+    # ------------------------------------------------------------------
+    # 🆕 Role-specific context & system prompt templates
+    # ------------------------------------------------------------------
+
+    _ROLE_SPECIALTIES = {
+        "Retailer": (
+            "You directly face external customer demand and are the only stage that observes *true* market demand in real time. "
+            "You cannot produce goods and must order from the Wholesaler. Your key objective is to avoid stock-outs to keep customers satisfied while minimising holding & backlog costs."),
+        "Wholesaler": (
+            "You are the intermediary between Retailer and Distributor. You see aggregated orders from the Retailer (not end-customer demand) and fulfil them from your inventory or by ordering from the Distributor. Your objective is to dampen demand variability while minimising costs."),
+        "Distributor": (
+            "You bridge the Wholesaler and Factory. You consolidate orders from the Wholesaler, buffer lead-time variability, and place orders to the Factory. Your objective is to provide stable, timely supply downstream while avoiding excessive inventory."),
+        "Factory": (
+            "You are the production stage. Instead of ordering upstream you *schedule production*. You can produce any quantity, but production appears downstream with a 1-round delay. Your objective is to balance production levels with downstream orders and to keep backlog low without creating costly excess stock.")
+    }
+
+    @classmethod
+    def _role_context(cls, role_name: str) -> str:
+        """Return one-sentence role context."""
+        return cls._ROLE_SPECIALTIES.get(role_name, "")
+
+    # ------------------------------------------------------------------
+    # Strategy generation prompt
+    # ------------------------------------------------------------------
+
     @staticmethod
-    def get_strategy_generation_prompt(role_name: str, inventory: int = 100, backlog: int = 0, profit_per_unit_sold: float = 5) -> str:
+    def get_strategy_generation_prompt(role_name: str, inventory: int = 100, backlog: int = 0, profit_per_unit_sold: float = 2.5) -> str:
+        role_context = BeerGamePrompts._role_context(role_name)
         return f"""
-        You are the {role_name} in the MIT Beer Game. 
+        You are the {role_name} in the MIT Beer Game. {role_context}
         Your task is to develop an ordering strategy that will minimize total costs 
         (holding costs + backlog costs - profits) over multiple rounds.
 
@@ -30,8 +56,9 @@ class BeerGamePrompts:
           • You have a holding cost of 0.5 per unit per round
           • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
           • You earn ${profit_per_unit_sold} profit for each unit sold
-         • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
-         • Never let the inventory go to zero.
+          • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+          • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+          • Never let the inventory go to zero.
 
         Please return only valid JSON with the following fields in order:
 
@@ -42,7 +69,7 @@ class BeerGamePrompts:
           "confidence": <float between 0 and 1>,
           "rationale": "<brief explanation of your reasoning>",
           "risk_assessment": "<describe any risks you anticipate>",
-          "expected_demand_next_round": <integer>,
+          " d_demand_next_round": <integer>,
           "order_quantity": <integer>
         }}
 
@@ -51,9 +78,10 @@ class BeerGamePrompts:
 
     @staticmethod
     def get_strategy_update_prompt(role_name: str, performance_log: str, current_strategy: dict,
-                                 inventory: int = 100, backlog: int = 0, profit_per_unit_sold: float = 5) -> str:
+                                 inventory: int = 100, backlog: int = 0, profit_per_unit_sold: float = 2.5) -> str:
+        role_context = BeerGamePrompts._role_context(role_name)
         return f"""
-        You are the {role_name} in the MIT Beer Game. 
+        You are the {role_name} in the MIT Beer Game. {role_context}
         
         Current State:
           • Current Inventory: {inventory} units
@@ -73,7 +101,8 @@ class BeerGamePrompts:
           • You have a holding cost of 0.5 per unit per round
           • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
           • You earn ${profit_per_unit_sold} profit for each unit sold
-         • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+          • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+          • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
           • Never let the inventory go to zero.
           
         Return only valid JSON with the following fields in order:
@@ -99,11 +128,12 @@ class BeerGamePrompts:
                             recent_demand_or_orders: List[int],
                             incoming_shipments: List[int],
                             current_strategy: dict,
-                            profit_per_unit_sold: float = 5,
+                            profit_per_unit_sold: float = 2.5,
                             last_order_placed: int = None,
                             last_profit: float = None) -> str:
+        role_context = BeerGamePrompts._role_context(role_name)
         return f"""
-        You are the {role_name} in the MIT Beer Game. 
+        You are the {role_name} in the MIT Beer Game. {role_context}
         Current State:
           - Inventory: {inventory} units
           - Backlog: {backlog} units
@@ -121,10 +151,11 @@ class BeerGamePrompts:
           - Profit: ${profit_per_unit_sold} per unit sold
           - Never let the inventory go to zero.
 
-        **Important:**
+        **Important Supply Chain Rules:**
         - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
         - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
         - CRITICAL: You must account for BOTH your current backlog ({backlog} units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
         - Review how much you have ordered and earned in the last round(s) to inform your decision.
         - Try to maintain a buffer of inventory to cover expected demand during the lead time.
 
@@ -152,12 +183,13 @@ class BeerGamePrompts:
 
     @staticmethod
     def get_communication_prompt(role_name: str, inventory: int, backlog: int, 
-                               recent_demand_or_orders: List[int], current_strategy: dict,
-                               message_history: List[Dict], other_agent_roles: List[str],
-                               round_index: int, last_order_placed: int = None,
-                               profit_accumulated: float = 0.0) -> str:
+                                recent_demand_or_orders: List[int], current_strategy: dict,
+                                message_history: List[Dict], other_agent_roles: List[str],
+                                round_index: int, last_order_placed: int = None,
+                                profit_accumulated: float = 0.0) -> str:
+        role_context = BeerGamePrompts._role_context(role_name)
         return f"""
-        You are the {role_name} in the MIT Beer Game, Round {round_index}.
+        You are the {role_name} in the MIT Beer Game, Round {round_index}. {role_context}
         
         Your Current State:
           - Inventory: {inventory} units
@@ -166,6 +198,12 @@ class BeerGamePrompts:
           - Last order placed: {last_order_placed}
           - Total profit so far: ${profit_accumulated:.2f}
           - Current strategy: {json.dumps(current_strategy, indent=2)}
+        
+        CRITICAL SUPPLY CHAIN CONTEXT:
+        ⏱️ LEAD TIME: All orders take EXACTLY 1 round to arrive (no exceptions)
+        💰 ECONOMICS: Holding cost $0.5/unit, Backlog cost $1.5/unit, Profit $2.5/unit sold
+        📦 SHIPMENT RULE: Can only ship (downstream_order + your_backlog) - no oversupply allowed
+        🏭 FACTORY SPECIAL: Factory schedules production (not orders) with same 1-round delay
         
         Other agents in the supply chain: {', '.join(other_agent_roles)}
         
@@ -182,17 +220,25 @@ class BeerGamePrompts:
         3. State your conclusion and response: "Based on this, my conclusion is..."
         4. Explain how you will react: "Therefore, I will..."
         
-        Consider sharing:
-        - What demand patterns or trends you've observed
-        - Suggestions for coordination to reduce bullwhip effect
-        - Your capacity constraints or inventory situation
-        - Proposals for information sharing or collaboration
-        - Strategic hints that benefit everyone (including yourself)
-        - Your specific reactions to what other agents have shared
+        CRITICAL COMMUNICATION OBJECTIVES:
+        📊 PROFIT FOCUS: Emphasize YOUR current profit (${profit_accumulated:.2f}) and how decisions affect it
+        📦 INVENTORY STATUS: Share your inventory ({inventory} units) and backlog ({backlog} units) situation
+        🤝 COLLABORATIVE PROFIT: Propose strategies to maximize TOTAL supply chain profits
+        ⚠️ PREVENT COLLAPSE: Warn about risks of stockouts, oversupply, or market instability
         
-        Be strategic - acknowledge what others have said, share helpful information that 
-        encourages good collaboration, but maintain your competitive advantage. Keep messages 
-        concise but informative.
+        You MUST elaborate on:
+        - Your profit trajectory and what threatens it
+        - How your inventory/backlog affects the entire chain
+        - Specific coordination to prevent bullwhip effect
+        - Joint strategies to keep everyone profitable
+        - Warning signs of potential market collapse
+        - Your shipment constraints (can only ship orders + backlog)
+        - Timing considerations: orders arrive in 1 round, plan accordingly
+        - Cost implications: holding vs backlog costs affect profit margins
+        - Supply chain stability: how to maintain steady flow without oscillations
+         
+        Be transparent about your situation while proposing win-win strategies.
+        Emphasize that supply chain collapse hurts EVERYONE's profits.
         
         Return only valid JSON with these fields:
         
@@ -207,10 +253,13 @@ class BeerGamePrompts:
         IMPORTANT: Output ONLY the JSON object, no markdown, no code fences. Keep it concise.
         """
 
+
+
+
     @staticmethod
     def get_decision_prompt_with_communication(role_name: str, inventory: int, backlog: int,
                                             recent_demand_or_orders: List[int], incoming_shipments: List[int],
-                                            current_strategy: dict, profit_per_unit_sold: float = 5,
+                                            current_strategy: dict, profit_per_unit_sold: float = 2.5,
                                             last_order_placed: int = None, last_profit: float = None,
                                             recent_communications: List[Dict] = None) -> str:
         base_prompt = BeerGamePrompts.get_decision_prompt(
@@ -259,10 +308,13 @@ class BeerGamePrompts:
         
         return memory_context
 
+
+
+
     @staticmethod
     def get_decision_prompt_with_memory(role_name: str, inventory: int, backlog: int,
                                       recent_demand_or_orders: List[int], incoming_shipments: List[int],
-                                      current_strategy: dict, profit_per_unit_sold: float = 5,
+                                      current_strategy: dict, profit_per_unit_sold: float = 2.5,
                                       last_order_placed: int = None, last_profit: float = None,
                                       agent_memory = None, memory_retention_rounds: int = 5) -> str:
         """Enhanced decision prompt that incorporates agent memory if available."""
@@ -306,4 +358,37 @@ class BeerGamePrompts:
                 enhanced_prompt = prompt_parts[0] + memory_context + "\nReturn only valid JSON with these fields:" + prompt_parts[1]
                 return enhanced_prompt
         
-        return base_prompt       
+        return base_prompt
+
+    @staticmethod
+    def get_system_prompt(role_name: str, enable_communication: bool = True) -> str:
+        """Return a role-specific system prompt for the MIT Beer Game agent.
+
+        The prompt describes the simulation, the agent's objective, the information
+        it will receive in the user message, and the expected JSON-only output.
+        """
+        comm_clause = "You may also broadcast one concise message to the other agents before ordering each round." if enable_communication else "Communication is disabled in the current simulation run."
+        role_context = BeerGamePrompts._role_context(role_name)
+
+        return f"""
+You are the {role_name} agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: {role_context}
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. {comm_clause}
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+"""       

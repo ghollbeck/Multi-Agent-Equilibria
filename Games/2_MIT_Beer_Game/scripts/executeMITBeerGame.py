@@ -36,7 +36,7 @@ def parse_args():
         help="Backlog cost per unit per round"
     )
     parser.add_argument(
-        "--profit_per_unit_sold", type=float, default=5.0,
+        "--profit_per_unit_sold", type=float, default=2.5,
         help="Profit earned per unit sold"
     )
     parser.add_argument(
@@ -71,6 +71,15 @@ def parse_args():
         "--langsmith_project", type=str, default="MIT_beer_game_Langsmith",
         help="LangSmith project name for tracing (default: MIT_beer_game_Langsmith)"
     )
+    # New arguments for initial agent values
+    parser.add_argument(
+        "--initial_inventory", type=int, default=100,
+        help="Initial inventory for all agents (default: 100)"
+    )
+    parser.add_argument(
+        "--initial_backlog", type=int, default=0,
+        help="Initial backlog for all agents (default: 0)"
+    )
     return parser.parse_args()
 
 
@@ -97,7 +106,9 @@ def main():
             communication_rounds=args.communication_rounds,
             enable_memory=args.enable_memory,
             memory_retention_rounds=args.memory_retention_rounds,
-            enable_shared_memory=args.enable_shared_memory
+            enable_shared_memory=args.enable_shared_memory,
+            initial_inventory=args.initial_inventory,
+            initial_backlog=args.initial_backlog
         )
     )
 
@@ -119,7 +130,9 @@ if __name__ == "__main__":
 #   --temperature 0.8 \
 #   --enable_memory \
 #   --memory_retention_rounds 7 \
-#   --communication_rounds 3
+#   --communication_rounds 3 \
+#   --initial_inventory 150 \
+#   --initial_backlog 10
 
 # python Games/2_MIT_Beer_Game/scripts/executeMITBeerGame.py \
 #   --num_rounds 50 \
@@ -133,6 +146,8 @@ if __name__ == "__main__":
 #   --enable_memory \
 #   --memory_retention_rounds 10 \
 #   --enable_shared_memory \
-#   --langsmith_project "my_beer_game_experiment"
+#   --langsmith_project "my_beer_game_experiment" \
+#   --initial_inventory 80 \
+#   --initial_backlog 20
 
 

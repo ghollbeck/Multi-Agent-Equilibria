@@ -30,6 +30,11 @@ Game Flow (per round):
   5. Each role decides how many units to order from its upstream agent. 
   6. Orders are placed and queued, to be delivered after a 1-round lead time.
 
+CRITICAL SHIPMENT CONSTRAINT:
+  - Agents can only ship up to (downstream_order + current_backlog) units
+  - This prevents oversupplying even when excess inventory is available
+  - Maintains realistic supply chain constraints and forces strategic planning
+
 LLM Prompt/Response Requirements:
   - Agents ask: 
         "Given my current inventory, backlog, demand (or order history), 
@@ -270,7 +275,7 @@ async def run_beer_game_generation(
     num_rounds: int = 2,
     holding_cost_per_unit: float = 0.5,
     backlog_cost_per_unit: float = 1.5,
-    profit_per_unit_sold: float = 5,
+    profit_per_unit_sold: float = 2.5,
     temperature: float = 0,
     generation_index: int = 1,
     sim_data: SimulationData = None,
@@ -349,64 +354,103 @@ async def run_beer_game_generation(
             shipments_received_list.append(received)
 
         shipments_sent_downstream = [0 for _ in agents]
+        orders_received_from_downstream = [0 for _ in agents]  # Track new orders received this round
 
         # ✅ FIX – wire the 'received' units in for every tier, no fulfill()
         # Retailer fulfills both backlog and new demand
         # Use incoming shipment and demand to update inventory/backlog and compute amt_filled
+        # IMPORTANT: Agents can only ship up to (new_orders + current_backlog)
+        
         # 1. Retailer
         incoming_retailer = shipments_received_list[0]
         # Add incoming shipment to inventory
         retailer.inventory += incoming_retailer
+        
+        # Calculate maximum allowed shipment: external demand + current backlog
+        max_allowed_shipment = retailer_demand + retailer.backlog
+        available_to_ship = min(retailer.inventory, max_allowed_shipment)
+        
+        if logger and retailer.inventory > max_allowed_shipment:
+            logger.log(f"📦 [Retailer] Shipment constraint applied: inventory={retailer.inventory}, max_allowed={max_allowed_shipment}")
+        
         # Fulfill backlog first
-        amt_to_backlog = min(retailer.inventory, retailer.backlog)
+        amt_to_backlog = min(available_to_ship, retailer.backlog)
         retailer.inventory -= amt_to_backlog
         retailer.backlog -= amt_to_backlog
-        # Fulfill new demand
-        amt_to_demand = min(retailer.inventory, retailer_demand)
+        available_to_ship -= amt_to_backlog
+        
+        # Fulfill new demand with remaining allowed shipment
+        amt_to_demand = min(available_to_ship, retailer_demand)
         retailer.inventory -= amt_to_demand
         leftover_demand = retailer_demand - amt_to_demand
         retailer.backlog += leftover_demand
+        
         ship_down = amt_to_backlog + amt_to_demand  # everything that left the door
         shipments_sent_downstream[0] = ship_down
         retailer_order = ship_down  # order equals what you shipped
         retailer.downstream_orders_history.append(retailer_demand)
+        orders_received_from_downstream[0] = retailer_demand  # Retailer receives external customer demand
 
         # 2. Wholesaler
         if wholesaler:
             incoming_wholesaler = shipments_received_list[1]
             wholesaler.inventory += incoming_wholesaler
+            
+            # Calculate maximum allowed shipment: retailer order + current backlog
+            max_allowed_shipment = retailer_order + wholesaler.backlog
+            available_to_ship = min(wholesaler.inventory, max_allowed_shipment)
+            
+            if logger and wholesaler.inventory > max_allowed_shipment:
+                logger.log(f"📦 [Wholesaler] Shipment constraint applied: inventory={wholesaler.inventory}, max_allowed={max_allowed_shipment}")
+            
             # Clear backlog first
-            amt_to_backlog = min(wholesaler.inventory, wholesaler.backlog)
+            amt_to_backlog = min(available_to_ship, wholesaler.backlog)
             wholesaler.inventory -= amt_to_backlog
             wholesaler.backlog -= amt_to_backlog
-            # Satisfy today's demand
-            amt_to_demand = min(wholesaler.inventory, retailer_order)
+            available_to_ship -= amt_to_backlog
+            
+            # Satisfy today's demand with remaining allowed shipment
+            amt_to_demand = min(available_to_ship, retailer_order)
             wholesaler.inventory -= amt_to_demand
             leftover_demand = retailer_order - amt_to_demand
             wholesaler.backlog += leftover_demand
+            
             ship_down = amt_to_backlog + amt_to_demand  # everything that left the door
             shipments_sent_downstream[1] = ship_down
             wh_order = ship_down  # order equals what you shipped
             wholesaler.downstream_orders_history.append(retailer_order)
+            orders_received_from_downstream[1] = retailer_order  # Wholesaler receives order from Retailer
             retailer.shipments_in_transit[1] += ship_down
 
         # 3. Distributor
         if distributor and wholesaler:
             incoming_distributor = shipments_received_list[2]
             distributor.inventory += incoming_distributor
+            
+            # Calculate maximum allowed shipment: wholesaler order + current backlog
+            max_allowed_shipment = wh_order + distributor.backlog
+            available_to_ship = min(distributor.inventory, max_allowed_shipment)
+            
+            if logger and distributor.inventory > max_allowed_shipment:
+                logger.log(f"📦 [Distributor] Shipment constraint applied: inventory={distributor.inventory}, max_allowed={max_allowed_shipment}")
+            
             # Clear backlog first
-            amt_to_backlog = min(distributor.inventory, distributor.backlog)
+            amt_to_backlog = min(available_to_ship, distributor.backlog)
             distributor.inventory -= amt_to_backlog
             distributor.backlog -= amt_to_backlog
-            # Satisfy today's demand
-            amt_to_demand = min(distributor.inventory, wh_order)
+            available_to_ship -= amt_to_backlog
+            
+            # Satisfy today's demand with remaining allowed shipment
+            amt_to_demand = min(available_to_ship, wh_order)
             distributor.inventory -= amt_to_demand
             leftover_demand = wh_order - amt_to_demand
             distributor.backlog += leftover_demand
+            
             ship_down = amt_to_backlog + amt_to_demand  # everything that left the door
             shipments_sent_downstream[2] = ship_down
             dist_order = ship_down  # order equals what you shipped
             distributor.downstream_orders_history.append(wh_order)
+            orders_received_from_downstream[2] = wh_order  # Distributor receives order from Wholesaler
             wholesaler.shipments_in_transit[1] += ship_down
 
         # 4. Factory
@@ -414,13 +458,21 @@ async def run_beer_game_generation(
             incoming_factory = shipments_received_list[3]
             factory.inventory += incoming_factory
 
-            # Clear backlog first with available inventory
-            amt_to_backlog = min(factory.inventory, factory.backlog)
+            # Calculate maximum allowed shipment: distributor order + current backlog
+            max_allowed_shipment = dist_order + factory.backlog
+            available_to_ship = min(factory.inventory, max_allowed_shipment)
+
+            if logger and factory.inventory > max_allowed_shipment:
+                logger.log(f"📦 [Factory] Shipment constraint applied: inventory={factory.inventory}, max_allowed={max_allowed_shipment}")
+
+            # Clear backlog first with available shipment allowance
+            amt_to_backlog = min(available_to_ship, factory.backlog)
             factory.inventory -= amt_to_backlog
             factory.backlog -= amt_to_backlog
+            available_to_ship -= amt_to_backlog
 
-            # Satisfy today's demand with remaining inventory
-            amt_to_demand = min(factory.inventory, dist_order)
+            # Satisfy today's demand with remaining allowed shipment
+            amt_to_demand = min(available_to_ship, dist_order)
             factory.inventory -= amt_to_demand
             leftover_demand = dist_order - amt_to_demand
             factory.backlog += leftover_demand
@@ -429,6 +481,7 @@ async def run_beer_game_generation(
             shipments_sent_downstream[3] = ship_down
             fact_order = ship_down
             factory.downstream_orders_history.append(dist_order)
+            orders_received_from_downstream[3] = dist_order  # Factory receives order from Distributor
             distributor.shipments_in_transit[1] += ship_down
 
             # --- Infinite reservoir production *with* 1-round delay ---
@@ -446,7 +499,7 @@ async def run_beer_game_generation(
         for idx, agent in enumerate(agents):
             holding_cost = agent.inventory * holding_cost_per_unit
             backlog_cost = agent.backlog * backlog_cost_per_unit
-            # Calculate profit for units sold (1.5 per unit)
+            # Calculate profit for units sold
             units_sold = shipments_sent_downstream[idx]
             profit = units_sold * profit_per_unit_sold
             # Calculate net profit (profit minus costs)
@@ -553,6 +606,7 @@ async def run_beer_game_generation(
                     inventory = agent.inventory,
                     backlog = agent.backlog,
                     order_placed = orders_placed[idx],
+                    order_received = orders_received_from_downstream[idx],
                     shipment_received = shipments_received_list[idx],
                     shipment_sent_downstream = shipments_sent_downstream[idx],
                     profit = agent.profit_accumulated
@@ -603,48 +657,46 @@ async def run_beer_game_generation(
                         writer.writerow(row_data)
             
             # Write all entries to JSON after collecting them (outside the agent loop)
-            if json_log_path and round_entries:
-                # Read existing data
-                all_entries = []
-                if os.path.exists(json_log_path) and os.path.getsize(json_log_path) > 0:
-                    try:
-                        with open(json_log_path, 'r') as jf:
-                            all_entries = json.load(jf)
-                    except json.JSONDecodeError:
-                        # print(f"Warning: Could not decode existing JSON file {json_log_path}. Starting fresh.")  # Commented out
-                        all_entries = []
-
-                # Prepare all new entries with LLM data
+            # NOTE: Removed old JSON writing here - we now write the complete nested structure at the end
+            
+                # ---- Aggregated round structure for nested logging ----
+                # Collect communication messages for this specific round
+                round_communication_messages = []
+                if enable_communication and communication_messages:
+                    round_communication_messages = [msg for msg in communication_messages if msg["round"] == round_index]
+                
+                # Create aggregated round structure with all agent data
+                agent_data_dict = {}
                 for entry, agent in round_entries:
-                    entry_dict = asdict(entry)
+                    agent_dict = asdict(entry)
                     llm_decision = getattr(agent, 'last_decision_output', {})
-                    entry_dict.update({
+                    
+                    # Add LLM output fields to agent data
+                    agent_dict.update({
                         'last_decision_output': llm_decision,
                         'last_update_output': getattr(agent, 'last_update_output', {}),
                         'last_init_output': getattr(agent, 'last_init_output', {}),
-                        # Add new LLM fields with prefixes
                         'llm_reported_inventory': llm_decision.get('inventory', None),
                         'llm_reported_backlog': llm_decision.get('backlog', None),
-                        'llm_recent_demand_or_orders': llm_decision.get('recent_demand_or_orders', None), # Keep as list
-                        'llm_incoming_shipments': llm_decision.get('incoming_shipments', None), # Keep as list
+                        'llm_recent_demand_or_orders': llm_decision.get('recent_demand_or_orders', None),
+                        'llm_incoming_shipments': llm_decision.get('incoming_shipments', None),
                         'llm_last_order_placed': llm_decision.get('last_order_placed', None),
                         'llm_confidence': llm_decision.get('confidence', None),
                         'llm_rationale': llm_decision.get('rationale', ''),
                         'llm_risk_assessment': llm_decision.get('risk_assessment', ''),
                         'llm_expected_demand_next_round': llm_decision.get('expected_demand_next_round', None)
                     })
-                    all_entries.append(entry_dict)
-
-                # Write updated list back to JSON
-                with open(json_log_path, 'w') as jsonfile:
-                    json.dump(all_entries, jsonfile, indent=2)
-
-                # ---- Aggregated round structure for nested logging ----
+                    
+                    agent_data_dict[agent.role_name] = agent_dict
+                
                 aggregated_round = {
                     "round_index": round_index,
-                    "communication": communication_messages,
-                    "agents": {e.role_name: asdict(e) for (e, _a) in round_entries}
+                    "generation": generation_index,
+                    "external_demand": retailer_demand,
+                    "communication": round_communication_messages,
+                    "agents": agent_data_dict
                 }
+                
                 if sim_data:
                     sim_data.add_aggregated_round(aggregated_round)
 
@@ -652,6 +704,7 @@ async def run_beer_game_generation(
         if human_log_file:
             human_log_file.write("\n--------------------- Round {} ---------------------\n".format(round_index+1))
             human_log_file.write("External demand (Retailer): {}\n".format(retailer_demand))
+            human_log_file.write("Orders received per agent: {}\n".format(orders_received_from_downstream))
             human_log_file.write("Shipments received per agent: {}\n".format(shipments_received_list))
             
             # Log communication messages if they exist for this round
@@ -692,19 +745,24 @@ async def run_beer_game_generation(
                             decision.get('last_order_placed', 'N/A')
                     ))
                 # Log the LLM prompt and output (Decision Output is now more detailed)
+                human_log_file.write("    LLM Decision System Prompt: {}\n".format(getattr(agent, 'last_decision_system_prompt', '')))
                 human_log_file.write("    LLM Decision Prompt: {}\n".format(getattr(agent, 'last_decision_prompt', '')))
                 human_log_file.write("    LLM Decision Output: {}\n".format(json.dumps(getattr(agent, 'last_decision_output', {}))))
                 if enable_communication:
+                    human_log_file.write("    LLM Communication System Prompt: {}\n".format(getattr(agent, 'last_communication_system_prompt', '')))
                     human_log_file.write("    LLM Communication Prompt: {}\n".format(getattr(agent, 'last_communication_prompt', '')))
                     human_log_file.write("    LLM Communication Output: {}\n".format(json.dumps(getattr(agent, 'last_communication_output', {}))))
+                human_log_file.write("    LLM Update System Prompt: {}\n".format(getattr(agent, 'last_update_system_prompt', '')))
                 human_log_file.write("    LLM Update Prompt: {}\n".format(getattr(agent, 'last_update_prompt', '')))
                 human_log_file.write("    LLM Update Output: {}\n".format(json.dumps(getattr(agent, 'last_update_output', {}))))
+                human_log_file.write("    LLM Init System Prompt: {}\n".format(getattr(agent, 'last_init_system_prompt', '')))
                 human_log_file.write("    LLM Init Prompt: {}\n".format(getattr(agent, 'last_init_prompt', '')))
                 human_log_file.write("    LLM Init Output: {}\n".format(json.dumps(getattr(agent, 'last_init_output', {}))))
             human_log_file.write("\n")
             human_log_file.flush()
 
         if logger:
+            logger.log(f"Orders received per agent: {orders_received_from_downstream}")
             logger.log(f"Shipments received per agent: {shipments_received_list}")
             for idx, agent in enumerate(agents):
                 if logger:
@@ -722,7 +780,9 @@ async def run_beer_game_simulation(
     communication_rounds: int = 2,
     enable_memory: bool = False,
     memory_retention_rounds: int = 5,
-    enable_shared_memory: bool = False
+    enable_shared_memory: bool = False,
+    initial_inventory: int = 100,
+    initial_backlog: int = 0
 ):
     """
     Orchestrates the Beer Game simulation with multiple rounds.
@@ -760,10 +820,11 @@ async def run_beer_game_simulation(
 
     # Initialize the roles (4 default roles)
     roles = ["Retailer", "Wholesaler", "Distributor", "Factory"]
-    agents = [BeerGameAgent(role_name=role, logger=logger) for role in roles]
+    agents = [BeerGameAgent.create_agent(role_name=role, initial_inventory=initial_inventory, 
+                                        initial_backlog=initial_backlog, logger=logger) for role in roles]
 
     # Each agent obtains an initial strategy from the LLM
-    await asyncio.gather(*(agent.initialize_strategy(temperature=temperature, profit_per_unit_sold=5) for agent in agents))
+    await asyncio.gather(*(agent.initialize_strategy(temperature=temperature, profit_per_unit_sold=2.5) for agent in agents))
 
     # Example external demand across rounds:
     # In real usage, you might load or generate random demands.
@@ -777,9 +838,17 @@ async def run_beer_game_simulation(
         "num_rounds": num_rounds,
         "holding_cost_per_unit": 0.5,
         "backlog_cost_per_unit": 1.5,
-        "profit_per_unit_sold": 5,
+        "profit_per_unit_sold": 2.5,
         "roles": roles,
-        "timestamp": current_time
+        "timestamp": current_time,
+        "external_demand_pattern": external_demand_pattern,
+        "enable_communication": enable_communication,
+        "communication_rounds": communication_rounds,
+        "enable_memory": enable_memory,
+        "memory_retention_rounds": memory_retention_rounds,
+        "enable_shared_memory": enable_shared_memory,
+        "initial_inventory": initial_inventory,
+        "initial_backlog": initial_backlog
     })
 
     csv_log_path = os.path.join(results_folder, "beer_game_detailed_log.csv")
@@ -788,7 +857,14 @@ async def run_beer_game_simulation(
     with open(csv_log_path, 'w', newline='') as csvfile:
         pass
     with open(json_log_path, 'w') as jsonfile:
-        json.dump([], jsonfile)
+        # Create initial nested structure
+        initial_structure = {
+            "hyperparameters": {},
+            "rounds_log": [],
+            "flat_rounds_log": [],
+            "communication_log": []
+        }
+        json.dump(initial_structure, jsonfile)
 
     logger.log(f"\n--- Starting Simulation ---")
     print(f"\n🎮 Starting Beer Game Simulation with {num_rounds} rounds")
@@ -801,7 +877,7 @@ async def run_beer_game_simulation(
         num_rounds=num_rounds,
         holding_cost_per_unit=0.5,
         backlog_cost_per_unit=1.5,
-        profit_per_unit_sold=5,
+        profit_per_unit_sold=2.5,
         temperature=temperature,
         generation_index=1,
         sim_data=sim_data,
@@ -822,12 +898,22 @@ async def run_beer_game_simulation(
     # Ensure df_rounds is defined for saving and plotting
     df_rounds = pd.DataFrame([asdict(r) for r in sim_data.rounds_log])
     
+    # Save complete simulation data with nested structure
     complete_sim_data = sim_data.to_dict()
-    with open(json_log_path, 'w') as jsonfile:
-        json.dump(complete_sim_data, jsonfile, indent=2)
     
+    # Create the nested JSON structure with hyperparameters and aggregated rounds
+    nested_json_structure = {
+        "hyperparameters": complete_sim_data['hyperparameters'],
+        "rounds_log": complete_sim_data['aggregated_rounds'],  # Use aggregated rounds for nested structure
+        "flat_rounds_log": complete_sim_data['rounds_log'],  # Keep flat structure for backward compatibility
+        "communication_log": complete_sim_data['communication_log']  # Separate communication log for reference
+    }
+    
+    with open(json_log_path, 'w') as jsonfile:
+        json.dump(nested_json_structure, jsonfile, indent=2)
+
     # Generate visualizations
-    plot_beer_game_results(df_rounds, results_folder)
+    plot_beer_game_results(df_rounds, results_folder, external_demand_pattern)
 
     # Calculate Nash equilibrium deviations (assumed equilibrium order quantity = 10)
     deviations = calculate_nash_deviation(df_rounds, equilibrium_order=10)
@@ -883,3 +969,15 @@ async def run_beer_game_simulation(
     logger.log("\nSimulation complete. Results saved to: {}".format(results_folder))
     logger.close()
     return sim_data
+
+# --------------------------------------------------------------------
+# 7. The default entry point for convenience
+# --------------------------------------------------------------------
+
+if __name__ == "__main__":
+    # Run the simulation with default settings
+    asyncio.run(run_beer_game_simulation(
+        num_rounds=30,
+        temperature=0.7,
+        logger=None
+    ))

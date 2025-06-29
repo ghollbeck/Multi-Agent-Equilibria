@@ -18,6 +18,7 @@ class RoundData:
     inventory: int
     backlog: int
     order_placed: int
+    order_received: int  # New orders received from downstream customers this round
     shipment_received: int
     shipment_sent_downstream: int
     profit: float
@@ -73,7 +74,7 @@ class BeerGameAgent(BaseModel):
     profit_accumulated: float = 0.0
     last_profit: Optional[float] = None
     last_order_placed: Optional[int] = None
-    shipments_in_transit: Dict[int,int] = Field(default_factory=lambda: {0:10, 1:10})
+    shipments_in_transit: Dict[int,int] = Field(default_factory=lambda: {0:0, 1:0})
     downstream_orders_history: List[int] = Field(default_factory=list)
     strategy: dict = Field(default_factory=dict)
     prompts: ClassVar[BeerGamePrompts] = BeerGamePrompts
@@ -87,18 +88,39 @@ class BeerGameAgent(BaseModel):
     message_history: List[Dict[str, str]] = Field(default_factory=list)
     last_communication_prompt: str = ""
     last_communication_output: dict = Field(default_factory=dict)
+    # Store system prompts for logging
+    last_decision_system_prompt: str = ""
+    last_update_system_prompt: str = ""
+    last_init_system_prompt: str = ""
+    last_communication_system_prompt: str = ""
     memory: Optional[AgentMemory] = None
+
+    @classmethod
+    def create_agent(cls, role_name: str, initial_inventory: int = 100, initial_backlog: int = 0, 
+                    logger: BeerGameLogger = None):
+        """Create a BeerGameAgent with configurable initial values."""
+        return cls(
+            role_name=role_name,
+            inventory=initial_inventory,
+            backlog=initial_backlog,
+            shipments_in_transit={0: 0, 1: 0},  # Start with no shipments in transit
+            logger=logger
+        )
 
     class Config:
         arbitrary_types_allowed = True
 
-    async def initialize_strategy(self, temperature=0, profit_per_unit_sold=5):
+    async def initialize_strategy(self, temperature=0, profit_per_unit_sold=2.5):
         if self.logger:
             self.logger.log(f"[Agent {self.role_name}] Initializing strategy...")
         prompt = self.prompts.get_strategy_generation_prompt(
             self.role_name, self.inventory, self.backlog, profit_per_unit_sold)
         self.last_init_prompt = prompt
-        system_prompt = "You are an expert supply chain manager. Return valid JSON only."
+        system_prompt = self.prompts.get_system_prompt(self.role_name)
+        self.last_init_system_prompt = system_prompt
+        # if self.logger:
+        #     self.logger.log(f"[LLM SYSTEM PROMPT]: {system_prompt}")
+        #     self.logger.log(f"[LLM USER PROMPT]: {prompt}")
         try:
             response_str = await lite_client.chat_completion(
                 model=MODEL_NAME,
@@ -128,7 +150,7 @@ class BeerGameAgent(BaseModel):
         self.strategy = response
         self.last_init_output = response
 
-    async def update_strategy(self, performance_log: str, temperature=0.7, profit_per_unit_sold=5):
+    async def update_strategy(self, performance_log: str, temperature=0.7, profit_per_unit_sold=2.5):
         if self.logger:
             self.logger.log(f"[Agent {self.role_name}] Updating strategy with performance log: {performance_log}")
         prompt = self.prompts.get_strategy_update_prompt(
@@ -136,7 +158,11 @@ class BeerGameAgent(BaseModel):
             self.inventory, self.backlog, profit_per_unit_sold
         )
         self.last_update_prompt = prompt
-        system_prompt = "You are an expert supply chain manager. Return valid JSON only."
+        system_prompt = self.prompts.get_system_prompt(self.role_name)
+        self.last_update_system_prompt = system_prompt
+        # if self.logger:
+        #     self.logger.log(f"[LLM SYSTEM PROMPT]: {system_prompt}")
+        #     self.logger.log(f"[LLM USER PROMPT]: {prompt}")
         try:
             response_str = await lite_client.chat_completion(
                 model=MODEL_NAME,
@@ -165,7 +191,7 @@ class BeerGameAgent(BaseModel):
         self.strategy = response
         self.last_update_output = response
 
-    async def decide_order_quantity(self, temperature=0.7, profit_per_unit_sold=5) -> dict:
+    async def decide_order_quantity(self, temperature=0.7, profit_per_unit_sold=2.5) -> dict:
         if self.logger:
             self.logger.log(f"[Agent {self.role_name}] Deciding order quantity. Inventory: {self.inventory}, Backlog: {self.backlog}, Downstream: {self.downstream_orders_history[-3:]}, Shipments: {[self.shipments_in_transit[1]]}")
         last_order_placed = self.last_order_placed
@@ -182,7 +208,11 @@ class BeerGameAgent(BaseModel):
             last_profit=last_profit
         )
         self.last_decision_prompt = prompt
-        system_prompt = "You are an expert supply chain manager. Return valid JSON only."
+        system_prompt = self.prompts.get_system_prompt(self.role_name)
+        self.last_decision_system_prompt = system_prompt
+        # if self.logger:
+        #     self.logger.log(f"[LLM SYSTEM PROMPT]: {system_prompt}")
+        #     self.logger.log(f"[LLM USER PROMPT]: {prompt}")
         try:
             response_str = await lite_client.chat_completion(
                 model=MODEL_NAME,
@@ -232,7 +262,12 @@ class BeerGameAgent(BaseModel):
         )
         
         self.last_communication_prompt = prompt
-        system_prompt = "You are an expert supply chain manager. Return valid JSON only."
+        system_prompt = self.prompts.get_system_prompt(self.role_name, enable_communication=True)
+        self.last_communication_system_prompt = system_prompt
+        
+        # if self.logger:
+        #     self.logger.log(f"[LLM SYSTEM PROMPT]: {system_prompt}")
+        #     self.logger.log(f"[LLM USER PROMPT]: {prompt}")
         
         try:
             response_str = await lite_client.chat_completion(
@@ -264,7 +299,7 @@ class BeerGameAgent(BaseModel):
         return response
 
     async def decide_order_quantity_with_communication(self, temperature: float = 0.7, 
-                                                     profit_per_unit_sold: float = 5,
+                                                     profit_per_unit_sold: float = 2.5,
                                                      recent_communications: List[Dict] = None) -> dict:
         """Enhanced decision making that incorporates communication messages."""
         if recent_communications:
@@ -282,7 +317,12 @@ class BeerGameAgent(BaseModel):
             )
             
             self.last_decision_prompt = prompt
-            system_prompt = "You are an expert supply chain manager. Return valid JSON only."
+            system_prompt = self.prompts.get_system_prompt(self.role_name, enable_communication=True)
+            self.last_decision_system_prompt = system_prompt
+            
+            # if self.logger:
+            #     self.logger.log(f"[LLM SYSTEM PROMPT]: {system_prompt}")
+            #     self.logger.log(f"[LLM USER PROMPT]: {prompt}")
             
             try:
                 response_str = await lite_client.chat_completion(

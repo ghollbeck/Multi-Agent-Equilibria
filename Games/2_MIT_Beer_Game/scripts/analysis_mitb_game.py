@@ -1,12 +1,13 @@
 import os
-from typing import Dict
+from typing import Dict, List, Optional
 import pandas as pd
 import matplotlib.pyplot as plt
 
 
-def plot_beer_game_results(rounds_df: pd.DataFrame, results_folder: str):
+def plot_beer_game_results(rounds_df: pd.DataFrame, results_folder: str, external_demand: Optional[List[int]] = None):
     """
     Basic plots: inventory over time, backlog over time, cost, etc.
+    If external_demand is provided, it will be plotted as well.
     """
     os.makedirs(results_folder, exist_ok=True)
 
@@ -64,8 +65,9 @@ def plot_beer_game_results(rounds_df: pd.DataFrame, results_folder: str):
     plt.savefig(os.path.join(results_folder, "cost_over_time.png"))
     plt.close()
 
-    # Combined plot with subplots for Inventory, Backlog, and Profit
-    fig, axes = plt.subplots(3, 1, figsize=(10, 18))
+    # Combined plot with subplots for Inventory, Backlog, Profit, and External Demand
+    num_subplots = 4 if external_demand else 3
+    fig, axes = plt.subplots(num_subplots, 1, figsize=(10, 6 * num_subplots))
 
     # Subplot 1: Inventory
     for role in rounds_df["role_name"].unique():
@@ -96,6 +98,20 @@ def plot_beer_game_results(rounds_df: pd.DataFrame, results_folder: str):
     axes[2].set_ylabel("Accumulated Profit")
     axes[2].legend()
     axes[2].grid(True)
+
+    # Subplot 4: External Demand (if provided)
+    if external_demand:
+        rounds = list(range(len(external_demand)))
+        axes[3].plot(rounds, external_demand, 'ko-', linewidth=2, markersize=6, label="External Demand")
+        axes[3].set_title("External Customer Demand")
+        axes[3].set_xlabel("Round")
+        axes[3].set_ylabel("Demand (Units)")
+        axes[3].legend()
+        axes[3].grid(True)
+        # Add average demand line
+        avg_demand = sum(external_demand) / len(external_demand)
+        axes[3].axhline(y=avg_demand, color='r', linestyle='--', alpha=0.5, label=f"Average: {avg_demand:.1f}")
+        axes[3].legend()
 
     fig.tight_layout()
     combined_plot_path = os.path.join(results_folder, "combined_plots.png")

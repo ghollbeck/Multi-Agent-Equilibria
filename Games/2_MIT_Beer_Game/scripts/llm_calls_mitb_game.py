@@ -115,9 +115,9 @@ class LiteLLMClient:
         
         # print(f"[LLM SYSTEM PROMPT]: {system_prompt}")  # Commented out
         # print(f"[LLM USER PROMPT]: {user_prompt}")  # Commented out
-        if self.logger:
-            self.logger.log(f"[LLM SYSTEM PROMPT]: {system_prompt}")
-            self.logger.log(f"[LLM USER PROMPT]: {user_prompt}")
+        # if self.logger:
+        #     self.logger.log(f"[LLM SYSTEM PROMPT]: {system_prompt}")
+        #     self.logger.log(f"[LLM USER PROMPT]: {user_prompt}")
         
         payload = {
             "model": model,
