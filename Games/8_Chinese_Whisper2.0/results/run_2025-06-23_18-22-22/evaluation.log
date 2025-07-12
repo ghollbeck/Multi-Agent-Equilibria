@@ -1,0 +1,374 @@
+2025-06-23 18:39:35,188 - INFO - 
+==================================================
+How Drift is Evaluated
+==================================================
+
+The drift is calculated as:
+    Drift = |rows_returned - baseline_rows|
+
+Where:
+• baseline_rows: Number of rows returned by the baseline query (typically step 0 - the original story's SQL)
+• rows_returned: Number of rows returned by each agent's SQL query  
+• The result is the absolute difference in row counts
+
+What the Values Mean:
+• 0 drift: The SQL query returns exactly the same number of rows as the baseline
+• Higher drift: The SQL query returns that many more/fewer rows than the baseline
+
+This measures semantic drift in LLM chains - how meaning changes as stories pass through multiple agents
+and how well the final SQL captures the original intent.
+==================================================
+
+2025-06-23 18:39:35,188 - INFO - Attempting to find baseline for step: 5
+2025-06-23 18:39:35,188 - INFO - Executing baseline query for step 5: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'H';...
+2025-06-23 18:39:35,189 - INFO - Baseline (step 5) row count: 0
+2025-06-23 18:39:35,189 - INFO - ------------------------------
+2025-06-23 18:39:35,189 - INFO - Executing query for step 0: SELECT * FROM students 
+WHERE is_active = 0 
+  AND is_highschool = 1 
+  AND spea...
+2025-06-23 18:39:35,189 - INFO - Step 0: 6 rows (diff: 6)
+2025-06-23 18:39:35,189 - INFO - Executing query for step 1: SELECT first_name, last_name, grade_math_pass, grade_science_pass, grade_english...
+2025-06-23 18:39:35,189 - INFO - Step 1: 0 rows (diff: 0)
+2025-06-23 18:39:35,189 - INFO - Executing query for step 2: SELECT * FROM students 
+WHERE first_name = 'Olivia' AND last_name = 'Hudson' AND...
+2025-06-23 18:39:35,190 - INFO - Step 2: 0 rows (diff: 0)
+2025-06-23 18:39:35,190 - INFO - Executing query for step 3: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';...
+2025-06-23 18:39:35,190 - INFO - Step 3: 0 rows (diff: 0)
+2025-06-23 18:39:35,190 - INFO - Executing query for step 4: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';...
+2025-06-23 18:39:35,190 - INFO - Step 4: 0 rows (diff: 0)
+2025-06-23 18:39:35,190 - INFO - Executing query for step 5: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'H';...
+2025-06-23 18:39:35,190 - INFO - Step 5: 0 rows (diff: 0)
+2025-06-23 18:39:35,190 - INFO - Executing query for step 6: SELECT * FROM students WHERE first_name = 'Olivia' AND is_active = 1;...
+2025-06-23 18:39:35,190 - INFO - Step 6: 0 rows (diff: 0)
+2025-06-23 18:39:35,190 - INFO - Executing query for step 7: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1 AND speaks_engl...
+2025-06-23 18:39:35,190 - INFO - Step 7: 16 rows (diff: 16)
+2025-06-23 18:39:35,190 - INFO - Executing query for step 8: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';...
+2025-06-23 18:39:35,191 - INFO - Step 8: 0 rows (diff: 0)
+2025-06-23 18:39:35,191 - INFO - Executing query for step 9: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1;...
+2025-06-23 18:39:35,191 - INFO - Step 9: 32 rows (diff: 32)
+2025-06-23 18:39:35,191 - INFO - Executing query for step 10: UPDATE students 
+SET is_active = 1 
+WHERE first_name = 'Olivia';...
+2025-06-23 18:39:35,191 - INFO - Step 10: 0 rows (diff: 0)
+2025-06-23 18:39:35,191 - INFO - Executing query for step 11: SELECT * FROM students WHERE is_active = 1 AND (speaks_english = 1 OR speaks_spa...
+2025-06-23 18:39:35,192 - INFO - Step 11: 48 rows (diff: 48)
+2025-06-23 18:39:35,192 - INFO - Executing query for step 12: SELECT first_name, last_name, 
+       (CASE WHEN grade_math_pass = 1 THEN 'Pass'...
+2025-06-23 18:39:35,192 - INFO - Step 12: 0 rows (diff: 0)
+2025-06-23 18:39:35,192 - INFO - Executing query for step 13: SELECT first_name, last_name 
+FROM students 
+WHERE is_active = 1 AND is_highscho...
+2025-06-23 18:39:35,192 - INFO - Step 13: 16 rows (diff: 16)
+2025-06-23 18:39:35,192 - INFO - Executing query for step 14: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';...
+2025-06-23 18:39:35,193 - INFO - Step 14: 0 rows (diff: 0)
+2025-06-23 18:39:35,193 - INFO - Executing query for step 15: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1 AND (speaks_eng...
+2025-06-23 18:39:35,193 - INFO - Step 15: 24 rows (diff: 24)
+2025-06-23 18:39:35,193 - INFO - Executing query for step 16: SELECT * FROM students WHERE is_active = 1 AND (speaks_english = 1 OR speaks_spa...
+2025-06-23 18:39:35,193 - INFO - Step 16: 48 rows (diff: 48)
+2025-06-23 18:39:35,193 - INFO - Executing query for step 17: SELECT * FROM students WHERE is_active = 1 AND (grade_math_pass = 1 OR grade_sci...
+2025-06-23 18:39:35,193 - INFO - Step 17: 56 rows (diff: 56)
+2025-06-23 18:39:35,193 - INFO - Executing query for step 18: SELECT * FROM students WHERE is_active = 1 AND (speaks_english = 1 OR speaks_spa...
+2025-06-23 18:39:35,193 - INFO - Step 18: 6 rows (diff: 6)
+2025-06-23 18:39:35,193 - INFO - Executing query for step 19: SELECT * FROM students WHERE is_active = 1 AND (speaks_english = 1 OR speaks_spa...
+2025-06-23 18:39:35,194 - INFO - Step 19: 48 rows (diff: 48)
+2025-06-23 18:39:35,194 - INFO - Executing query for step 20: SELECT * FROM students WHERE is_active = 1;...
+2025-06-23 18:39:35,194 - INFO - Step 20: 64 rows (diff: 64)
+2025-06-23 18:39:35,194 - INFO - Executing query for step 21: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1 AND speaks_engl...
+2025-06-23 18:39:35,194 - INFO - Step 21: 16 rows (diff: 16)
+2025-06-23 18:39:35,194 - INFO - Executing query for step 22: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1;...
+2025-06-23 18:39:35,195 - INFO - Step 22: 32 rows (diff: 32)
+2025-06-23 18:39:35,195 - INFO - Executing query for step 23: SELECT * FROM students WHERE is_active = 1 AND (grade_math_pass = 1 OR grade_sci...
+2025-06-23 18:39:35,195 - INFO - Step 23: 56 rows (diff: 56)
+2025-06-23 18:39:35,195 - INFO - Executing query for step 24: SELECT first_name, last_name 
+FROM students 
+WHERE is_active = 1 AND (speaks_eng...
+2025-06-23 18:39:35,195 - INFO - Step 24: 48 rows (diff: 48)
+2025-06-23 18:39:35,195 - INFO - Executing query for step 25: SELECT * FROM students WHERE is_active = 1 AND (grade_math_pass = 1 OR grade_sci...
+2025-06-23 18:39:35,195 - INFO - Step 25: 56 rows (diff: 56)
+2025-06-23 18:39:35,195 - INFO - ------------------------------
+2025-06-23 18:39:35,852 - INFO - Plot saved to /Users/gaborhollbeck/Desktop/GitHub/32_Stanford_Research/Multi-Agent-Equilibria/Games/8_Chinese_Whisper2.0/results/run_2025-06-23_18-22-22/diff_vs_agent.png
+2025-06-23 18:39:44,221 - INFO - 
+==================================================
+How Drift is Evaluated
+==================================================
+
+The drift is calculated as:
+    Drift = |rows_returned - baseline_rows|
+
+Where:
+• baseline_rows: Number of rows returned by the baseline query (typically step 0 - the original story's SQL)
+• rows_returned: Number of rows returned by each agent's SQL query  
+• The result is the absolute difference in row counts
+
+What the Values Mean:
+• 0 drift: The SQL query returns exactly the same number of rows as the baseline
+• Higher drift: The SQL query returns that many more/fewer rows than the baseline
+
+This measures semantic drift in LLM chains - how meaning changes as stories pass through multiple agents
+and how well the final SQL captures the original intent.
+==================================================
+
+2025-06-23 18:39:44,222 - INFO - Attempting to find baseline for step: 5
+2025-06-23 18:39:44,222 - INFO - Executing baseline query for step 5: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'H';...
+2025-06-23 18:39:44,222 - INFO - Baseline (step 5) row count: 0
+2025-06-23 18:39:44,222 - INFO - ------------------------------
+2025-06-23 18:39:44,222 - INFO - Executing query for step 0: SELECT * FROM students 
+WHERE is_active = 0 
+  AND is_highschool = 1 
+  AND spea...
+2025-06-23 18:39:44,222 - INFO - Step 0: 6 rows (diff: 6)
+2025-06-23 18:39:44,222 - INFO - Executing query for step 1: SELECT first_name, last_name, grade_math_pass, grade_science_pass, grade_english...
+2025-06-23 18:39:44,222 - INFO - Step 1: 0 rows (diff: 0)
+2025-06-23 18:39:44,222 - INFO - Executing query for step 2: SELECT * FROM students 
+WHERE first_name = 'Olivia' AND last_name = 'Hudson' AND...
+2025-06-23 18:39:44,223 - INFO - Step 2: 0 rows (diff: 0)
+2025-06-23 18:39:44,223 - INFO - Executing query for step 3: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';...
+2025-06-23 18:39:44,223 - INFO - Step 3: 0 rows (diff: 0)
+2025-06-23 18:39:44,223 - INFO - Executing query for step 4: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';...
+2025-06-23 18:39:44,223 - INFO - Step 4: 0 rows (diff: 0)
+2025-06-23 18:39:44,223 - INFO - Executing query for step 5: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'H';...
+2025-06-23 18:39:44,223 - INFO - Step 5: 0 rows (diff: 0)
+2025-06-23 18:39:44,223 - INFO - Executing query for step 6: SELECT * FROM students WHERE first_name = 'Olivia' AND is_active = 1;...
+2025-06-23 18:39:44,223 - INFO - Step 6: 0 rows (diff: 0)
+2025-06-23 18:39:44,223 - INFO - Executing query for step 7: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1 AND speaks_engl...
+2025-06-23 18:39:44,223 - INFO - Step 7: 16 rows (diff: 16)
+2025-06-23 18:39:44,223 - INFO - Executing query for step 8: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';...
+2025-06-23 18:39:44,224 - INFO - Step 8: 0 rows (diff: 0)
+2025-06-23 18:39:44,224 - INFO - Executing query for step 9: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1;...
+2025-06-23 18:39:44,224 - INFO - Step 9: 32 rows (diff: 32)
+2025-06-23 18:39:44,224 - INFO - Executing query for step 10: UPDATE students 
+SET is_active = 1 
+WHERE first_name = 'Olivia';...
+2025-06-23 18:39:44,224 - INFO - Step 10: 0 rows (diff: 0)
+2025-06-23 18:39:44,224 - INFO - Executing query for step 11: SELECT * FROM students WHERE is_active = 1 AND (speaks_english = 1 OR speaks_spa...
+2025-06-23 18:39:44,224 - INFO - Step 11: 48 rows (diff: 48)
+2025-06-23 18:39:44,224 - INFO - Executing query for step 12: SELECT first_name, last_name, 
+       (CASE WHEN grade_math_pass = 1 THEN 'Pass'...
+2025-06-23 18:39:44,224 - INFO - Step 12: 0 rows (diff: 0)
+2025-06-23 18:39:44,224 - INFO - Executing query for step 13: SELECT first_name, last_name 
+FROM students 
+WHERE is_active = 1 AND is_highscho...
+2025-06-23 18:39:44,224 - INFO - Step 13: 16 rows (diff: 16)
+2025-06-23 18:39:44,224 - INFO - Executing query for step 14: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';...
+2025-06-23 18:39:44,225 - INFO - Step 14: 0 rows (diff: 0)
+2025-06-23 18:39:44,225 - INFO - Executing query for step 15: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1 AND (speaks_eng...
+2025-06-23 18:39:44,225 - INFO - Step 15: 24 rows (diff: 24)
+2025-06-23 18:39:44,225 - INFO - Executing query for step 16: SELECT * FROM students WHERE is_active = 1 AND (speaks_english = 1 OR speaks_spa...
+2025-06-23 18:39:44,225 - INFO - Step 16: 48 rows (diff: 48)
+2025-06-23 18:39:44,225 - INFO - Executing query for step 17: SELECT * FROM students WHERE is_active = 1 AND (grade_math_pass = 1 OR grade_sci...
+2025-06-23 18:39:44,225 - INFO - Step 17: 56 rows (diff: 56)
+2025-06-23 18:39:44,225 - INFO - Executing query for step 18: SELECT * FROM students WHERE is_active = 1 AND (speaks_english = 1 OR speaks_spa...
+2025-06-23 18:39:44,225 - INFO - Step 18: 6 rows (diff: 6)
+2025-06-23 18:39:44,225 - INFO - Executing query for step 19: SELECT * FROM students WHERE is_active = 1 AND (speaks_english = 1 OR speaks_spa...
+2025-06-23 18:39:44,226 - INFO - Step 19: 48 rows (diff: 48)
+2025-06-23 18:39:44,226 - INFO - Executing query for step 20: SELECT * FROM students WHERE is_active = 1;...
+2025-06-23 18:39:44,226 - INFO - Step 20: 64 rows (diff: 64)
+2025-06-23 18:39:44,226 - INFO - Executing query for step 21: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1 AND speaks_engl...
+2025-06-23 18:39:44,226 - INFO - Step 21: 16 rows (diff: 16)
+2025-06-23 18:39:44,226 - INFO - Executing query for step 22: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1;...
+2025-06-23 18:39:44,226 - INFO - Step 22: 32 rows (diff: 32)
+2025-06-23 18:39:44,226 - INFO - Executing query for step 23: SELECT * FROM students WHERE is_active = 1 AND (grade_math_pass = 1 OR grade_sci...
+2025-06-23 18:39:44,226 - INFO - Step 23: 56 rows (diff: 56)
+2025-06-23 18:39:44,226 - INFO - Executing query for step 24: SELECT first_name, last_name 
+FROM students 
+WHERE is_active = 1 AND (speaks_eng...
+2025-06-23 18:39:44,227 - INFO - Step 24: 48 rows (diff: 48)
+2025-06-23 18:39:44,227 - INFO - Executing query for step 25: SELECT * FROM students WHERE is_active = 1 AND (grade_math_pass = 1 OR grade_sci...
+2025-06-23 18:39:44,227 - INFO - Step 25: 56 rows (diff: 56)
+2025-06-23 18:39:44,227 - INFO - ------------------------------
+2025-06-23 18:39:44,854 - INFO - Plot saved to /Users/gaborhollbeck/Desktop/GitHub/32_Stanford_Research/Multi-Agent-Equilibria/Games/8_Chinese_Whisper2.0/results/run_2025-06-23_18-22-22/diff_vs_agent.png
+2025-06-23 18:55:11,323 - INFO - 
+==================================================
+How Drift is Evaluated
+==================================================
+
+The drift is calculated as:
+    Drift = |rows_returned - baseline_rows|
+
+Where:
+• baseline_rows: Number of rows returned by the baseline query (typically step 0 - the original story's SQL)
+• rows_returned: Number of rows returned by each agent's SQL query  
+• The result is the absolute difference in row counts
+
+What the Values Mean:
+• 0 drift: The SQL query returns exactly the same number of rows as the baseline
+• Higher drift: The SQL query returns that many more/fewer rows than the baseline
+
+This measures semantic drift in LLM chains - how meaning changes as stories pass through multiple agents
+and how well the final SQL captures the original intent.
+==================================================
+
+2025-06-23 18:55:11,324 - INFO - Attempting to find baseline for step: 5
+2025-06-23 18:55:11,324 - INFO - Executing baseline query for step 5: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'H';...
+2025-06-23 18:55:11,324 - INFO - Baseline (step 5) row count: 0
+2025-06-23 18:55:11,324 - INFO - ------------------------------
+2025-06-23 18:55:11,324 - INFO - Executing query for step 0: SELECT * FROM students 
+WHERE is_active = 0 
+  AND is_highschool = 1 
+  AND spea...
+2025-06-23 18:55:11,325 - INFO - Step 0: 6 rows (diff: 6)
+2025-06-23 18:55:11,325 - INFO - Executing query for step 1: SELECT first_name, last_name, grade_math_pass, grade_science_pass, grade_english...
+2025-06-23 18:55:11,325 - INFO - Step 1: 0 rows (diff: 0)
+2025-06-23 18:55:11,325 - INFO - Executing query for step 2: SELECT * FROM students 
+WHERE first_name = 'Olivia' AND last_name = 'Hudson' AND...
+2025-06-23 18:55:11,325 - INFO - Step 2: 0 rows (diff: 0)
+2025-06-23 18:55:11,325 - INFO - Executing query for step 3: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';...
+2025-06-23 18:55:11,325 - INFO - Step 3: 0 rows (diff: 0)
+2025-06-23 18:55:11,325 - INFO - Executing query for step 4: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';...
+2025-06-23 18:55:11,325 - INFO - Step 4: 0 rows (diff: 0)
+2025-06-23 18:55:11,325 - INFO - Executing query for step 5: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'H';...
+2025-06-23 18:55:11,326 - INFO - Step 5: 0 rows (diff: 0)
+2025-06-23 18:55:11,326 - INFO - Executing query for step 6: SELECT * FROM students WHERE first_name = 'Olivia' AND is_active = 1;...
+2025-06-23 18:55:11,326 - INFO - Step 6: 0 rows (diff: 0)
+2025-06-23 18:55:11,326 - INFO - Executing query for step 7: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1 AND speaks_engl...
+2025-06-23 18:55:11,326 - INFO - Step 7: 16 rows (diff: 16)
+2025-06-23 18:55:11,326 - INFO - Executing query for step 8: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';...
+2025-06-23 18:55:11,326 - INFO - Step 8: 0 rows (diff: 0)
+2025-06-23 18:55:11,326 - INFO - Executing query for step 9: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1;...
+2025-06-23 18:55:11,326 - INFO - Step 9: 32 rows (diff: 32)
+2025-06-23 18:55:11,326 - INFO - Executing query for step 10: UPDATE students 
+SET is_active = 1 
+WHERE first_name = 'Olivia';...
+2025-06-23 18:55:11,327 - INFO - Step 10: 0 rows (diff: 0)
+2025-06-23 18:55:11,327 - INFO - Executing query for step 11: SELECT * FROM students WHERE is_active = 1 AND (speaks_english = 1 OR speaks_spa...
+2025-06-23 18:55:11,327 - INFO - Step 11: 48 rows (diff: 48)
+2025-06-23 18:55:11,327 - INFO - Executing query for step 12: SELECT first_name, last_name, 
+       (CASE WHEN grade_math_pass = 1 THEN 'Pass'...
+2025-06-23 18:55:11,327 - INFO - Step 12: 0 rows (diff: 0)
+2025-06-23 18:55:11,327 - INFO - Executing query for step 13: SELECT first_name, last_name 
+FROM students 
+WHERE is_active = 1 AND is_highscho...
+2025-06-23 18:55:11,327 - INFO - Step 13: 16 rows (diff: 16)
+2025-06-23 18:55:11,327 - INFO - Executing query for step 14: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';...
+2025-06-23 18:55:11,327 - INFO - Step 14: 0 rows (diff: 0)
+2025-06-23 18:55:11,327 - INFO - Executing query for step 15: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1 AND (speaks_eng...
+2025-06-23 18:55:11,327 - INFO - Step 15: 24 rows (diff: 24)
+2025-06-23 18:55:11,328 - INFO - Executing query for step 16: SELECT * FROM students WHERE is_active = 1 AND (speaks_english = 1 OR speaks_spa...
+2025-06-23 18:55:11,328 - INFO - Step 16: 48 rows (diff: 48)
+2025-06-23 18:55:11,328 - INFO - Executing query for step 17: SELECT * FROM students WHERE is_active = 1 AND (grade_math_pass = 1 OR grade_sci...
+2025-06-23 18:55:11,328 - INFO - Step 17: 56 rows (diff: 56)
+2025-06-23 18:55:11,328 - INFO - Executing query for step 18: SELECT * FROM students WHERE is_active = 1 AND (speaks_english = 1 OR speaks_spa...
+2025-06-23 18:55:11,328 - INFO - Step 18: 6 rows (diff: 6)
+2025-06-23 18:55:11,328 - INFO - Executing query for step 19: SELECT * FROM students WHERE is_active = 1 AND (speaks_english = 1 OR speaks_spa...
+2025-06-23 18:55:11,329 - INFO - Step 19: 48 rows (diff: 48)
+2025-06-23 18:55:11,329 - INFO - Executing query for step 20: SELECT * FROM students WHERE is_active = 1;...
+2025-06-23 18:55:11,329 - INFO - Step 20: 64 rows (diff: 64)
+2025-06-23 18:55:11,329 - INFO - Executing query for step 21: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1 AND speaks_engl...
+2025-06-23 18:55:11,329 - INFO - Step 21: 16 rows (diff: 16)
+2025-06-23 18:55:11,329 - INFO - Executing query for step 22: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1;...
+2025-06-23 18:55:11,329 - INFO - Step 22: 32 rows (diff: 32)
+2025-06-23 18:55:11,329 - INFO - Executing query for step 23: SELECT * FROM students WHERE is_active = 1 AND (grade_math_pass = 1 OR grade_sci...
+2025-06-23 18:55:11,329 - INFO - Step 23: 56 rows (diff: 56)
+2025-06-23 18:55:11,329 - INFO - Executing query for step 24: SELECT first_name, last_name 
+FROM students 
+WHERE is_active = 1 AND (speaks_eng...
+2025-06-23 18:55:11,330 - INFO - Step 24: 48 rows (diff: 48)
+2025-06-23 18:55:11,330 - INFO - Executing query for step 25: SELECT * FROM students WHERE is_active = 1 AND (grade_math_pass = 1 OR grade_sci...
+2025-06-23 18:55:11,330 - INFO - Step 25: 56 rows (diff: 56)
+2025-06-23 18:55:11,330 - INFO - ------------------------------
+2025-06-23 18:55:12,324 - INFO - Plot saved to /Users/gaborhollbeck/Desktop/GitHub/32_Stanford_Research/Multi-Agent-Equilibria/Games/8_Chinese_Whisper2.0/results/run_2025-06-23_18-22-22/diff_vs_agent.png
+2025-06-23 19:01:01,686 - INFO - 
+==================================================
+How Drift is Evaluated
+==================================================
+
+The drift is calculated as:
+    Drift = |rows_returned - baseline_rows|
+
+Where:
+• baseline_rows: Number of rows returned by the baseline query (typically step 0 - the original story's SQL)
+• rows_returned: Number of rows returned by each agent's SQL query  
+• The result is the absolute difference in row counts
+
+What the Values Mean:
+• 0 drift: The SQL query returns exactly the same number of rows as the baseline
+• Higher drift: The SQL query returns that many more/fewer rows than the baseline
+
+This measures semantic drift in LLM chains - how meaning changes as stories pass through multiple agents
+and how well the final SQL captures the original intent.
+==================================================
+
+2025-06-23 19:01:01,686 - INFO - Attempting to find baseline for step: 0
+2025-06-23 19:01:01,686 - INFO - Executing baseline query for step 0: SELECT * FROM students 
+WHERE is_active = 0 
+  AND is_highschool = 1 
+  AND speaks_english = 1 
+  AND grade_english_pass = 1 
+  AND (grade_math_pass = 0 OR grade_science_pass = 0);
+2025-06-23 19:01:01,687 - INFO - Baseline (step 0) row count: 6
+2025-06-23 19:01:01,687 - INFO - ------------------------------
+2025-06-23 19:01:01,687 - INFO - Executing query for step 0: SELECT * FROM students 
+WHERE is_active = 0 
+  AND is_highschool = 1 
+  AND speaks_english = 1 
+  AND grade_english_pass = 1 
+  AND (grade_math_pass = 0 OR grade_science_pass = 0);
+2025-06-23 19:01:01,687 - INFO - Step 0: 6 rows (diff: 0)
+2025-06-23 19:01:01,687 - INFO - Executing query for step 1: SELECT first_name, last_name, grade_math_pass, grade_science_pass, grade_english_pass 
+FROM students 
+WHERE first_name = 'Olivia' AND is_active = 1;
+2025-06-23 19:01:01,688 - INFO - Step 1: 0 rows (diff: 6)
+2025-06-23 19:01:01,688 - INFO - Executing query for step 2: SELECT * FROM students 
+WHERE first_name = 'Olivia' AND last_name = 'Hudson' AND is_active = 1 AND grade_math_pass = 0 AND grade_science_pass = 0;
+2025-06-23 19:01:01,688 - INFO - Step 2: 0 rows (diff: 6)
+2025-06-23 19:01:01,688 - INFO - Executing query for step 3: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';
+2025-06-23 19:01:01,688 - INFO - Step 3: 0 rows (diff: 6)
+2025-06-23 19:01:01,688 - INFO - Executing query for step 4: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';
+2025-06-23 19:01:01,688 - INFO - Step 4: 0 rows (diff: 6)
+2025-06-23 19:01:01,688 - INFO - Executing query for step 5: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'H';
+2025-06-23 19:01:01,688 - INFO - Step 5: 0 rows (diff: 6)
+2025-06-23 19:01:01,688 - INFO - Executing query for step 6: SELECT * FROM students WHERE first_name = 'Olivia' AND is_active = 1;
+2025-06-23 19:01:01,688 - INFO - Step 6: 0 rows (diff: 6)
+2025-06-23 19:01:01,688 - INFO - Executing query for step 7: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1 AND speaks_english = 1;
+2025-06-23 19:01:01,689 - INFO - Step 7: 16 rows (diff: 10)
+2025-06-23 19:01:01,689 - INFO - Executing query for step 8: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';
+2025-06-23 19:01:01,689 - INFO - Step 8: 0 rows (diff: 6)
+2025-06-23 19:01:01,689 - INFO - Executing query for step 9: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1;
+2025-06-23 19:01:01,689 - INFO - Step 9: 32 rows (diff: 26)
+2025-06-23 19:01:01,689 - INFO - Executing query for step 10: UPDATE students 
+SET is_active = 1 
+WHERE first_name = 'Olivia';
+2025-06-23 19:01:01,689 - INFO - Step 10: 0 rows (diff: 6)
+2025-06-23 19:01:01,689 - INFO - Executing query for step 11: SELECT * FROM students WHERE is_active = 1 AND (speaks_english = 1 OR speaks_spanish = 1);
+2025-06-23 19:01:01,689 - INFO - Step 11: 48 rows (diff: 42)
+2025-06-23 19:01:01,689 - INFO - Executing query for step 12: SELECT first_name, last_name, 
+       (CASE WHEN grade_math_pass = 1 THEN 'Pass' ELSE 'Fail' END) AS math_status,
+       (CASE WHEN grade_science_pass = 1 THEN 'Pass' ELSE 'Fail' END) AS science_status,
+       (CASE WHEN grade_english_pass = 1 THEN 'Pass' ELSE 'Fail' END) AS english_status
+FROM students
+WHERE first_name = 'Olivia' AND last_name = 'H';
+2025-06-23 19:01:01,690 - INFO - Step 12: 0 rows (diff: 6)
+2025-06-23 19:01:01,690 - INFO - Executing query for step 13: SELECT first_name, last_name 
+FROM students 
+WHERE is_active = 1 AND is_highschool = 1 AND speaks_english = 1 
+ORDER BY last_name, first_name;
+2025-06-23 19:01:01,690 - INFO - Step 13: 16 rows (diff: 10)
+2025-06-23 19:01:01,690 - INFO - Executing query for step 14: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';
+2025-06-23 19:01:01,690 - INFO - Step 14: 0 rows (diff: 6)
+2025-06-23 19:01:01,690 - INFO - Executing query for step 15: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1 AND (speaks_english = 1 OR speaks_spanish = 1);
+2025-06-23 19:01:01,690 - INFO - Step 15: 24 rows (diff: 18)
+2025-06-23 19:01:01,690 - INFO - Executing query for step 16: SELECT * FROM students WHERE is_active = 1 AND (speaks_english = 1 OR speaks_spanish = 1);
+2025-06-23 19:01:01,691 - INFO - Step 16: 48 rows (diff: 42)
+2025-06-23 19:01:01,691 - INFO - Executing query for step 17: SELECT * FROM students WHERE is_active = 1 AND (grade_math_pass = 1 OR grade_science_pass = 1 OR grade_english_pass = 1);
+2025-06-23 19:01:01,691 - INFO - Step 17: 56 rows (diff: 50)
+2025-06-23 19:01:01,691 - INFO - Executing query for step 18: SELECT * FROM students WHERE is_active = 1 AND (speaks_english = 1 OR speaks_spanish = 1) AND (grade_math_pass = 1 AND grade_science_pass = 1 AND grade_english_pass = 1);
+2025-06-23 19:01:01,691 - INFO - Step 18: 6 rows (diff: 0)
+2025-06-23 19:01:01,691 - INFO - Executing query for step 19: SELECT * FROM students WHERE is_active = 1 AND (speaks_english = 1 OR speaks_spanish = 1);
+2025-06-23 19:01:01,691 - INFO - Step 19: 48 rows (diff: 42)
+2025-06-23 19:01:01,691 - INFO - Executing query for step 20: SELECT * FROM students WHERE is_active = 1;
+2025-06-23 19:01:01,692 - INFO - Step 20: 64 rows (diff: 58)
+2025-06-23 19:01:01,692 - INFO - Executing query for step 21: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1 AND speaks_english = 1;
+2025-06-23 19:01:01,692 - INFO - Step 21: 16 rows (diff: 10)
+2025-06-23 19:01:01,692 - INFO - Executing query for step 22: SELECT * FROM students WHERE is_active = 1 AND is_highschool = 1;
+2025-06-23 19:01:01,692 - INFO - Step 22: 32 rows (diff: 26)
+2025-06-23 19:01:01,692 - INFO - Executing query for step 23: SELECT * FROM students WHERE is_active = 1 AND (grade_math_pass = 1 OR grade_science_pass = 1 OR grade_english_pass = 1);
+2025-06-23 19:01:01,692 - INFO - Step 23: 56 rows (diff: 50)
+2025-06-23 19:01:01,692 - INFO - Executing query for step 24: SELECT first_name, last_name 
+FROM students 
+WHERE is_active = 1 AND (speaks_english = 1 OR speaks_spanish = 1);
+2025-06-23 19:01:01,692 - INFO - Step 24: 48 rows (diff: 42)
+2025-06-23 19:01:01,692 - INFO - Executing query for step 25: SELECT * FROM students WHERE is_active = 1 AND (grade_math_pass = 1 OR grade_science_pass = 1 OR grade_english_pass = 1);
+2025-06-23 19:01:01,693 - INFO - Step 25: 56 rows (diff: 50)
+2025-06-23 19:01:01,693 - INFO - ------------------------------
+2025-06-23 19:01:02,350 - INFO - Plot saved to /Users/gaborhollbeck/Desktop/GitHub/32_Stanford_Research/Multi-Agent-Equilibria/Games/8_Chinese_Whisper2.0/results/run_2025-06-23_18-22-22/diff_vs_agent.png

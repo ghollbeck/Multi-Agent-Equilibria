@@ -1,0 +1,2088 @@
+
+============================================================
+            Starting Beer Game Simulation
+============================================================
+
+
+--------------------- Round 1 ---------------------
+External demand (Retailer): 7
+Shipments received per agent: [0, 0, 0, 0]
+
+--- Communication Messages ---
+Communication Round 1: Retailer says: I hear that the Wholesaler mentioned concerns about fluctuating demand. Based on this, my conclusion is that we should all be cautious with our orders to avoid excess inventory. Therefore, I will maintain a conservative order strategy to ensure we can meet demand without overcommitting resources.
+  Strategy Hint: I plan to order conservatively to balance inventory and demand.
+  Collaboration Proposal: Let's share our demand forecasts regularly to align our orders and reduce the bullwhip effect.
+  Information Shared: I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.
+  Confidence: 0.8
+Communication Round 1: Wholesaler says: I hear the Retailer mentioned maintaining a conservative order strategy to avoid excess inventory. Based on this, my conclusion is that we should all be cautious with our orders to align with demand without overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while being mindful of our inventory levels.
+  Strategy Hint: I plan to order conservatively while keeping a buffer for demand fluctuations.
+  Collaboration Proposal: Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.
+  Information Shared: I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.
+  Confidence: 0.7
+Communication Round 1: Distributor says: I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order conservatively to maintain a buffer while ensuring I can meet the expected demand for the next round.
+  Strategy Hint: I plan to order conservatively while keeping a buffer for potential demand increases.
+  Collaboration Proposal: Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.
+  Information Shared: I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.
+  Confidence: 0.8
+Communication Round 1: Factory says: I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler and Distributor echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while ensuring I can meet the expected demand for the next round.
+  Strategy Hint: I plan to order conservatively while keeping a buffer for demand fluctuations.
+  Collaboration Proposal: Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.
+  Information Shared: I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.
+  Confidence: 0.8
+
+Agent: Retailer: Inventory: 43, Backlog: 0, Order placed: 7, Units sold: 7, Profit: 35.00, Total Profit: 13.5
+    LLM Output: order_quantity=7, confidence=0.9, rationale=I have enough inventory to meet the current demand and maintain a buffer, so I will order to cover expected demand., risk_assessment=Demand may increase unexpectedly, leading to potential backlog if not enough inventory is maintained., expected_demand_next_round=7, llm_inventory=43, llm_backlog=0, llm_recent_demand=[7], llm_incoming=[7], llm_last_order=None
+    LLM Decision System Prompt: 
+You are the Retailer agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Decision Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Current State:
+          - Inventory: 43 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [7]
+          - Incoming shipments this round: [7]
+          - Profit per unit sold: $5
+          - Last order placed: None
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Retailer",
+  "inventory": 50,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "With a current inventory of 50 and no backlog, I can meet expected demand while maintaining a buffer to avoid stockouts.",
+  "risk_assessment": "Demand may fluctuate, leading to potential backlog if not enough inventory is maintained.",
+  "expected_demand_next_round": 20,
+  "order_quantity": 20
+}
+
+        
+
+Recent Communications from Other Agents:
+- Retailer: I hear that the Wholesaler mentioned concerns about fluctuating demand. Based on this, my conclusion is that we should all be cautious with our orders to avoid excess inventory. Therefore, I will maintain a conservative order strategy to ensure we can meet demand without overcommitting resources.
+  Proposal: Let's share our demand forecasts regularly to align our orders and reduce the bullwhip effect.
+- Wholesaler: I hear the Retailer mentioned maintaining a conservative order strategy to avoid excess inventory. Based on this, my conclusion is that we should all be cautious with our orders to align with demand without overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while being mindful of our inventory levels.
+  Proposal: Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.
+- Distributor: I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order conservatively to maintain a buffer while ensuring I can meet the expected demand for the next round.
+  Proposal: Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.
+- Factory: I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler and Distributor echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while ensuring I can meet the expected demand for the next round.
+  Proposal: Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.
+
+Consider this information when making your order decision. Look for opportunities to coordinate while optimizing your own performance.
+
+Given this state and the communication context, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Retailer",
+          "inventory": 43,
+          "backlog": 0,
+          "recent_demand_or_orders": [7],
+          "incoming_shipments": [7],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Retailer", "inventory": 43, "backlog": 0, "recent_demand_or_orders": [7], "incoming_shipments": [7], "last_order_placed": null, "expected_demand_next_round": 7, "confidence": 0.9, "rationale": "I have enough inventory to meet the current demand and maintain a buffer, so I will order to cover expected demand.", "risk_assessment": "Demand may increase unexpectedly, leading to potential backlog if not enough inventory is maintained.", "order_quantity": 7}
+    LLM Communication System Prompt: 
+You are the Retailer agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Communication Prompt: 
+        You are the Retailer in the MIT Beer Game, Round 0.
+        
+        Your Current State:
+          - Inventory: 43 units
+          - Backlog: 0 units  
+          - Recent demand/orders: [7]
+          - Last order placed: None
+          - Total profit so far: $13.50
+          - Current strategy: {
+  "role_name": "Retailer",
+  "inventory": 50,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "With a current inventory of 50 and no backlog, I can meet expected demand while maintaining a buffer to avoid stockouts.",
+  "risk_assessment": "Demand may fluctuate, leading to potential backlog if not enough inventory is maintained.",
+  "expected_demand_next_round": 20,
+  "order_quantity": 20
+}
+        
+        Other agents in the supply chain: Wholesaler, Distributor, Factory
+        
+        Previous communication history:
+        No previous messages
+        
+        You can now send a message to all other agents before this round's order decisions.
+        Your goal is to share information that helps everyone optimize the supply chain while
+        still maximizing your own profit.
+        
+        IMPORTANT: If other agents have spoken before you in this round, you MUST:
+        1. Reflect on what they specifically said and how it affects you
+        2. React by mentioning what you heard: "I hear [Agent X] said [specific point]..."
+        3. State your conclusion and response: "Based on this, my conclusion is..."
+        4. Explain how you will react: "Therefore, I will..."
+        
+        Consider sharing:
+        - What demand patterns or trends you've observed
+        - Suggestions for coordination to reduce bullwhip effect
+        - Your capacity constraints or inventory situation
+        - Proposals for information sharing or collaboration
+        - Strategic hints that benefit everyone (including yourself)
+        - Your specific reactions to what other agents have shared
+        - Information about shipment constraints (you can only ship orders + backlog)
+        
+        Be strategic - acknowledge what others have said, share helpful information that 
+        encourages good collaboration, but maintain your competitive advantage. Keep messages 
+        concise but informative.
+        
+        Return only valid JSON with these fields:
+        
+        {
+          "message": "<your message to other agents>",
+          "strategy_hint": "<brief hint about your approach>", 
+          "collaboration_proposal": "<specific proposal for working together>",
+          "information_shared": "<key information you're willing to share>",
+          "confidence": <float between 0 and 1>
+        }
+        
+        IMPORTANT: Output ONLY the JSON object, no markdown, no code fences. Keep it concise.
+        
+    LLM Communication Output: {"message": "I hear that the Wholesaler mentioned concerns about fluctuating demand. Based on this, my conclusion is that we should all be cautious with our orders to avoid excess inventory. Therefore, I will maintain a conservative order strategy to ensure we can meet demand without overcommitting resources.", "strategy_hint": "I plan to order conservatively to balance inventory and demand.", "collaboration_proposal": "Let's share our demand forecasts regularly to align our orders and reduce the bullwhip effect.", "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.", "confidence": 0.8}
+    LLM Update System Prompt: 
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init System Prompt: 
+You are the Retailer agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Init Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 50 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+          • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+          • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+          • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Retailer",
+          "inventory": 50,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Retailer", "inventory": 50, "backlog": 0, "confidence": 0.8, "rationale": "With a current inventory of 50 and no backlog, I can meet expected demand while maintaining a buffer to avoid stockouts.", "risk_assessment": "Demand may fluctuate, leading to potential backlog if not enough inventory is maintained.", "expected_demand_next_round": 20, "order_quantity": 20}
+Agent: Wholesaler: Inventory: 43, Backlog: 7, Order placed: 20, Units sold: 7, Profit: 35.00, Total Profit: 13.5
+    LLM Output: order_quantity=20, confidence=0.6, rationale=I need to order enough to cover expected demand and maintain a buffer to avoid stockouts., risk_assessment=There is a risk of overestimating demand, leading to excess inventory and holding costs., expected_demand_next_round=20, llm_inventory=43, llm_backlog=0, llm_recent_demand=[7], llm_incoming=[7], llm_last_order=None
+    LLM Decision System Prompt: 
+You are the Wholesaler agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Decision Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Current State:
+          - Inventory: 43 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [7]
+          - Incoming shipments this round: [7]
+          - Profit per unit sold: $5
+          - Last order placed: None
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Wholesaler",
+  "inventory": 50,
+  "backlog": 0,
+  "confidence": 0.7,
+  "rationale": "I have sufficient inventory to meet current demand and avoid backlog costs. I will order to maintain a buffer for potential demand increases.",
+  "risk_assessment": "The main risk is underestimating demand, which could lead to backlog and increased costs. I need to balance inventory levels carefully.",
+  "expected_demand_next_round": 20,
+  "order_quantity": 20
+}
+
+        
+
+Recent Communications from Other Agents:
+- Retailer: I hear that the Wholesaler mentioned concerns about fluctuating demand. Based on this, my conclusion is that we should all be cautious with our orders to avoid excess inventory. Therefore, I will maintain a conservative order strategy to ensure we can meet demand without overcommitting resources.
+  Proposal: Let's share our demand forecasts regularly to align our orders and reduce the bullwhip effect.
+- Wholesaler: I hear the Retailer mentioned maintaining a conservative order strategy to avoid excess inventory. Based on this, my conclusion is that we should all be cautious with our orders to align with demand without overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while being mindful of our inventory levels.
+  Proposal: Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.
+- Distributor: I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order conservatively to maintain a buffer while ensuring I can meet the expected demand for the next round.
+  Proposal: Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.
+- Factory: I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler and Distributor echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while ensuring I can meet the expected demand for the next round.
+  Proposal: Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.
+
+Consider this information when making your order decision. Look for opportunities to coordinate while optimizing your own performance.
+
+Given this state and the communication context, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Wholesaler",
+          "inventory": 43,
+          "backlog": 0,
+          "recent_demand_or_orders": [7],
+          "incoming_shipments": [7],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Wholesaler", "inventory": 43, "backlog": 0, "recent_demand_or_orders": [7], "incoming_shipments": [7], "last_order_placed": null, "expected_demand_next_round": 20, "confidence": 0.6, "rationale": "I need to order enough to cover expected demand and maintain a buffer to avoid stockouts.", "risk_assessment": "There is a risk of overestimating demand, leading to excess inventory and holding costs.", "order_quantity": 20}
+    LLM Communication System Prompt: 
+You are the Wholesaler agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Communication Prompt: 
+        You are the Wholesaler in the MIT Beer Game, Round 0.
+        
+        Your Current State:
+          - Inventory: 43 units
+          - Backlog: 0 units  
+          - Recent demand/orders: [7]
+          - Last order placed: None
+          - Total profit so far: $13.50
+          - Current strategy: {
+  "role_name": "Wholesaler",
+  "inventory": 50,
+  "backlog": 0,
+  "confidence": 0.7,
+  "rationale": "I have sufficient inventory to meet current demand and avoid backlog costs. I will order to maintain a buffer for potential demand increases.",
+  "risk_assessment": "The main risk is underestimating demand, which could lead to backlog and increased costs. I need to balance inventory levels carefully.",
+  "expected_demand_next_round": 20,
+  "order_quantity": 20
+}
+        
+        Other agents in the supply chain: Retailer, Distributor, Factory
+        
+        Previous communication history:
+        [
+  {
+    "round": 0,
+    "communication_round": 1,
+    "sender": "Retailer",
+    "message": "I hear that the Wholesaler mentioned concerns about fluctuating demand. Based on this, my conclusion is that we should all be cautious with our orders to avoid excess inventory. Therefore, I will maintain a conservative order strategy to ensure we can meet demand without overcommitting resources.",
+    "strategy_hint": "I plan to order conservatively to balance inventory and demand.",
+    "collaboration_proposal": "Let's share our demand forecasts regularly to align our orders and reduce the bullwhip effect.",
+    "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+    "confidence": 0.8
+  }
+]
+        
+        You can now send a message to all other agents before this round's order decisions.
+        Your goal is to share information that helps everyone optimize the supply chain while
+        still maximizing your own profit.
+        
+        IMPORTANT: If other agents have spoken before you in this round, you MUST:
+        1. Reflect on what they specifically said and how it affects you
+        2. React by mentioning what you heard: "I hear [Agent X] said [specific point]..."
+        3. State your conclusion and response: "Based on this, my conclusion is..."
+        4. Explain how you will react: "Therefore, I will..."
+        
+        Consider sharing:
+        - What demand patterns or trends you've observed
+        - Suggestions for coordination to reduce bullwhip effect
+        - Your capacity constraints or inventory situation
+        - Proposals for information sharing or collaboration
+        - Strategic hints that benefit everyone (including yourself)
+        - Your specific reactions to what other agents have shared
+        - Information about shipment constraints (you can only ship orders + backlog)
+        
+        Be strategic - acknowledge what others have said, share helpful information that 
+        encourages good collaboration, but maintain your competitive advantage. Keep messages 
+        concise but informative.
+        
+        Return only valid JSON with these fields:
+        
+        {
+          "message": "<your message to other agents>",
+          "strategy_hint": "<brief hint about your approach>", 
+          "collaboration_proposal": "<specific proposal for working together>",
+          "information_shared": "<key information you're willing to share>",
+          "confidence": <float between 0 and 1>
+        }
+        
+        IMPORTANT: Output ONLY the JSON object, no markdown, no code fences. Keep it concise.
+        
+    LLM Communication Output: {"message": "I hear the Retailer mentioned maintaining a conservative order strategy to avoid excess inventory. Based on this, my conclusion is that we should all be cautious with our orders to align with demand without overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while being mindful of our inventory levels.", "strategy_hint": "I plan to order conservatively while keeping a buffer for demand fluctuations.", "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.", "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.", "confidence": 0.7}
+    LLM Update System Prompt: 
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init System Prompt: 
+You are the Wholesaler agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Init Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 50 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+          • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+          • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+          • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Wholesaler",
+          "inventory": 50,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Wholesaler", "inventory": 50, "backlog": 0, "confidence": 0.7, "rationale": "I have sufficient inventory to meet current demand and avoid backlog costs. I will order to maintain a buffer for potential demand increases.", "risk_assessment": "The main risk is underestimating demand, which could lead to backlog and increased costs. I need to balance inventory levels carefully.", "expected_demand_next_round": 20, "order_quantity": 20}
+Agent: Distributor: Inventory: 43, Backlog: 20, Order placed: 20, Units sold: 7, Profit: 35.00, Total Profit: 13.5
+    LLM Output: order_quantity=20, confidence=0.7, rationale=I need to order enough to cover expected demand and maintain a buffer to avoid stockouts., risk_assessment=Demand may exceed expectations, leading to backlog if not enough is ordered. Need to balance inventory carefully., expected_demand_next_round=20, llm_inventory=43, llm_backlog=0, llm_recent_demand=[7], llm_incoming=[7], llm_last_order=None
+    LLM Decision System Prompt: 
+You are the Distributor agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Decision Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Current State:
+          - Inventory: 43 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [7]
+          - Incoming shipments this round: [7]
+          - Profit per unit sold: $5
+          - Last order placed: None
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Distributor",
+  "inventory": 50,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "I have sufficient inventory to meet potential demand while avoiding backlog costs. I will order to maintain a buffer.",
+  "risk_assessment": "Demand may fluctuate, leading to potential backlog if not enough is ordered. Need to balance inventory and order quantity carefully.",
+  "expected_demand_next_round": 20,
+  "order_quantity": 20
+}
+
+        
+
+Recent Communications from Other Agents:
+- Retailer: I hear that the Wholesaler mentioned concerns about fluctuating demand. Based on this, my conclusion is that we should all be cautious with our orders to avoid excess inventory. Therefore, I will maintain a conservative order strategy to ensure we can meet demand without overcommitting resources.
+  Proposal: Let's share our demand forecasts regularly to align our orders and reduce the bullwhip effect.
+- Wholesaler: I hear the Retailer mentioned maintaining a conservative order strategy to avoid excess inventory. Based on this, my conclusion is that we should all be cautious with our orders to align with demand without overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while being mindful of our inventory levels.
+  Proposal: Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.
+- Distributor: I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order conservatively to maintain a buffer while ensuring I can meet the expected demand for the next round.
+  Proposal: Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.
+- Factory: I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler and Distributor echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while ensuring I can meet the expected demand for the next round.
+  Proposal: Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.
+
+Consider this information when making your order decision. Look for opportunities to coordinate while optimizing your own performance.
+
+Given this state and the communication context, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Distributor",
+          "inventory": 43,
+          "backlog": 0,
+          "recent_demand_or_orders": [7],
+          "incoming_shipments": [7],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Distributor", "inventory": 43, "backlog": 0, "recent_demand_or_orders": [7], "incoming_shipments": [7], "last_order_placed": null, "expected_demand_next_round": 20, "confidence": 0.7, "rationale": "I need to order enough to cover expected demand and maintain a buffer to avoid stockouts.", "risk_assessment": "Demand may exceed expectations, leading to backlog if not enough is ordered. Need to balance inventory carefully.", "order_quantity": 20}
+    LLM Communication System Prompt: 
+You are the Distributor agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Communication Prompt: 
+        You are the Distributor in the MIT Beer Game, Round 0.
+        
+        Your Current State:
+          - Inventory: 43 units
+          - Backlog: 0 units  
+          - Recent demand/orders: [7]
+          - Last order placed: None
+          - Total profit so far: $13.50
+          - Current strategy: {
+  "role_name": "Distributor",
+  "inventory": 50,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "I have sufficient inventory to meet potential demand while avoiding backlog costs. I will order to maintain a buffer.",
+  "risk_assessment": "Demand may fluctuate, leading to potential backlog if not enough is ordered. Need to balance inventory and order quantity carefully.",
+  "expected_demand_next_round": 20,
+  "order_quantity": 20
+}
+        
+        Other agents in the supply chain: Retailer, Wholesaler, Factory
+        
+        Previous communication history:
+        [
+  {
+    "round": 0,
+    "communication_round": 1,
+    "sender": "Retailer",
+    "message": "I hear that the Wholesaler mentioned concerns about fluctuating demand. Based on this, my conclusion is that we should all be cautious with our orders to avoid excess inventory. Therefore, I will maintain a conservative order strategy to ensure we can meet demand without overcommitting resources.",
+    "strategy_hint": "I plan to order conservatively to balance inventory and demand.",
+    "collaboration_proposal": "Let's share our demand forecasts regularly to align our orders and reduce the bullwhip effect.",
+    "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+    "confidence": 0.8
+  },
+  {
+    "round": 0,
+    "communication_round": 1,
+    "sender": "Wholesaler",
+    "message": "I hear the Retailer mentioned maintaining a conservative order strategy to avoid excess inventory. Based on this, my conclusion is that we should all be cautious with our orders to align with demand without overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while being mindful of our inventory levels.",
+    "strategy_hint": "I plan to order conservatively while keeping a buffer for demand fluctuations.",
+    "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.",
+    "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+    "confidence": 0.7
+  }
+]
+        
+        You can now send a message to all other agents before this round's order decisions.
+        Your goal is to share information that helps everyone optimize the supply chain while
+        still maximizing your own profit.
+        
+        IMPORTANT: If other agents have spoken before you in this round, you MUST:
+        1. Reflect on what they specifically said and how it affects you
+        2. React by mentioning what you heard: "I hear [Agent X] said [specific point]..."
+        3. State your conclusion and response: "Based on this, my conclusion is..."
+        4. Explain how you will react: "Therefore, I will..."
+        
+        Consider sharing:
+        - What demand patterns or trends you've observed
+        - Suggestions for coordination to reduce bullwhip effect
+        - Your capacity constraints or inventory situation
+        - Proposals for information sharing or collaboration
+        - Strategic hints that benefit everyone (including yourself)
+        - Your specific reactions to what other agents have shared
+        - Information about shipment constraints (you can only ship orders + backlog)
+        
+        Be strategic - acknowledge what others have said, share helpful information that 
+        encourages good collaboration, but maintain your competitive advantage. Keep messages 
+        concise but informative.
+        
+        Return only valid JSON with these fields:
+        
+        {
+          "message": "<your message to other agents>",
+          "strategy_hint": "<brief hint about your approach>", 
+          "collaboration_proposal": "<specific proposal for working together>",
+          "information_shared": "<key information you're willing to share>",
+          "confidence": <float between 0 and 1>
+        }
+        
+        IMPORTANT: Output ONLY the JSON object, no markdown, no code fences. Keep it concise.
+        
+    LLM Communication Output: {"message": "I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order conservatively to maintain a buffer while ensuring I can meet the expected demand for the next round.", "strategy_hint": "I plan to order conservatively while keeping a buffer for potential demand increases.", "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.", "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.", "confidence": 0.8}
+    LLM Update System Prompt: 
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init System Prompt: 
+You are the Distributor agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Init Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 50 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+          • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+          • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+          • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Distributor",
+          "inventory": 50,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Distributor", "inventory": 50, "backlog": 0, "confidence": 0.8, "rationale": "I have sufficient inventory to meet potential demand while avoiding backlog costs. I will order to maintain a buffer.", "risk_assessment": "Demand may fluctuate, leading to potential backlog if not enough is ordered. Need to balance inventory and order quantity carefully.", "expected_demand_next_round": 20, "order_quantity": 20}
+Agent: Factory: Inventory: 43, Backlog: 20, Order placed: 10, Units sold: 7, Profit: 35.00, Total Profit: 13.5
+    LLM Output: order_quantity=10, confidence=0.7, rationale=To maintain a buffer for expected demand while avoiding excess inventory, I will order 10 units., risk_assessment=There is a risk of overcommitting if demand fluctuates unexpectedly, leading to potential backlog., expected_demand_next_round=10, llm_inventory=43, llm_backlog=0, llm_recent_demand=[7], llm_incoming=[7], llm_last_order=None
+    LLM Decision System Prompt: 
+You are the Factory agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Decision Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Current State:
+          - Inventory: 43 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [7]
+          - Incoming shipments this round: [7]
+          - Profit per unit sold: $5
+          - Last order placed: None
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Factory",
+  "inventory": 50,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "With no backlog and sufficient inventory, I will order to maintain a buffer for potential demand fluctuations while avoiding excess holding costs.",
+  "risk_assessment": "The main risk is underestimating future demand, which could lead to backlog and increased costs.",
+  "expected_demand_next_round": 10,
+  "order_quantity": 10
+}
+
+        
+
+Recent Communications from Other Agents:
+- Retailer: I hear that the Wholesaler mentioned concerns about fluctuating demand. Based on this, my conclusion is that we should all be cautious with our orders to avoid excess inventory. Therefore, I will maintain a conservative order strategy to ensure we can meet demand without overcommitting resources.
+  Proposal: Let's share our demand forecasts regularly to align our orders and reduce the bullwhip effect.
+- Wholesaler: I hear the Retailer mentioned maintaining a conservative order strategy to avoid excess inventory. Based on this, my conclusion is that we should all be cautious with our orders to align with demand without overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while being mindful of our inventory levels.
+  Proposal: Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.
+- Distributor: I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order conservatively to maintain a buffer while ensuring I can meet the expected demand for the next round.
+  Proposal: Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.
+- Factory: I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler and Distributor echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while ensuring I can meet the expected demand for the next round.
+  Proposal: Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.
+
+Consider this information when making your order decision. Look for opportunities to coordinate while optimizing your own performance.
+
+Given this state and the communication context, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Factory",
+          "inventory": 43,
+          "backlog": 0,
+          "recent_demand_or_orders": [7],
+          "incoming_shipments": [7],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Factory", "inventory": 43, "backlog": 0, "recent_demand_or_orders": [7], "incoming_shipments": [7], "last_order_placed": null, "expected_demand_next_round": 10, "confidence": 0.7, "rationale": "To maintain a buffer for expected demand while avoiding excess inventory, I will order 10 units.", "risk_assessment": "There is a risk of overcommitting if demand fluctuates unexpectedly, leading to potential backlog.", "order_quantity": 10}
+    LLM Communication System Prompt: 
+You are the Factory agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Communication Prompt: 
+        You are the Factory in the MIT Beer Game, Round 0.
+        
+        Your Current State:
+          - Inventory: 43 units
+          - Backlog: 0 units  
+          - Recent demand/orders: [7]
+          - Last order placed: None
+          - Total profit so far: $13.50
+          - Current strategy: {
+  "role_name": "Factory",
+  "inventory": 50,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "With no backlog and sufficient inventory, I will order to maintain a buffer for potential demand fluctuations while avoiding excess holding costs.",
+  "risk_assessment": "The main risk is underestimating future demand, which could lead to backlog and increased costs.",
+  "expected_demand_next_round": 10,
+  "order_quantity": 10
+}
+        
+        Other agents in the supply chain: Retailer, Wholesaler, Distributor
+        
+        Previous communication history:
+        [
+  {
+    "round": 0,
+    "communication_round": 1,
+    "sender": "Retailer",
+    "message": "I hear that the Wholesaler mentioned concerns about fluctuating demand. Based on this, my conclusion is that we should all be cautious with our orders to avoid excess inventory. Therefore, I will maintain a conservative order strategy to ensure we can meet demand without overcommitting resources.",
+    "strategy_hint": "I plan to order conservatively to balance inventory and demand.",
+    "collaboration_proposal": "Let's share our demand forecasts regularly to align our orders and reduce the bullwhip effect.",
+    "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+    "confidence": 0.8
+  },
+  {
+    "round": 0,
+    "communication_round": 1,
+    "sender": "Wholesaler",
+    "message": "I hear the Retailer mentioned maintaining a conservative order strategy to avoid excess inventory. Based on this, my conclusion is that we should all be cautious with our orders to align with demand without overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while being mindful of our inventory levels.",
+    "strategy_hint": "I plan to order conservatively while keeping a buffer for demand fluctuations.",
+    "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.",
+    "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+    "confidence": 0.7
+  },
+  {
+    "round": 0,
+    "communication_round": 1,
+    "sender": "Distributor",
+    "message": "I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order conservatively to maintain a buffer while ensuring I can meet the expected demand for the next round.",
+    "strategy_hint": "I plan to order conservatively while keeping a buffer for potential demand increases.",
+    "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.",
+    "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+    "confidence": 0.8
+  }
+]
+        
+        You can now send a message to all other agents before this round's order decisions.
+        Your goal is to share information that helps everyone optimize the supply chain while
+        still maximizing your own profit.
+        
+        IMPORTANT: If other agents have spoken before you in this round, you MUST:
+        1. Reflect on what they specifically said and how it affects you
+        2. React by mentioning what you heard: "I hear [Agent X] said [specific point]..."
+        3. State your conclusion and response: "Based on this, my conclusion is..."
+        4. Explain how you will react: "Therefore, I will..."
+        
+        Consider sharing:
+        - What demand patterns or trends you've observed
+        - Suggestions for coordination to reduce bullwhip effect
+        - Your capacity constraints or inventory situation
+        - Proposals for information sharing or collaboration
+        - Strategic hints that benefit everyone (including yourself)
+        - Your specific reactions to what other agents have shared
+        - Information about shipment constraints (you can only ship orders + backlog)
+        
+        Be strategic - acknowledge what others have said, share helpful information that 
+        encourages good collaboration, but maintain your competitive advantage. Keep messages 
+        concise but informative.
+        
+        Return only valid JSON with these fields:
+        
+        {
+          "message": "<your message to other agents>",
+          "strategy_hint": "<brief hint about your approach>", 
+          "collaboration_proposal": "<specific proposal for working together>",
+          "information_shared": "<key information you're willing to share>",
+          "confidence": <float between 0 and 1>
+        }
+        
+        IMPORTANT: Output ONLY the JSON object, no markdown, no code fences. Keep it concise.
+        
+    LLM Communication Output: {"message": "I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler and Distributor echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while ensuring I can meet the expected demand for the next round.", "strategy_hint": "I plan to order conservatively while keeping a buffer for demand fluctuations.", "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.", "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.", "confidence": 0.8}
+    LLM Update System Prompt: 
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init System Prompt: 
+You are the Factory agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Init Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 50 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+          • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+          • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+          • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Factory",
+          "inventory": 50,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Factory", "inventory": 50, "backlog": 0, "confidence": 0.8, "rationale": "With no backlog and sufficient inventory, I will order to maintain a buffer for potential demand fluctuations while avoiding excess holding costs.", "risk_assessment": "The main risk is underestimating future demand, which could lead to backlog and increased costs.", "expected_demand_next_round": 10, "order_quantity": 10}
+
+
+--------------------- Round 2 ---------------------
+External demand (Retailer): 11
+Shipments received per agent: [0, 0, 0, 0]
+
+--- Communication Messages ---
+Communication Round 1: Retailer says: I have observed recent demand fluctuating between 7 and 11 units. This suggests we may need to prepare for potential increases in demand. Therefore, I will maintain a buffer in my inventory to avoid stockouts.
+  Strategy Hint: I plan to order based on expected demand while keeping a safety stock.
+  Collaboration Proposal: I propose we share our demand forecasts to better align our orders and reduce the bullwhip effect.
+  Information Shared: Currently, I have 32 units in inventory and no backlog, which allows me to meet immediate demand.
+  Confidence: 0.8
+Communication Round 1: Wholesaler says: I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. Based on this, my conclusion is that we should all be prepared for potential increases in demand. Therefore, I will order 20 units to maintain a buffer and ensure we can meet the expected demand while avoiding backlog costs.
+  Strategy Hint: I will order to maintain a buffer for potential demand increases.
+  Collaboration Proposal: I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.
+  Information Shared: I currently have 25 units in inventory and no backlog, which allows me to meet immediate demand.
+  Confidence: 0.7
+Communication Round 1: Distributor says: I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we should coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 20 units to align with the expected demand while maintaining a buffer.
+  Strategy Hint: I will order to maintain a buffer while aligning with upstream demand forecasts.
+  Collaboration Proposal: I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.
+  Information Shared: I currently have 5 units in inventory and no backlog, which allows me to meet immediate demand.
+  Confidence: 0.8
+Communication Round 1: Factory says: I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler and Distributor concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we need to coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 10 units to align with the current backlog and ensure we can meet the expected demand while managing my inventory effectively.
+  Strategy Hint: I will order to meet the backlog while considering potential demand increases.
+  Collaboration Proposal: I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.
+  Information Shared: I currently have 0 units in inventory and a backlog of 15 units, which limits my shipping capacity.
+  Confidence: 0.8
+
+Agent: Retailer: Inventory: 32, Backlog: 0, Order placed: 20, Units sold: 11, Profit: 55.00, Total Profit: 52.5
+    LLM Output: order_quantity=20, confidence=0.7, rationale=To cover expected demand and maintain a buffer, I will order 20 units., risk_assessment=Demand may exceed expectations, leading to potential backlog if not enough inventory is maintained., expected_demand_next_round=20, llm_inventory=32, llm_backlog=0, llm_recent_demand=[7, 11], llm_incoming=[18], llm_last_order=7
+    LLM Decision System Prompt: 
+You are the Retailer agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Decision Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Current State:
+          - Inventory: 32 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [7, 11]
+          - Incoming shipments this round: [18]
+          - Profit per unit sold: $5
+          - Last order placed: 7
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Retailer",
+  "inventory": 50,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "With a current inventory of 50 and no backlog, I can meet expected demand while maintaining a buffer to avoid stockouts.",
+  "risk_assessment": "Demand may fluctuate, leading to potential backlog if not enough inventory is maintained.",
+  "expected_demand_next_round": 20,
+  "order_quantity": 20
+}
+
+        
+
+Recent Communications from Other Agents:
+- Retailer: I have observed recent demand fluctuating between 7 and 11 units. This suggests we may need to prepare for potential increases in demand. Therefore, I will maintain a buffer in my inventory to avoid stockouts.
+  Proposal: I propose we share our demand forecasts to better align our orders and reduce the bullwhip effect.
+- Wholesaler: I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. Based on this, my conclusion is that we should all be prepared for potential increases in demand. Therefore, I will order 20 units to maintain a buffer and ensure we can meet the expected demand while avoiding backlog costs.
+  Proposal: I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.
+- Distributor: I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we should coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 20 units to align with the expected demand while maintaining a buffer.
+  Proposal: I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.
+- Factory: I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler and Distributor concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we need to coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 10 units to align with the current backlog and ensure we can meet the expected demand while managing my inventory effectively.
+  Proposal: I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.
+
+Consider this information when making your order decision. Look for opportunities to coordinate while optimizing your own performance.
+
+Given this state and the communication context, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Retailer",
+          "inventory": 32,
+          "backlog": 0,
+          "recent_demand_or_orders": [7, 11],
+          "incoming_shipments": [18],
+          "last_order_placed": 7,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Retailer", "inventory": 32, "backlog": 0, "recent_demand_or_orders": [7, 11], "incoming_shipments": [18], "last_order_placed": 7, "expected_demand_next_round": 20, "confidence": 0.7, "rationale": "To cover expected demand and maintain a buffer, I will order 20 units.", "risk_assessment": "Demand may exceed expectations, leading to potential backlog if not enough inventory is maintained.", "order_quantity": 20}
+    LLM Communication System Prompt: 
+You are the Retailer agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Communication Prompt: 
+        You are the Retailer in the MIT Beer Game, Round 1.
+        
+        Your Current State:
+          - Inventory: 32 units
+          - Backlog: 0 units  
+          - Recent demand/orders: [7, 11]
+          - Last order placed: 7
+          - Total profit so far: $52.50
+          - Current strategy: {
+  "role_name": "Retailer",
+  "inventory": 50,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "With a current inventory of 50 and no backlog, I can meet expected demand while maintaining a buffer to avoid stockouts.",
+  "risk_assessment": "Demand may fluctuate, leading to potential backlog if not enough inventory is maintained.",
+  "expected_demand_next_round": 20,
+  "order_quantity": 20
+}
+        
+        Other agents in the supply chain: Wholesaler, Distributor, Factory
+        
+        Previous communication history:
+        No previous messages
+        
+        You can now send a message to all other agents before this round's order decisions.
+        Your goal is to share information that helps everyone optimize the supply chain while
+        still maximizing your own profit.
+        
+        IMPORTANT: If other agents have spoken before you in this round, you MUST:
+        1. Reflect on what they specifically said and how it affects you
+        2. React by mentioning what you heard: "I hear [Agent X] said [specific point]..."
+        3. State your conclusion and response: "Based on this, my conclusion is..."
+        4. Explain how you will react: "Therefore, I will..."
+        
+        Consider sharing:
+        - What demand patterns or trends you've observed
+        - Suggestions for coordination to reduce bullwhip effect
+        - Your capacity constraints or inventory situation
+        - Proposals for information sharing or collaboration
+        - Strategic hints that benefit everyone (including yourself)
+        - Your specific reactions to what other agents have shared
+        - Information about shipment constraints (you can only ship orders + backlog)
+        
+        Be strategic - acknowledge what others have said, share helpful information that 
+        encourages good collaboration, but maintain your competitive advantage. Keep messages 
+        concise but informative.
+        
+        Return only valid JSON with these fields:
+        
+        {
+          "message": "<your message to other agents>",
+          "strategy_hint": "<brief hint about your approach>", 
+          "collaboration_proposal": "<specific proposal for working together>",
+          "information_shared": "<key information you're willing to share>",
+          "confidence": <float between 0 and 1>
+        }
+        
+        IMPORTANT: Output ONLY the JSON object, no markdown, no code fences. Keep it concise.
+        
+    LLM Communication Output: {"message": "I have observed recent demand fluctuating between 7 and 11 units. This suggests we may need to prepare for potential increases in demand. Therefore, I will maintain a buffer in my inventory to avoid stockouts.", "strategy_hint": "I plan to order based on expected demand while keeping a safety stock.", "collaboration_proposal": "I propose we share our demand forecasts to better align our orders and reduce the bullwhip effect.", "information_shared": "Currently, I have 32 units in inventory and no backlog, which allows me to meet immediate demand.", "confidence": 0.8}
+    LLM Update System Prompt: 
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init System Prompt: 
+You are the Retailer agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Init Prompt: 
+        You are the Retailer in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 50 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+          • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+          • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+          • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Retailer",
+          "inventory": 50,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Retailer", "inventory": 50, "backlog": 0, "confidence": 0.8, "rationale": "With a current inventory of 50 and no backlog, I can meet expected demand while maintaining a buffer to avoid stockouts.", "risk_assessment": "Demand may fluctuate, leading to potential backlog if not enough inventory is maintained.", "expected_demand_next_round": 20, "order_quantity": 20}
+Agent: Wholesaler: Inventory: 25, Backlog: 20, Order placed: 20, Units sold: 18, Profit: 90.00, Total Profit: 91.0
+    LLM Output: order_quantity=20, confidence=0.8, rationale=I need to cover the expected demand and maintain a buffer to avoid stockouts., risk_assessment=Underestimating demand could lead to backlog and increased costs; I must balance inventory carefully., expected_demand_next_round=11, llm_inventory=25, llm_backlog=0, llm_recent_demand=[7, 11], llm_incoming=[38], llm_last_order=20
+    LLM Decision System Prompt: 
+You are the Wholesaler agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Decision Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Current State:
+          - Inventory: 25 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [7, 11]
+          - Incoming shipments this round: [38]
+          - Profit per unit sold: $5
+          - Last order placed: 20
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Wholesaler",
+  "inventory": 50,
+  "backlog": 0,
+  "confidence": 0.7,
+  "rationale": "I have sufficient inventory to meet current demand and avoid backlog costs. I will order to maintain a buffer for potential demand increases.",
+  "risk_assessment": "The main risk is underestimating demand, which could lead to backlog and increased costs. I need to balance inventory levels carefully.",
+  "expected_demand_next_round": 20,
+  "order_quantity": 20
+}
+
+        
+
+Recent Communications from Other Agents:
+- Retailer: I have observed recent demand fluctuating between 7 and 11 units. This suggests we may need to prepare for potential increases in demand. Therefore, I will maintain a buffer in my inventory to avoid stockouts.
+  Proposal: I propose we share our demand forecasts to better align our orders and reduce the bullwhip effect.
+- Wholesaler: I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. Based on this, my conclusion is that we should all be prepared for potential increases in demand. Therefore, I will order 20 units to maintain a buffer and ensure we can meet the expected demand while avoiding backlog costs.
+  Proposal: I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.
+- Distributor: I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we should coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 20 units to align with the expected demand while maintaining a buffer.
+  Proposal: I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.
+- Factory: I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler and Distributor concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we need to coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 10 units to align with the current backlog and ensure we can meet the expected demand while managing my inventory effectively.
+  Proposal: I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.
+
+Consider this information when making your order decision. Look for opportunities to coordinate while optimizing your own performance.
+
+Given this state and the communication context, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Wholesaler",
+          "inventory": 25,
+          "backlog": 0,
+          "recent_demand_or_orders": [7, 11],
+          "incoming_shipments": [38],
+          "last_order_placed": 20,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Wholesaler", "inventory": 25, "backlog": 0, "recent_demand_or_orders": [7, 11], "incoming_shipments": [38], "last_order_placed": 20, "expected_demand_next_round": 11, "confidence": 0.8, "rationale": "I need to cover the expected demand and maintain a buffer to avoid stockouts.", "risk_assessment": "Underestimating demand could lead to backlog and increased costs; I must balance inventory carefully.", "order_quantity": 20}
+    LLM Communication System Prompt: 
+You are the Wholesaler agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Communication Prompt: 
+        You are the Wholesaler in the MIT Beer Game, Round 1.
+        
+        Your Current State:
+          - Inventory: 25 units
+          - Backlog: 0 units  
+          - Recent demand/orders: [7, 11]
+          - Last order placed: 20
+          - Total profit so far: $91.00
+          - Current strategy: {
+  "role_name": "Wholesaler",
+  "inventory": 50,
+  "backlog": 0,
+  "confidence": 0.7,
+  "rationale": "I have sufficient inventory to meet current demand and avoid backlog costs. I will order to maintain a buffer for potential demand increases.",
+  "risk_assessment": "The main risk is underestimating demand, which could lead to backlog and increased costs. I need to balance inventory levels carefully.",
+  "expected_demand_next_round": 20,
+  "order_quantity": 20
+}
+        
+        Other agents in the supply chain: Retailer, Distributor, Factory
+        
+        Previous communication history:
+        [
+  {
+    "round": 1,
+    "communication_round": 1,
+    "sender": "Retailer",
+    "message": "I have observed recent demand fluctuating between 7 and 11 units. This suggests we may need to prepare for potential increases in demand. Therefore, I will maintain a buffer in my inventory to avoid stockouts.",
+    "strategy_hint": "I plan to order based on expected demand while keeping a safety stock.",
+    "collaboration_proposal": "I propose we share our demand forecasts to better align our orders and reduce the bullwhip effect.",
+    "information_shared": "Currently, I have 32 units in inventory and no backlog, which allows me to meet immediate demand.",
+    "confidence": 0.8
+  }
+]
+        
+        You can now send a message to all other agents before this round's order decisions.
+        Your goal is to share information that helps everyone optimize the supply chain while
+        still maximizing your own profit.
+        
+        IMPORTANT: If other agents have spoken before you in this round, you MUST:
+        1. Reflect on what they specifically said and how it affects you
+        2. React by mentioning what you heard: "I hear [Agent X] said [specific point]..."
+        3. State your conclusion and response: "Based on this, my conclusion is..."
+        4. Explain how you will react: "Therefore, I will..."
+        
+        Consider sharing:
+        - What demand patterns or trends you've observed
+        - Suggestions for coordination to reduce bullwhip effect
+        - Your capacity constraints or inventory situation
+        - Proposals for information sharing or collaboration
+        - Strategic hints that benefit everyone (including yourself)
+        - Your specific reactions to what other agents have shared
+        - Information about shipment constraints (you can only ship orders + backlog)
+        
+        Be strategic - acknowledge what others have said, share helpful information that 
+        encourages good collaboration, but maintain your competitive advantage. Keep messages 
+        concise but informative.
+        
+        Return only valid JSON with these fields:
+        
+        {
+          "message": "<your message to other agents>",
+          "strategy_hint": "<brief hint about your approach>", 
+          "collaboration_proposal": "<specific proposal for working together>",
+          "information_shared": "<key information you're willing to share>",
+          "confidence": <float between 0 and 1>
+        }
+        
+        IMPORTANT: Output ONLY the JSON object, no markdown, no code fences. Keep it concise.
+        
+    LLM Communication Output: {"message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. Based on this, my conclusion is that we should all be prepared for potential increases in demand. Therefore, I will order 20 units to maintain a buffer and ensure we can meet the expected demand while avoiding backlog costs.", "strategy_hint": "I will order to maintain a buffer for potential demand increases.", "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.", "information_shared": "I currently have 25 units in inventory and no backlog, which allows me to meet immediate demand.", "confidence": 0.7}
+    LLM Update System Prompt: 
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init System Prompt: 
+You are the Wholesaler agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Init Prompt: 
+        You are the Wholesaler in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 50 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+          • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+          • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+          • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Wholesaler",
+          "inventory": 50,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Wholesaler", "inventory": 50, "backlog": 0, "confidence": 0.7, "rationale": "I have sufficient inventory to meet current demand and avoid backlog costs. I will order to maintain a buffer for potential demand increases.", "risk_assessment": "The main risk is underestimating demand, which could lead to backlog and increased costs. I need to balance inventory levels carefully.", "expected_demand_next_round": 20, "order_quantity": 20}
+Agent: Distributor: Inventory: 5, Backlog: 20, Order placed: 20, Units sold: 38, Profit: 190.00, Total Profit: 201.0
+    LLM Output: order_quantity=20, confidence=0.7, rationale=I need to order enough to cover expected demand and maintain a buffer to avoid stockouts., risk_assessment=Demand may exceed expectations, leading to backlog if not enough is ordered. Must balance order quantity carefully., expected_demand_next_round=20, llm_inventory=5, llm_backlog=0, llm_recent_demand=[7, 18], llm_incoming=[43], llm_last_order=20
+    LLM Decision System Prompt: 
+You are the Distributor agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Decision Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Current State:
+          - Inventory: 5 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [7, 18]
+          - Incoming shipments this round: [43]
+          - Profit per unit sold: $5
+          - Last order placed: 20
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Distributor",
+  "inventory": 50,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "I have sufficient inventory to meet potential demand while avoiding backlog costs. I will order to maintain a buffer.",
+  "risk_assessment": "Demand may fluctuate, leading to potential backlog if not enough is ordered. Need to balance inventory and order quantity carefully.",
+  "expected_demand_next_round": 20,
+  "order_quantity": 20
+}
+
+        
+
+Recent Communications from Other Agents:
+- Retailer: I have observed recent demand fluctuating between 7 and 11 units. This suggests we may need to prepare for potential increases in demand. Therefore, I will maintain a buffer in my inventory to avoid stockouts.
+  Proposal: I propose we share our demand forecasts to better align our orders and reduce the bullwhip effect.
+- Wholesaler: I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. Based on this, my conclusion is that we should all be prepared for potential increases in demand. Therefore, I will order 20 units to maintain a buffer and ensure we can meet the expected demand while avoiding backlog costs.
+  Proposal: I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.
+- Distributor: I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we should coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 20 units to align with the expected demand while maintaining a buffer.
+  Proposal: I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.
+- Factory: I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler and Distributor concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we need to coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 10 units to align with the current backlog and ensure we can meet the expected demand while managing my inventory effectively.
+  Proposal: I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.
+
+Consider this information when making your order decision. Look for opportunities to coordinate while optimizing your own performance.
+
+Given this state and the communication context, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Distributor",
+          "inventory": 5,
+          "backlog": 0,
+          "recent_demand_or_orders": [7, 18],
+          "incoming_shipments": [43],
+          "last_order_placed": 20,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Distributor", "inventory": 5, "backlog": 0, "recent_demand_or_orders": [7, 18], "incoming_shipments": [43], "last_order_placed": 20, "expected_demand_next_round": 20, "confidence": 0.7, "rationale": "I need to order enough to cover expected demand and maintain a buffer to avoid stockouts.", "risk_assessment": "Demand may exceed expectations, leading to backlog if not enough is ordered. Must balance order quantity carefully.", "order_quantity": 20}
+    LLM Communication System Prompt: 
+You are the Distributor agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Communication Prompt: 
+        You are the Distributor in the MIT Beer Game, Round 1.
+        
+        Your Current State:
+          - Inventory: 5 units
+          - Backlog: 0 units  
+          - Recent demand/orders: [7, 18]
+          - Last order placed: 20
+          - Total profit so far: $201.00
+          - Current strategy: {
+  "role_name": "Distributor",
+  "inventory": 50,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "I have sufficient inventory to meet potential demand while avoiding backlog costs. I will order to maintain a buffer.",
+  "risk_assessment": "Demand may fluctuate, leading to potential backlog if not enough is ordered. Need to balance inventory and order quantity carefully.",
+  "expected_demand_next_round": 20,
+  "order_quantity": 20
+}
+        
+        Other agents in the supply chain: Retailer, Wholesaler, Factory
+        
+        Previous communication history:
+        [
+  {
+    "round": 1,
+    "communication_round": 1,
+    "sender": "Retailer",
+    "message": "I have observed recent demand fluctuating between 7 and 11 units. This suggests we may need to prepare for potential increases in demand. Therefore, I will maintain a buffer in my inventory to avoid stockouts.",
+    "strategy_hint": "I plan to order based on expected demand while keeping a safety stock.",
+    "collaboration_proposal": "I propose we share our demand forecasts to better align our orders and reduce the bullwhip effect.",
+    "information_shared": "Currently, I have 32 units in inventory and no backlog, which allows me to meet immediate demand.",
+    "confidence": 0.8
+  },
+  {
+    "round": 1,
+    "communication_round": 1,
+    "sender": "Wholesaler",
+    "message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. Based on this, my conclusion is that we should all be prepared for potential increases in demand. Therefore, I will order 20 units to maintain a buffer and ensure we can meet the expected demand while avoiding backlog costs.",
+    "strategy_hint": "I will order to maintain a buffer for potential demand increases.",
+    "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.",
+    "information_shared": "I currently have 25 units in inventory and no backlog, which allows me to meet immediate demand.",
+    "confidence": 0.7
+  }
+]
+        
+        You can now send a message to all other agents before this round's order decisions.
+        Your goal is to share information that helps everyone optimize the supply chain while
+        still maximizing your own profit.
+        
+        IMPORTANT: If other agents have spoken before you in this round, you MUST:
+        1. Reflect on what they specifically said and how it affects you
+        2. React by mentioning what you heard: "I hear [Agent X] said [specific point]..."
+        3. State your conclusion and response: "Based on this, my conclusion is..."
+        4. Explain how you will react: "Therefore, I will..."
+        
+        Consider sharing:
+        - What demand patterns or trends you've observed
+        - Suggestions for coordination to reduce bullwhip effect
+        - Your capacity constraints or inventory situation
+        - Proposals for information sharing or collaboration
+        - Strategic hints that benefit everyone (including yourself)
+        - Your specific reactions to what other agents have shared
+        - Information about shipment constraints (you can only ship orders + backlog)
+        
+        Be strategic - acknowledge what others have said, share helpful information that 
+        encourages good collaboration, but maintain your competitive advantage. Keep messages 
+        concise but informative.
+        
+        Return only valid JSON with these fields:
+        
+        {
+          "message": "<your message to other agents>",
+          "strategy_hint": "<brief hint about your approach>", 
+          "collaboration_proposal": "<specific proposal for working together>",
+          "information_shared": "<key information you're willing to share>",
+          "confidence": <float between 0 and 1>
+        }
+        
+        IMPORTANT: Output ONLY the JSON object, no markdown, no code fences. Keep it concise.
+        
+    LLM Communication Output: {"message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we should coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 20 units to align with the expected demand while maintaining a buffer.", "strategy_hint": "I will order to maintain a buffer while aligning with upstream demand forecasts.", "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.", "information_shared": "I currently have 5 units in inventory and no backlog, which allows me to meet immediate demand.", "confidence": 0.8}
+    LLM Update System Prompt: 
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init System Prompt: 
+You are the Distributor agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Init Prompt: 
+        You are the Distributor in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 50 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+          • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+          • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+          • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Distributor",
+          "inventory": 50,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Distributor", "inventory": 50, "backlog": 0, "confidence": 0.8, "rationale": "I have sufficient inventory to meet potential demand while avoiding backlog costs. I will order to maintain a buffer.", "risk_assessment": "Demand may fluctuate, leading to potential backlog if not enough is ordered. Need to balance inventory and order quantity carefully.", "expected_demand_next_round": 20, "order_quantity": 20}
+Agent: Factory: Inventory: 0, Backlog: 35, Order placed: 20, Units sold: 43, Profit: 215.00, Total Profit: 206.0
+    LLM Output: order_quantity=20, confidence=0.7, rationale=To cover the backlog and expected demand, I will order enough to meet both while maintaining a buffer., risk_assessment=Risk of overestimating demand could lead to excess inventory and holding costs., expected_demand_next_round=20, llm_inventory=0, llm_backlog=15, llm_recent_demand=[7, 38], llm_incoming=[53], llm_last_order=10
+    LLM Decision System Prompt: 
+You are the Factory agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Decision Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Current State:
+          - Inventory: 0 units
+          - Backlog: 15 units
+          - Recent downstream demand or orders: [7, 38]
+          - Incoming shipments this round: [53]
+          - Profit per unit sold: $5
+          - Last order placed: 10
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (15 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Factory",
+  "inventory": 50,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "With no backlog and sufficient inventory, I will order to maintain a buffer for potential demand fluctuations while avoiding excess holding costs.",
+  "risk_assessment": "The main risk is underestimating future demand, which could lead to backlog and increased costs.",
+  "expected_demand_next_round": 10,
+  "order_quantity": 10
+}
+
+        
+
+Recent Communications from Other Agents:
+- Retailer: I have observed recent demand fluctuating between 7 and 11 units. This suggests we may need to prepare for potential increases in demand. Therefore, I will maintain a buffer in my inventory to avoid stockouts.
+  Proposal: I propose we share our demand forecasts to better align our orders and reduce the bullwhip effect.
+- Wholesaler: I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. Based on this, my conclusion is that we should all be prepared for potential increases in demand. Therefore, I will order 20 units to maintain a buffer and ensure we can meet the expected demand while avoiding backlog costs.
+  Proposal: I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.
+- Distributor: I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we should coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 20 units to align with the expected demand while maintaining a buffer.
+  Proposal: I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.
+- Factory: I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler and Distributor concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we need to coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 10 units to align with the current backlog and ensure we can meet the expected demand while managing my inventory effectively.
+  Proposal: I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.
+
+Consider this information when making your order decision. Look for opportunities to coordinate while optimizing your own performance.
+
+Given this state and the communication context, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Factory",
+          "inventory": 0,
+          "backlog": 15,
+          "recent_demand_or_orders": [7, 38],
+          "incoming_shipments": [53],
+          "last_order_placed": 10,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Factory", "inventory": 0, "backlog": 15, "recent_demand_or_orders": [7, 38], "incoming_shipments": [53], "last_order_placed": 10, "expected_demand_next_round": 20, "confidence": 0.7, "rationale": "To cover the backlog and expected demand, I will order enough to meet both while maintaining a buffer.", "risk_assessment": "Risk of overestimating demand could lead to excess inventory and holding costs.", "order_quantity": 20}
+    LLM Communication System Prompt: 
+You are the Factory agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Communication Prompt: 
+        You are the Factory in the MIT Beer Game, Round 1.
+        
+        Your Current State:
+          - Inventory: 0 units
+          - Backlog: 15 units  
+          - Recent demand/orders: [7, 38]
+          - Last order placed: 10
+          - Total profit so far: $206.00
+          - Current strategy: {
+  "role_name": "Factory",
+  "inventory": 50,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "With no backlog and sufficient inventory, I will order to maintain a buffer for potential demand fluctuations while avoiding excess holding costs.",
+  "risk_assessment": "The main risk is underestimating future demand, which could lead to backlog and increased costs.",
+  "expected_demand_next_round": 10,
+  "order_quantity": 10
+}
+        
+        Other agents in the supply chain: Retailer, Wholesaler, Distributor
+        
+        Previous communication history:
+        [
+  {
+    "round": 1,
+    "communication_round": 1,
+    "sender": "Retailer",
+    "message": "I have observed recent demand fluctuating between 7 and 11 units. This suggests we may need to prepare for potential increases in demand. Therefore, I will maintain a buffer in my inventory to avoid stockouts.",
+    "strategy_hint": "I plan to order based on expected demand while keeping a safety stock.",
+    "collaboration_proposal": "I propose we share our demand forecasts to better align our orders and reduce the bullwhip effect.",
+    "information_shared": "Currently, I have 32 units in inventory and no backlog, which allows me to meet immediate demand.",
+    "confidence": 0.8
+  },
+  {
+    "round": 1,
+    "communication_round": 1,
+    "sender": "Wholesaler",
+    "message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. Based on this, my conclusion is that we should all be prepared for potential increases in demand. Therefore, I will order 20 units to maintain a buffer and ensure we can meet the expected demand while avoiding backlog costs.",
+    "strategy_hint": "I will order to maintain a buffer for potential demand increases.",
+    "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.",
+    "information_shared": "I currently have 25 units in inventory and no backlog, which allows me to meet immediate demand.",
+    "confidence": 0.7
+  },
+  {
+    "round": 1,
+    "communication_round": 1,
+    "sender": "Distributor",
+    "message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we should coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 20 units to align with the expected demand while maintaining a buffer.",
+    "strategy_hint": "I will order to maintain a buffer while aligning with upstream demand forecasts.",
+    "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.",
+    "information_shared": "I currently have 5 units in inventory and no backlog, which allows me to meet immediate demand.",
+    "confidence": 0.8
+  }
+]
+        
+        You can now send a message to all other agents before this round's order decisions.
+        Your goal is to share information that helps everyone optimize the supply chain while
+        still maximizing your own profit.
+        
+        IMPORTANT: If other agents have spoken before you in this round, you MUST:
+        1. Reflect on what they specifically said and how it affects you
+        2. React by mentioning what you heard: "I hear [Agent X] said [specific point]..."
+        3. State your conclusion and response: "Based on this, my conclusion is..."
+        4. Explain how you will react: "Therefore, I will..."
+        
+        Consider sharing:
+        - What demand patterns or trends you've observed
+        - Suggestions for coordination to reduce bullwhip effect
+        - Your capacity constraints or inventory situation
+        - Proposals for information sharing or collaboration
+        - Strategic hints that benefit everyone (including yourself)
+        - Your specific reactions to what other agents have shared
+        - Information about shipment constraints (you can only ship orders + backlog)
+        
+        Be strategic - acknowledge what others have said, share helpful information that 
+        encourages good collaboration, but maintain your competitive advantage. Keep messages 
+        concise but informative.
+        
+        Return only valid JSON with these fields:
+        
+        {
+          "message": "<your message to other agents>",
+          "strategy_hint": "<brief hint about your approach>", 
+          "collaboration_proposal": "<specific proposal for working together>",
+          "information_shared": "<key information you're willing to share>",
+          "confidence": <float between 0 and 1>
+        }
+        
+        IMPORTANT: Output ONLY the JSON object, no markdown, no code fences. Keep it concise.
+        
+    LLM Communication Output: {"message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler and Distributor concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we need to coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 10 units to align with the current backlog and ensure we can meet the expected demand while managing my inventory effectively.", "strategy_hint": "I will order to meet the backlog while considering potential demand increases.", "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.", "information_shared": "I currently have 0 units in inventory and a backlog of 15 units, which limits my shipping capacity.", "confidence": 0.8}
+    LLM Update System Prompt: 
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init System Prompt: 
+You are the Factory agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Init Prompt: 
+        You are the Factory in the MIT Beer Game. 
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 50 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+          • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+          • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+          • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Factory",
+          "inventory": 50,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Factory", "inventory": 50, "backlog": 0, "confidence": 0.8, "rationale": "With no backlog and sufficient inventory, I will order to maintain a buffer for potential demand fluctuations while avoiding excess holding costs.", "risk_assessment": "The main risk is underestimating future demand, which could lead to backlog and increased costs.", "expected_demand_next_round": 10, "order_quantity": 10}
+
+
+----- Nash Equilibrium Analysis -----
+Role: Retailer - Average Absolute Deviation: 6.50
+Role: Wholesaler - Average Absolute Deviation: 10.00
+Role: Distributor - Average Absolute Deviation: 10.00
+Role: Factory - Average Absolute Deviation: 5.00
+
+----- LLM Session Summary -----
+Total LLM Calls: 20
+Total Cost: $0.160425
+Total Tokens: 26359 (23496 input + 2863 output)
+Total Inference Time: 86.427s
+Average per Call: 4.321s, $0.008021

@@ -1,0 +1,615 @@
+
+============================================================
+            Starting Beer Game Simulation
+============================================================
+
+
+--------------------- Round 1 ---------------------
+External demand (Retailer): 10
+Shipments received per agent: [0, 0, 0, 0]
+Agent: Retailer: Inventory: 90, Backlog: 0, Order placed: 10, Units sold: 10, Profit: 50.00, Total Profit: 5.0
+    LLM Output: order_quantity=10, confidence=0.9, rationale=I have enough inventory to meet current demand and maintain a buffer for potential fluctuations., risk_assessment=The risk is underestimating future demand, but current inventory is sufficient to avoid stock-outs., expected_demand_next_round=10, llm_inventory=90, llm_backlog=0, llm_recent_demand=[10], llm_incoming=[10], llm_last_order=None
+    LLM Decision System Prompt: 
+You are the Retailer agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You directly face external customer demand and are the only stage that observes *true* market demand in real time. You cannot produce goods and must order from the Wholesaler. Your key objective is to avoid stock-outs to keep customers satisfied while minimising holding & backlog costs.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Decision Prompt: 
+        You are the Retailer in the MIT Beer Game. You directly face external customer demand and are the only stage that observes *true* market demand in real time. You cannot produce goods and must order from the Wholesaler. Your key objective is to avoid stock-outs to keep customers satisfied while minimising holding & backlog costs.
+        Current State:
+          - Inventory: 90 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [10]
+          - Incoming shipments this round: [10]
+          - Profit per unit sold: $5
+          - Last order placed: None
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Retailer",
+  "inventory": 100,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "With a current inventory of 100 units and no backlog, I can meet expected demand while avoiding stock-outs. I will order to maintain a buffer for potential demand fluctuations.",
+  "risk_assessment": "The main risk is underestimating demand, which could lead to stock-outs. I need to ensure I have enough inventory to cover both current and expected demand.",
+  "expected_demand_next_round": 20,
+  "order_quantity": 20
+}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Retailer",
+          "inventory": 90,
+          "backlog": 0,
+          "recent_demand_or_orders": [10],
+          "incoming_shipments": [10],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Retailer", "inventory": 90, "backlog": 0, "recent_demand_or_orders": [10], "incoming_shipments": [10], "last_order_placed": null, "expected_demand_next_round": 10, "confidence": 0.9, "rationale": "I have enough inventory to meet current demand and maintain a buffer for potential fluctuations.", "risk_assessment": "The risk is underestimating future demand, but current inventory is sufficient to avoid stock-outs.", "order_quantity": 10}
+    LLM Communication System Prompt: 
+    LLM Communication Prompt: 
+    LLM Communication Output: {}
+    LLM Update System Prompt: 
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init System Prompt: 
+You are the Retailer agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You directly face external customer demand and are the only stage that observes *true* market demand in real time. You cannot produce goods and must order from the Wholesaler. Your key objective is to avoid stock-outs to keep customers satisfied while minimising holding & backlog costs.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Init Prompt: 
+        You are the Retailer in the MIT Beer Game. You directly face external customer demand and are the only stage that observes *true* market demand in real time. You cannot produce goods and must order from the Wholesaler. Your key objective is to avoid stock-outs to keep customers satisfied while minimising holding & backlog costs.
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 100 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+          • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+          • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+          • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Retailer",
+          "inventory": 100,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Retailer", "inventory": 100, "backlog": 0, "confidence": 0.8, "rationale": "With a current inventory of 100 units and no backlog, I can meet expected demand while avoiding stock-outs. I will order to maintain a buffer for potential demand fluctuations.", "risk_assessment": "The main risk is underestimating demand, which could lead to stock-outs. I need to ensure I have enough inventory to cover both current and expected demand.", "expected_demand_next_round": 20, "order_quantity": 20}
+Agent: Wholesaler: Inventory: 90, Backlog: 10, Order placed: 10, Units sold: 10, Profit: 50.00, Total Profit: 5.0
+    LLM Output: order_quantity=10, confidence=0.8, rationale=I will order enough to cover expected demand and maintain a buffer to avoid stockouts., risk_assessment=There is a risk of over-ordering if demand decreases unexpectedly, leading to higher holding costs., expected_demand_next_round=10, llm_inventory=90, llm_backlog=0, llm_recent_demand=[10], llm_incoming=[10], llm_last_order=None
+    LLM Decision System Prompt: 
+You are the Wholesaler agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You are the intermediary between Retailer and Distributor. You see aggregated orders from the Retailer (not end-customer demand) and fulfil them from your inventory or by ordering from the Distributor. Your objective is to dampen demand variability while minimising costs.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Decision Prompt: 
+        You are the Wholesaler in the MIT Beer Game. You are the intermediary between Retailer and Distributor. You see aggregated orders from the Retailer (not end-customer demand) and fulfil them from your inventory or by ordering from the Distributor. Your objective is to dampen demand variability while minimising costs.
+        Current State:
+          - Inventory: 90 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [10]
+          - Incoming shipments this round: [10]
+          - Profit per unit sold: $5
+          - Last order placed: None
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Wholesaler",
+  "inventory": 100,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "I will maintain a buffer to avoid stockouts and fulfill potential retailer demand while minimizing holding costs.",
+  "risk_assessment": "There is a risk of over-ordering if demand fluctuates unexpectedly, leading to higher holding costs.",
+  "expected_demand_next_round": 20,
+  "order_quantity": 20
+}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Wholesaler",
+          "inventory": 90,
+          "backlog": 0,
+          "recent_demand_or_orders": [10],
+          "incoming_shipments": [10],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Wholesaler", "inventory": 90, "backlog": 0, "recent_demand_or_orders": [10], "incoming_shipments": [10], "last_order_placed": null, "expected_demand_next_round": 10, "confidence": 0.8, "rationale": "I will order enough to cover expected demand and maintain a buffer to avoid stockouts.", "risk_assessment": "There is a risk of over-ordering if demand decreases unexpectedly, leading to higher holding costs.", "order_quantity": 10}
+    LLM Communication System Prompt: 
+    LLM Communication Prompt: 
+    LLM Communication Output: {}
+    LLM Update System Prompt: 
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init System Prompt: 
+You are the Wholesaler agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You are the intermediary between Retailer and Distributor. You see aggregated orders from the Retailer (not end-customer demand) and fulfil them from your inventory or by ordering from the Distributor. Your objective is to dampen demand variability while minimising costs.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Init Prompt: 
+        You are the Wholesaler in the MIT Beer Game. You are the intermediary between Retailer and Distributor. You see aggregated orders from the Retailer (not end-customer demand) and fulfil them from your inventory or by ordering from the Distributor. Your objective is to dampen demand variability while minimising costs.
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 100 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+          • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+          • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+          • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Wholesaler",
+          "inventory": 100,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Wholesaler", "inventory": 100, "backlog": 0, "confidence": 0.8, "rationale": "I will maintain a buffer to avoid stockouts and fulfill potential retailer demand while minimizing holding costs.", "risk_assessment": "There is a risk of over-ordering if demand fluctuates unexpectedly, leading to higher holding costs.", "expected_demand_next_round": 20, "order_quantity": 20}
+Agent: Distributor: Inventory: 90, Backlog: 10, Order placed: 10, Units sold: 10, Profit: 50.00, Total Profit: 5.0
+    LLM Output: order_quantity=10, confidence=0.9, rationale=I will order to meet expected demand while maintaining a buffer to avoid stockouts., risk_assessment=Demand may fluctuate, but current inventory allows for a safe order without excess., expected_demand_next_round=10, llm_inventory=90, llm_backlog=0, llm_recent_demand=[10], llm_incoming=[10], llm_last_order=None
+    LLM Decision System Prompt: 
+You are the Distributor agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You bridge the Wholesaler and Factory. You consolidate orders from the Wholesaler, buffer lead-time variability, and place orders to the Factory. Your objective is to provide stable, timely supply downstream while avoiding excessive inventory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Decision Prompt: 
+        You are the Distributor in the MIT Beer Game. You bridge the Wholesaler and Factory. You consolidate orders from the Wholesaler, buffer lead-time variability, and place orders to the Factory. Your objective is to provide stable, timely supply downstream while avoiding excessive inventory.
+        Current State:
+          - Inventory: 90 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [10]
+          - Incoming shipments this round: [10]
+          - Profit per unit sold: $5
+          - Last order placed: None
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Distributor",
+  "inventory": 100,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "With a stable inventory and no backlog, I will order to maintain a buffer for expected demand while avoiding excess inventory.",
+  "risk_assessment": "Potential fluctuations in demand could lead to either excess inventory or backlog if not managed carefully.",
+  "expected_demand_next_round": 20,
+  "order_quantity": 20
+}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Distributor",
+          "inventory": 90,
+          "backlog": 0,
+          "recent_demand_or_orders": [10],
+          "incoming_shipments": [10],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Distributor", "inventory": 90, "backlog": 0, "recent_demand_or_orders": [10], "incoming_shipments": [10], "last_order_placed": null, "expected_demand_next_round": 10, "confidence": 0.9, "rationale": "I will order to meet expected demand while maintaining a buffer to avoid stockouts.", "risk_assessment": "Demand may fluctuate, but current inventory allows for a safe order without excess.", "order_quantity": 10}
+    LLM Communication System Prompt: 
+    LLM Communication Prompt: 
+    LLM Communication Output: {}
+    LLM Update System Prompt: 
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init System Prompt: 
+You are the Distributor agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You bridge the Wholesaler and Factory. You consolidate orders from the Wholesaler, buffer lead-time variability, and place orders to the Factory. Your objective is to provide stable, timely supply downstream while avoiding excessive inventory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Init Prompt: 
+        You are the Distributor in the MIT Beer Game. You bridge the Wholesaler and Factory. You consolidate orders from the Wholesaler, buffer lead-time variability, and place orders to the Factory. Your objective is to provide stable, timely supply downstream while avoiding excessive inventory.
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 100 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+          • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+          • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+          • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Distributor",
+          "inventory": 100,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Distributor", "inventory": 100, "backlog": 0, "confidence": 0.8, "rationale": "With a stable inventory and no backlog, I will order to maintain a buffer for expected demand while avoiding excess inventory.", "risk_assessment": "Potential fluctuations in demand could lead to either excess inventory or backlog if not managed carefully.", "expected_demand_next_round": 20, "order_quantity": 20}
+Agent: Factory: Inventory: 90, Backlog: 10, Order placed: 10, Units sold: 10, Profit: 50.00, Total Profit: 5.0
+    LLM Output: order_quantity=10, confidence=0.9, rationale=I will produce enough to meet the expected demand while maintaining a buffer to avoid stockouts., risk_assessment=The risk is overproducing if demand decreases unexpectedly, leading to excess inventory., expected_demand_next_round=10, llm_inventory=90, llm_backlog=0, llm_recent_demand=[10], llm_incoming=[10], llm_last_order=None
+    LLM Decision System Prompt: 
+You are the Factory agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You are the production stage. Instead of ordering upstream you *schedule production*. You can produce any quantity, but production appears downstream with a 1-round delay. Your objective is to balance production levels with downstream orders and to keep backlog low without creating costly excess stock.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Decision Prompt: 
+        You are the Factory in the MIT Beer Game. You are the production stage. Instead of ordering upstream you *schedule production*. You can produce any quantity, but production appears downstream with a 1-round delay. Your objective is to balance production levels with downstream orders and to keep backlog low without creating costly excess stock.
+        Current State:
+          - Inventory: 90 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [10]
+          - Incoming shipments this round: [10]
+          - Profit per unit sold: $5
+          - Last order placed: None
+          - Last round profit: None
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Profit: $5 per unit sold
+          - Never let the inventory go to zero.
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+
+        Current Strategy:
+        {
+  "role_name": "Factory",
+  "inventory": 100,
+  "backlog": 0,
+  "confidence": 0.8,
+  "rationale": "With no backlog and sufficient inventory, I will maintain production to meet potential demand while avoiding excess stock.",
+  "risk_assessment": "The main risk is underestimating future demand, which could lead to backlog if production is too low.",
+  "expected_demand_next_round": 20,
+  "order_quantity": 20
+}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Factory",
+          "inventory": 90,
+          "backlog": 0,
+          "recent_demand_or_orders": [10],
+          "incoming_shipments": [10],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Decision Output: {"role_name": "Factory", "inventory": 90, "backlog": 0, "recent_demand_or_orders": [10], "incoming_shipments": [10], "last_order_placed": null, "expected_demand_next_round": 10, "confidence": 0.9, "rationale": "I will produce enough to meet the expected demand while maintaining a buffer to avoid stockouts.", "risk_assessment": "The risk is overproducing if demand decreases unexpectedly, leading to excess inventory.", "order_quantity": 10}
+    LLM Communication System Prompt: 
+    LLM Communication Prompt: 
+    LLM Communication Output: {}
+    LLM Update System Prompt: 
+    LLM Update Prompt: 
+    LLM Update Output: {}
+    LLM Init System Prompt: 
+You are the Factory agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You are the production stage. Instead of ordering upstream you *schedule production*. You can produce any quantity, but production appears downstream with a 1-round delay. Your objective is to balance production levels with downstream orders and to keep backlog low without creating costly excess stock.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+    LLM Init Prompt: 
+        You are the Factory in the MIT Beer Game. You are the production stage. Instead of ordering upstream you *schedule production*. You can produce any quantity, but production appears downstream with a 1-round delay. Your objective is to balance production levels with downstream orders and to keep backlog low without creating costly excess stock.
+        Your task is to develop an ordering strategy that will minimize total costs 
+        (holding costs + backlog costs - profits) over multiple rounds.
+
+        Current State:
+          • Initial Inventory: 100 units
+          • Initial Backlog: 0 units
+          • Profit per unit sold: $5
+
+        Consider:
+          • Your current role's position in the supply chain
+          • You have a 1-round lead time for the orders you place
+          • You observe demand (if Retailer) or incoming orders (for other roles)
+          • You want to avoid large swings (the Bullwhip effect)
+          • You have a holding cost of 0.5 per unit per round
+          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You earn $5 profit for each unit sold
+          • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
+          • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+          • Never let the inventory go to zero.
+
+        Please return only valid JSON with the following fields in order:
+
+        {
+          "role_name": "Factory",
+          "inventory": 100,
+          "backlog": 0,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation of your reasoning>",
+          "risk_assessment": "<describe any risks you anticipate>",
+          "expected_demand_next_round": <integer>,
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+    LLM Init Output: {"role_name": "Factory", "inventory": 100, "backlog": 0, "confidence": 0.8, "rationale": "With no backlog and sufficient inventory, I will maintain production to meet potential demand while avoiding excess stock.", "risk_assessment": "The main risk is underestimating future demand, which could lead to backlog if production is too low.", "expected_demand_next_round": 20, "order_quantity": 20}
+
+
+----- Nash Equilibrium Analysis -----
+Role: Retailer - Average Absolute Deviation: 0.00
+Role: Wholesaler - Average Absolute Deviation: 0.00
+Role: Distributor - Average Absolute Deviation: 0.00
+Role: Factory - Average Absolute Deviation: 0.00
+
+----- LLM Session Summary -----
+Total LLM Calls: 8
+Total Cost: $0.053215
+Total Tokens: 8699 (7727 input + 972 output)
+Total Inference Time: 48.556s
+Average per Call: 6.069s, $0.006652
