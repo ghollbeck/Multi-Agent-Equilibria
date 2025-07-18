@@ -548,3 +548,170 @@ python Games/2_MIT_Beer_Game/scripts/executeMITBeerGame.py --num_rounds 10 --ini
 ```
 
 The simulation logic remains intact and the Beer Game mechanics work properly with the fixed order flow from previous iterations. 
+
+## Latest Implementation - Bank Account Balance System (2025-01-XX)
+
+### Major Feature: Bank Account Balance System
+- **Replaced profit tracking with bank account balance system**
+- **Initial balance**: $1000 per agent (configurable via CLI)
+- **Bankruptcy detection**: Simulation terminates if any agent balance ≤ 0
+
+#### Changes Made:
+1. **Models (`models_mitb_game.py`)**:
+   - Added `balance: float = 1000.0` field to `BeerGameAgent`
+   - Added compatibility alias `profit_accumulated` → `balance`
+   - Updated `RoundData` to track: `starting_balance`, `revenue`, `purchase_cost`, `holding_cost`, `backlog_cost`, `ending_balance`
+   - Modified `create_agent()` to accept `initial_balance` parameter
+
+2. **Core Game Logic (`MIT_Beer_Game.py`)**:
+   - **Revenue**: Added to balance when units are sold downstream
+   - **Purchase costs**: Deducted immediately when orders are placed
+   - **Holding/backlog costs**: Deducted each round based on inventory/backlog
+   - **Bankruptcy check**: Simulation stops if any agent balance ≤ 0
+   - Added monetary parameters: `sale_price_per_unit`, `purchase_cost_per_unit`, `production_cost_per_unit`
+
+3. **CLI Interface (`executeMITBeerGame.py`)**:
+   - Added `--initial_balance` argument (default: 1000.0)
+   - Added `--sale_price`, `--purchase_cost`, `--production_cost` arguments
+   - All monetary parameters configurable via command line
+
+4. **Analysis (`analysis_mitb_game.py`)**:
+   - Updated plots to use `ending_balance` instead of deprecated `profit` column
+   - Fixed visualization compatibility with new data structure
+
+#### Command Examples:
+```bash
+# Start with $500 balance, 0 backlog, 100 inventory
+python executeMITBeerGame.py --initial_balance 500.0 --initial_backlog 0 --initial_inventory 100
+
+# Custom pricing scenario
+python executeMITBeerGame.py --sale_price 6.0 --purchase_cost 3.0 --production_cost 2.0 --initial_balance 2000.0
+```
+
+#### Cash Flow Logic:
+1. **Each Round**:
+   - Revenue: `units_sold × sale_price_per_unit` → added to balance
+   - Holding cost: `inventory × holding_cost_per_unit` → deducted from balance  
+   - Backlog cost: `backlog × backlog_cost_per_unit` → deducted from balance
+   - Purchase cost: `order_quantity × purchase_cost_per_unit` → deducted from balance
+
+2. **Bankruptcy Protection**:
+   - If any agent's balance ≤ 0, simulation terminates with "Bankruptcy!" message
+   - Prevents unrealistic negative cash flow scenarios
+
+#### Prompt Updates Needed:
+- [ ] Update LLM prompts to inform agents about cash constraints
+- [ ] Add bankruptcy risk awareness to decision-making prompts
+- [ ] Include balance information in strategy generation prompts
+
+---
+
+## Previous Changes...
+
+### Applied Second Fix to Beer Game Logic (2025-06-28)
+- Fixed double-counting bug in order flow
+- Restored proper order processing: orders placed → upstream backlog → fulfillment
+- LLM decisions now for strategic planning only, not immediate order placement
+- Prevents both inventory explosion and starvation scenarios
+
+### LangSmith Integration (Previous)
+- Comprehensive workflow visualization and tracing
+- Real-time performance monitoring  
+- Agent-level decision tracking
+- Dashboard visualization at smith.langchain.com
+
+### Communication System
+- Multi-round agent communication before decisions
+- Strategy sharing and collaboration proposals
+- Message history tracking and context
+
+### Memory System  
+- Agent memory for past decisions and strategies
+- Configurable retention periods
+- Shared memory pool option for cross-agent learning
+
+### Applied Second Fix to Beer Game Logic (2025-06-28)
+- Fixed double-counting bug in order flow
+- Restored proper order processing: orders placed → upstream backlog → fulfillment
+- LLM decisions now for strategic planning only, not immediate order placement
+- Prevents both inventory explosion and starvation scenarios
+
+### LangSmith Integration (Previous)
+- Comprehensive workflow visualization and tracing
+- Real-time performance monitoring  
+- Agent-level decision tracking
+- Dashboard visualization at smith.langchain.com
+
+### Communication System
+- Multi-round agent communication before decisions
+- Strategy sharing and collaboration proposals
+- Message history tracking and context
+
+### Memory System  
+- Agent memory for past decisions and strategies
+- Configurable retention periods
+- Shared memory pool option for cross-agent learning 
+
+### 2025-06-30 – Optional Anthropic Claude Provider
+
+* Added `AnthropicLLMClient` in `llm_calls_mitb_game.py` (calls Claude via `/v1/messages` endpoint).
+* New CLI flags in `executeMITBeerGame.py`:
+  * `--provider litellm|anthropic` (default `litellm`)
+  * `--anthropic_model <model-name>` (default `claude-3-haiku-20240307`)
+* Requires environment variable `ANTHROPIC_API_KEY`.
+* Usage example:
+
+```bash
+export ANTHROPIC_API_KEY="sk-..."
+python executeMITBeerGame.py --provider anthropic --anthropic_model claude-3-haiku-20240307 --num_rounds 5
+``` 
+
+### 2025-06-30 - Chinese Whisper 2.0 SQL Evaluation Run
+
+**Files Used:** `Games/8_Chinese_Whisper2.0/generate_sql.py`, `Games/8_Chinese_Whisper2.0/evaluate_sql.py`
+
+**Change Description:**
+- Successfully ran SQL evaluation on latest Chinese Whispers simulation (run_2025-06-30_18-32-24)
+- Evaluated 26 SQL queries generated from story transformations across 25 agent steps
+- Measured semantic drift by comparing result set sizes against baseline (step 5: 8 rows)
+- Generated drift visualization plot showing semantic deviation over agent chain
+
+**Key Results:**
+- Several queries failed due to missing 'Olivia Hudson' records (expected for synthetic data)
+- Significant drift observed: ranging from 0 (perfect match) to 56 rows difference
+- Step 13 showed minimal drift (5 rows difference) while steps 11, 12, 17, 24 showed maximum drift (48-56 rows)
+- Generated comprehensive evaluation log, results.json, and diff_vs_agent.png visualization
+
+**Files Generated:**
+- `evaluation.log` - Detailed execution log with query results
+- `results.json` - Structured evaluation results with row counts and drift metrics  
+- `diff_vs_agent.png` - Visualization of semantic drift across agent chain
+
+**Impact:**
+- Demonstrates measurable semantic drift in LLM chains through SQL result set analysis
+- Provides quantitative metrics for evaluating information preservation in multi-agent transformations 
+
+## Latest Changes (January 2025)
+
+### Round Structure Analysis
+**Current Round Types Available:**
+- **Main Game Rounds** (`--num_rounds`): Core simulation rounds where agents make supply chain decisions
+- **Communication Rounds** (`--communication_rounds`): Sub-rounds within each main round for agent message exchange
+- **Memory Rounds** (`--memory_retention_rounds`): Number of past rounds agents retain in memory
+
+**Orchestration Rounds: NOT IMPLEMENTED**
+- No orchestration round option currently exists in the system
+- Orchestration rounds would be special rounds for higher-level strategy coordination
+- Could include supply chain alignment, demand forecasting coordination, risk management planning
+- Feature request noted for potential future implementation
+
+### Orchestrator Feature (NEW)
+- Added LLM-based Orchestrator that provides recommended order quantities to each agent every round.
+- CLI flags:
+  * `--enable_orchestrator` – turn on orchestrator phase.
+  * `--orchestrator_history` – how many past rounds are included in orchestrator prompt.
+  * `--orchestrator_override` – if set, agents are forced to follow orchestrator order.
+- Logging:
+  * `orchestrator_order` column in CSV/JSON.
+  * Recommendations stored in aggregated JSON under `orchestrator_recommendations`.
+- Visuals: Combined plot now includes "Orchestrator Recommended Orders" subplot.

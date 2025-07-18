@@ -275,7 +275,9 @@ async def run_beer_game_generation(
     num_rounds: int = 2,
     holding_cost_per_unit: float = 0.5,
     backlog_cost_per_unit: float = 1.5,
-    profit_per_unit_sold: float = 2.5,
+    sale_price_per_unit: float = 5.0,
+    purchase_cost_per_unit: float = 2.5,
+    production_cost_per_unit: float = 1.5,
     temperature: float = 0,
     generation_index: int = 1,
     sim_data: SimulationData = None,
@@ -287,7 +289,10 @@ async def run_beer_game_generation(
     communication_rounds: int = 2,
     enable_memory: bool = False,
     memory_retention_rounds: int = 5,
-    enable_shared_memory: bool = False
+    enable_shared_memory: bool = False,
+    enable_orchestrator: bool = False,
+    orchestrator_history: int = 3,
+    orchestrator_override: bool = False
 ):
     """
     Runs one generation of the Beer Game with the provided agents.
@@ -328,6 +333,12 @@ async def run_beer_game_generation(
             enable_communication=enable_communication,
             communication_rounds=communication_rounds
         )
+
+    # Initialize orchestrator if enabled
+    orchestrator = None
+    if enable_orchestrator:
+        from orchestrator_mitb_game import BeerGameOrchestrator
+        orchestrator = BeerGameOrchestrator(history_window=orchestrator_history, logger=logger)
 
     # For convenience, create references:
     retailer = agents[0]
@@ -455,19 +466,26 @@ async def run_beer_game_generation(
             if logger:
                 logger.log(f"🔥 [Factory] Scheduled {scheduled_production} units for production (delivered next round)")
 
-        # 4. Each role pays holding + backlog cost
+        # 4. Each role updates cash balance: revenues minus holding/backlog costs (purchase cost deducted later)
+        starting_balances = [agent.balance for agent in agents]
+        revenues = []
+        holding_costs = []
+        backlog_costs = []
         for idx, agent in enumerate(agents):
             holding_cost = agent.inventory * holding_cost_per_unit
             backlog_cost = agent.backlog * backlog_cost_per_unit
-            # Calculate profit for units sold
             units_sold = shipments_sent_downstream[idx]
-            profit = units_sold * profit_per_unit_sold
-            # Calculate net profit (profit minus costs)
-            round_profit = profit - (holding_cost + backlog_cost)
-            agent.profit_accumulated += round_profit
-            
+            revenue = units_sold * sale_price_per_unit
+            # Apply to balance
+            agent.balance += revenue
+            agent.balance -= (holding_cost + backlog_cost)
+
+            revenues.append(revenue)
+            holding_costs.append(holding_cost)
+            backlog_costs.append(backlog_cost)
+
             if logger:
-                logger.log(f"Agent {agent.role_name}: Holding cost: {holding_cost}, Backlog cost: {backlog_cost}, Revenue: {profit}, Net profit: {round_profit}")
+                logger.log(f"Agent {agent.role_name}: Revenue: {revenue}, Holding cost: {holding_cost}, Backlog cost: {backlog_cost}, New balance: {agent.balance}")
 
         communication_messages = []
         if enable_communication:
@@ -509,6 +527,42 @@ async def run_beer_game_generation(
                 for agent in agents:
                     agent.message_history.extend(round_messages)
 
+        # --------------------------------------------------
+        # 🧑‍💼 Orchestrator Phase – provide chain-level advice
+        # --------------------------------------------------
+        orchestrator_recs = {}
+        if enable_orchestrator and orchestrator:
+            try:
+                orchestrator_recs = await orchestrator.get_recommendations(
+                    agents=agents,
+                    external_demand=retailer_demand,
+                    round_index=round_index,
+                    history=sim_data.aggregated_rounds if sim_data else []
+                )
+                if logger:
+                    logger.log(f"📊 [Orchestrator] Recommendations: {orchestrator_recs}")
+            except Exception as e:
+                if logger:
+                    logger.log(f"[Orchestrator] Failed to generate recommendations: {e}")
+                orchestrator_recs = {}
+
+            # Share orchestrator advice as a broadcast message so agents can factor it in
+            for agent in agents:
+                if agent.role_name in orchestrator_recs:
+                    rec = orchestrator_recs[agent.role_name]
+                    orch_msg = {
+                        "round": round_index,
+                        "communication_round": 0,
+                        "sender": "Orchestrator",
+                        "message": f"Recommended order qty: {rec['order_quantity']}. {rec.get('rationale','')}",
+                        "strategy_hint": "Orchestrator advice",
+                        "collaboration_proposal": "",
+                        "information_shared": "",
+                        "confidence": 1.0
+                    }
+                    communication_messages.append(orch_msg)
+                    agent.message_history.append(orch_msg)
+
         # 5. Each role decides on new order quantity from upstream
         print(f"   🤔 Agents making ordering decisions...")
         if workflow:
@@ -518,35 +572,61 @@ async def run_beer_game_generation(
                 total_rounds=3,
                 external_demand=retailer_demand,
                 temperature=temperature,
-                profit_per_unit_sold=profit_per_unit_sold
+                profit_per_unit_sold=sale_price_per_unit
             )
             final_state = await workflow.run_round(initial_state)
             decisions = [final_state["agent_states"][agent.role_name]["decision_output"] 
                         for agent in agents if agent.role_name in final_state["agent_states"]]
         else:
-            order_decision_tasks = []
-            for agent in agents:
-                recent_messages = communication_messages[-len(agents)*2:] if enable_communication else []
-                if enable_communication and recent_messages:
+            use_comm = enable_communication or enable_orchestrator
+            recent_messages = communication_messages[-len(agents)*2:] if use_comm else []
+            if use_comm and recent_messages:
+                order_decision_tasks = []
+                for agent in agents:
                     order_decision_tasks.append(
                         agent.decide_order_quantity_with_communication(
                             temperature=temperature, 
-                            profit_per_unit_sold=profit_per_unit_sold,
+                            profit_per_unit_sold=sale_price_per_unit,
                             recent_communications=recent_messages
                         )
                     )
-                else:
-                    order_decision_tasks.append(agent.decide_order_quantity(temperature=temperature, profit_per_unit_sold=profit_per_unit_sold))
-            decisions = await asyncio.gather(*order_decision_tasks)
+                decisions = await asyncio.gather(*order_decision_tasks)
+            else:
+                order_decision_tasks = []
+                for agent in agents:
+                    order_decision_tasks.append(agent.decide_order_quantity(temperature=temperature, profit_per_unit_sold=sale_price_per_unit))
+                decisions = await asyncio.gather(*order_decision_tasks)
 
         # 6. LLM decisions for strategic planning (logged but not used for immediate orders)
         orders_placed = []
         for idx, (agent, dec) in enumerate(zip(agents, decisions)):
-            order_qty = dec.get("order_quantity", 10)
+            if orchestrator_override and agent.role_name in orchestrator_recs:
+                order_qty = orchestrator_recs[agent.role_name]["order_quantity"]
+            else:
+                order_qty = dec.get("order_quantity", 10)
             orders_placed.append(order_qty)
             # store last order placed for context
             agent.last_order_placed = order_qty
             # Note: Orders are now processed during shipping phase, not here
+
+        # 6b. Deduct purchase / production cost immediately from balance
+        purchase_costs = []
+        for idx, (agent, qty) in enumerate(zip(agents, orders_placed)):
+            if agent.role_name == "Factory":
+                cost_per_unit = production_cost_per_unit
+            else:
+                cost_per_unit = purchase_cost_per_unit
+            purchase_cost = qty * cost_per_unit
+            agent.balance -= purchase_cost
+            purchase_costs.append(purchase_cost)
+            if logger:
+                logger.log(f"💸 [Cost] {agent.role_name} prepaid {purchase_cost} for {qty} units (cost/unit={cost_per_unit}). New balance: {agent.balance}")
+
+        # Bankruptcy check – stop simulation if any agent is insolvent
+        bankrupt = any(a.balance <= 0 for a in agents)
+        if bankrupt:
+            logger.log("❌ Bankruptcy! Simulation terminated early due to zero or negative balance.")
+            break
 
         # Store round logs
         if sim_data:
@@ -563,7 +643,14 @@ async def run_beer_game_generation(
                     order_received = orders_received_from_downstream[idx],
                     shipment_received = shipments_received_list[idx],
                     shipment_sent_downstream = shipments_sent_downstream[idx],
-                    profit = agent.profit_accumulated
+                    starting_balance = starting_balances[idx],
+                    revenue = revenues[idx],
+                    purchase_cost = purchase_costs[idx],
+                    holding_cost = holding_costs[idx],
+                    backlog_cost = backlog_costs[idx],
+                    ending_balance = agent.balance,
+                    orchestrator_order = orchestrator_recs.get(agent.role_name, {}).get("order_quantity", 0),
+                    orchestrator_rationale = orchestrator_recs.get(agent.role_name, {}).get("rationale", "")
                 )
                 sim_data.add_round_entry(entry)
                 
@@ -643,7 +730,9 @@ async def run_beer_game_generation(
                         'llm_confidence': llm_decision.get('confidence', None),
                         'llm_rationale': llm_decision.get('rationale', ''),
                         'llm_risk_assessment': llm_decision.get('risk_assessment', ''),
-                        'llm_expected_demand_next_round': llm_decision.get('expected_demand_next_round', None)
+                        'llm_expected_demand_next_round': llm_decision.get('expected_demand_next_round', None),
+                        'orchestrator_order': orchestrator_recs.get(agent.role_name, {}).get('order_quantity', 0),
+                        'orchestrator_rationale': orchestrator_recs.get(agent.role_name, {}).get('rationale', '')
                     })
                     
                     agent_data_dict[agent.role_name] = agent_dict
@@ -653,7 +742,8 @@ async def run_beer_game_generation(
                     "generation": generation_index,
                     "external_demand": retailer_demand,
                     "communication": round_communication_messages,
-                    "agents": agent_data_dict
+                    "agents": agent_data_dict,
+                    "orchestrator_recommendations": orchestrator_recs
                 }
                 
                 if sim_data:
@@ -683,7 +773,7 @@ async def run_beer_game_generation(
             for idx, agent in enumerate(agents):
                 human_log_file.write("Agent: {}: Inventory: {}, Backlog: {}, Order placed: {}, Units sold: {}, Profit: {:.2f}, Total Profit: {}\n".format(
                     agent.role_name, agent.inventory, agent.backlog, orders_placed[idx], shipments_sent_downstream[idx], 
-                    shipments_sent_downstream[idx] * profit_per_unit_sold, agent.profit_accumulated
+                    shipments_sent_downstream[idx] * sale_price_per_unit, agent.profit_accumulated
                 ))
                 # Log the LLM decision output for this agent
                 decision = decisions[idx] if idx < len(decisions) else {}
@@ -741,7 +831,14 @@ async def run_beer_game_simulation(
     memory_retention_rounds: int = 5,
     enable_shared_memory: bool = False,
     initial_inventory: int = 100,
-    initial_backlog: int = 0
+    initial_backlog: int = 0,
+    sale_price_per_unit: float = 5.0,
+    purchase_cost_per_unit: float = 2.5,
+    production_cost_per_unit: float = 1.5,
+    initial_balance: float = 1000.0,
+    enable_orchestrator: bool = False,
+    orchestrator_history: int = 3,
+    orchestrator_override: bool = False
 ):
     """
     Orchestrates the Beer Game simulation with multiple rounds.
@@ -780,10 +877,11 @@ async def run_beer_game_simulation(
     # Initialize the roles (4 default roles)
     roles = ["Retailer", "Wholesaler", "Distributor", "Factory"]
     agents = [BeerGameAgent.create_agent(role_name=role, initial_inventory=initial_inventory, 
-                                        initial_backlog=initial_backlog, logger=logger) for role in roles]
+                                        initial_backlog=initial_backlog, initial_balance=initial_balance,
+                                        logger=logger) for role in roles]
 
     # Each agent obtains an initial strategy from the LLM
-    await asyncio.gather(*(agent.initialize_strategy(temperature=temperature, profit_per_unit_sold=2.5) for agent in agents))
+    await asyncio.gather(*(agent.initialize_strategy(temperature=temperature, profit_per_unit_sold=sale_price_per_unit) for agent in agents))
 
     # Example external demand across rounds:
     # In real usage, you might load or generate random demands.
@@ -797,7 +895,9 @@ async def run_beer_game_simulation(
         "num_rounds": num_rounds,
         "holding_cost_per_unit": 0.5,
         "backlog_cost_per_unit": 1.5,
-        "profit_per_unit_sold": 2.5,
+        "sale_price_per_unit": sale_price_per_unit,
+        "purchase_cost_per_unit": purchase_cost_per_unit,
+        "production_cost_per_unit": production_cost_per_unit,
         "roles": roles,
         "timestamp": current_time,
         "external_demand_pattern": external_demand_pattern,
@@ -807,7 +907,8 @@ async def run_beer_game_simulation(
         "memory_retention_rounds": memory_retention_rounds,
         "enable_shared_memory": enable_shared_memory,
         "initial_inventory": initial_inventory,
-        "initial_backlog": initial_backlog
+        "initial_backlog": initial_backlog,
+        "initial_balance": initial_balance
     })
 
     csv_log_path = os.path.join(results_folder, "beer_game_detailed_log.csv")
@@ -836,7 +937,9 @@ async def run_beer_game_simulation(
         num_rounds=num_rounds,
         holding_cost_per_unit=0.5,
         backlog_cost_per_unit=1.5,
-        profit_per_unit_sold=2.5,
+        sale_price_per_unit=sale_price_per_unit,
+        purchase_cost_per_unit=purchase_cost_per_unit,
+        production_cost_per_unit=production_cost_per_unit,
         temperature=temperature,
         generation_index=1,
         sim_data=sim_data,
@@ -848,7 +951,10 @@ async def run_beer_game_simulation(
         communication_rounds=communication_rounds,
         enable_memory=enable_memory,
         memory_retention_rounds=memory_retention_rounds,
-        enable_shared_memory=enable_shared_memory
+        enable_shared_memory=enable_shared_memory,
+        enable_orchestrator=enable_orchestrator,
+        orchestrator_history=orchestrator_history,
+        orchestrator_override=orchestrator_override
     )
 
     print(f"✅ Simulation complete")

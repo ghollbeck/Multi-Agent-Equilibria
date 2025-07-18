@@ -24,7 +24,7 @@ def parse_args():
         description="Execute the MIT Beer Game simulation with custom parameters"
     )
     parser.add_argument(
-        "--num_rounds", type=int, default=40,
+        "--num_rounds", type=int, default=10,
         help="Number of rounds to simulate (canonical MIT Beer Game uses 36-50 rounds)"
     )
     parser.add_argument(
@@ -45,7 +45,15 @@ def parse_args():
     )
     parser.add_argument(
         "--model_name", type=str, default=llm_calls_mitb_game.MODEL_NAME,
-        help="Name of the LLM model to use"
+        help="Name of the LLM model to use (for LiteLLM provider)"
+    )
+    parser.add_argument(
+        "--provider", type=str, choices=["litellm", "anthropic"], default="litellm",
+        help="Which LLM provider to use: 'litellm' (default) or 'anthropic'"
+    )
+    parser.add_argument(
+        "--anthropic_model", type=str, default="claude-3-haiku-20240307",
+        help="Claude model name to use when --provider anthropic (default: claude-3-haiku-20240307)"
     )
     parser.add_argument(
         "--enable_communication", action="store_true", default=True,
@@ -80,14 +88,51 @@ def parse_args():
         "--initial_backlog", type=int, default=0,
         help="Initial backlog for all agents (default: 0)"
     )
+    parser.add_argument(
+        "--sale_price", type=float, default=5.0,
+        help="Sale price per unit shipped downstream (default: 5.0)"
+    )
+    parser.add_argument(
+        "--purchase_cost", type=float, default=2.5,
+        help="Purchase cost per unit ordered upstream (default: 2.5)"
+    )
+    parser.add_argument(
+        "--production_cost", type=float, default=1.5,
+        help="Factory production cost per unit (default: 1.5)"
+    )
+    parser.add_argument(
+        "--initial_balance", type=float, default=200.0,
+        help="Initial bank account balance for all agents (default: 1000.0)"
+    )
+    # Orchestrator options
+    parser.add_argument(
+        "--enable_orchestrator", action="store_true",
+        help="Enable chain-level LLM orchestrator that gives order recommendations"
+    )
+    parser.add_argument(
+        "--orchestrator_history", type=int, default=3,
+        help="How many past rounds the orchestrator sees in its prompt (default: 3)"
+    )
+    parser.add_argument(
+        "--orchestrator_override", action="store_true",
+        help="If set, orchestrator recommendations override agent order quantities"
+    )
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
 
-    # Override the default MODEL_NAME in llm_calls module
-    llm_calls_mitb_game.MODEL_NAME = args.model_name
+    # Select provider and set up client/model
+    if args.provider == "anthropic":
+        from llm_calls_mitb_game import AnthropicLLMClient
+        llm_calls_mitb_game.lite_client = AnthropicLLMClient()
+        llm_calls_mitb_game.MODEL_NAME = args.anthropic_model
+        print(f"🔄 Using Anthropic Claude model: {args.anthropic_model}")
+    else:
+        # Default to LiteLLM provider (OpenAI-compatible)
+        llm_calls_mitb_game.MODEL_NAME = args.model_name
+        print(f"🔄 Using LiteLLM/OpenAI model: {args.model_name}")
 
     if args.langsmith_project:
         import os
@@ -108,7 +153,14 @@ def main():
             memory_retention_rounds=args.memory_retention_rounds,
             enable_shared_memory=args.enable_shared_memory,
             initial_inventory=args.initial_inventory,
-            initial_backlog=args.initial_backlog
+            initial_backlog=args.initial_backlog,
+            sale_price_per_unit=args.sale_price,
+            purchase_cost_per_unit=args.purchase_cost,
+            production_cost_per_unit=args.production_cost,
+            initial_balance=args.initial_balance,
+            enable_orchestrator=args.enable_orchestrator,
+            orchestrator_history=args.orchestrator_history,
+            orchestrator_override=args.orchestrator_override,
         )
     )
 
@@ -151,3 +203,5 @@ if __name__ == "__main__":
 #   --initial_backlog 20
 
 
+# or like this 
+# python executeMITBeerGame.py --provider anthropic --anthropic_model claude-3-haiku-20240307 --num_rounds 5

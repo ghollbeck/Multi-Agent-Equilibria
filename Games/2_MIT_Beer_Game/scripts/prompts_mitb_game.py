@@ -56,6 +56,7 @@ class BeerGamePrompts:
           • You have a holding cost of 0.5 per unit per round
           • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
           • You earn ${profit_per_unit_sold} profit for each unit sold
+          • 🚨 BANKRUPTCY RULE: If your bank-account balance ever reaches $0 or below, you are bankrupt and the simulation ends. Plan orders so your balance always stays positive.
           • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
           • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
           • Never let the inventory go to zero.
@@ -102,6 +103,7 @@ class BeerGamePrompts:
           • You have a holding cost of 0.5 per unit per round
           • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
           • You earn ${profit_per_unit_sold} profit for each unit sold
+          • 🚨 BANKRUPTCY RULE: If your bank-account balance ever reaches $0 or below, you are bankrupt and the simulation ends. Adjust your strategy to keep a positive balance.
           • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
           • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
           • Never let the inventory go to zero.
@@ -151,6 +153,7 @@ class BeerGamePrompts:
           - Holding cost: $0.5 per unit per round
           - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
           - Profit: ${profit_per_unit_sold} per unit sold
+          - 🚨 BANKRUPTCY RULE: Keep your bank-account balance > $0 at all times. Planning that risks a zero or negative balance is unacceptable.
           - Never let the inventory go to zero.
           - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
 
@@ -333,7 +336,12 @@ class BeerGamePrompts:
             
             if memory_context:
                 prompt_parts = base_prompt.split("Given this state, return valid JSON")
-                enhanced_prompt = prompt_parts[0] + memory_context + "\nGiven this state and your past experiences, return valid JSON" + prompt_parts[1]
+                enhanced_prompt = (
+                    prompt_parts[0]
+                    + memory_context
+                    + "\nCarefully analyze your past behaviour and learning to craft a more sustainable, stable ordering decision. After this reflection, return valid JSON"
+                    + prompt_parts[1]
+                )
                 return enhanced_prompt
         
         return base_prompt
@@ -358,7 +366,12 @@ class BeerGamePrompts:
             
             if memory_context:
                 prompt_parts = base_prompt.split("Return only valid JSON with these fields:")
-                enhanced_prompt = prompt_parts[0] + memory_context + "\nReturn only valid JSON with these fields:" + prompt_parts[1]
+                enhanced_prompt = (
+                    prompt_parts[0]
+                    + memory_context
+                    + "\nReflect on your past communication behaviour and lessons learned to propose more sustainable, coordinated actions. Then return only valid JSON with these fields:"
+                    + prompt_parts[1]
+                )
                 return enhanced_prompt
         
         return base_prompt

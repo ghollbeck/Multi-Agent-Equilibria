@@ -320,4 +320,101 @@ class LiteLLMClient:
         return summary
 
 
+# -----------------------------
+# Anthropic Claude Client
+# -----------------------------
+class AnthropicLLMClient:
+    """Simple async wrapper for Anthropic Claude API (v1/messages)."""
+    def __init__(self, logger=None):
+        self.api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not self.api_key:
+            raise EnvironmentError("ANTHROPIC_API_KEY environment variable not set")
+        self.endpoint = "https://api.anthropic.com/v1/messages"
+        self.semaphore = asyncio.Semaphore(2)
+        self.logger = logger
+        # Basic accounting – keep same fields as LiteLLMClient for compatibility
+        self.total_calls = 0
+        self.total_cost = 0.0  # Claude cost calculation requires model-specific pricing; skipping here
+        self.total_input_tokens = 0
+        self.total_output_tokens = 0
+        self.total_inference_time = 0.0
+
+    async def chat_completion(self, model: str, system_prompt: str, user_prompt: str,
+                              temperature: float = 0.7, max_tokens: int = 800,
+                              agent_role: str = None, round_index: int = None,
+                              decision_type: str = None):
+        start_time = time.time()
+        # Minimal tracer: show which agent + decision
+        if agent_role and decision_type:
+            print(f"🤖[Claude:{model}] {agent_role} → {decision_type}")
+        payload = {
+            "model": model,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "system": system_prompt,
+            "messages": [
+                {"role": "user", "content": user_prompt}
+            ]
+        }
+        headers = {
+            "x-api-key": self.api_key,
+            "content-type": "application/json",
+            "anthropic-version": "2023-06-01"
+        }
+        async with self.semaphore:
+            response = await asyncio.to_thread(requests.post, self.endpoint, json=payload, headers=headers)
+        if not response.ok:
+            raise Exception(f"Anthropic API error: {response.status_code} {response.text}")
+        data = response.json()
+        # Claude returns an array for "content"
+        try:
+            content_text = data["content"][0]["text"]
+        except Exception:
+            content_text = data.get("content", "")
+        # update accounting
+        self.total_calls += 1
+        # track inference time
+        self.total_inference_time += (time.time() - start_time)
+        # Anthropic currently does not return token counts in standard field; skip for now.
+        # Track simple inference time
+        # (We already measured above)
+        return content_text
+
+    def get_session_summary(self):
+        """Return a minimal session summary compatible with LiteLLMClient schema."""
+        if self.total_calls == 0:
+            return {
+                "total_calls": 0,
+                "total_cost_usd": 0.0,
+                "total_input_tokens": 0,
+                "total_output_tokens": 0,
+                "total_tokens": 0,
+                "total_inference_time_seconds": 0.0,
+                "average_inference_time_seconds": 0.0,
+                "average_cost_per_call_usd": 0.0
+            }
+        avg_inference_time = self.total_inference_time / self.total_calls if self.total_calls else 0.0
+        avg_cost_per_call = self.total_cost / self.total_calls if self.total_calls else 0.0
+        return {
+            "total_calls": self.total_calls,
+            "total_cost_usd": round(self.total_cost, 6),
+            "total_input_tokens": self.total_input_tokens,
+            "total_output_tokens": self.total_output_tokens,
+            "total_tokens": self.total_input_tokens + self.total_output_tokens,
+            "total_inference_time_seconds": round(self.total_inference_time, 3),
+            "average_inference_time_seconds": round(avg_inference_time, 3),
+            "average_cost_per_call_usd": round(avg_cost_per_call, 6)
+        }
+
+# Map provider name to client constructor for easy switching
+CLIENT_MAP = {
+    "litellm": LiteLLMClient,
+    "anthropic": AnthropicLLMClient
+}
+
+# Default client instance (LiteLLMClient). Can be overridden at runtime by execute script.
+# (Existing code already sets lite_client to LiteLLMClient(); we overwrite that section.)
+# Remove existing instantiation if duplicate; keep latest below.
+
+# Overwrite previous lite_client with default provider client for clarity
 lite_client = LiteLLMClient()           

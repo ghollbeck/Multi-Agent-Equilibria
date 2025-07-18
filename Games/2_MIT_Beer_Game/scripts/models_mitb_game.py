@@ -21,7 +21,15 @@ class RoundData:
     order_received: int  # New orders received from downstream customers this round
     shipment_received: int
     shipment_sent_downstream: int
-    profit: float
+    starting_balance: float
+    revenue: float
+    purchase_cost: float
+    holding_cost: float
+    backlog_cost: float
+    ending_balance: float
+    # Orchestrator recommendation
+    orchestrator_order: int = 0
+    orchestrator_rationale: str = ""
     # NEW: Track order and production delays
     orders_in_transit_0: int = 0  # Orders arriving this round
     orders_in_transit_1: int = 0  # Orders arriving next round
@@ -76,7 +84,7 @@ class BeerGameAgent(BaseModel):
     role_name: str  # "Retailer", "Wholesaler", "Distributor", "Factory"
     inventory: int = 100
     backlog: int = 0
-    profit_accumulated: float = 0.0
+    balance: float = 1000.0  # Bank account balance starts at $1000
     last_profit: Optional[float] = None
     last_order_placed: Optional[int] = None
     shipments_in_transit: Dict[int,int] = Field(default_factory=lambda: {0:0, 1:0})
@@ -104,12 +112,13 @@ class BeerGameAgent(BaseModel):
 
     @classmethod
     def create_agent(cls, role_name: str, initial_inventory: int = 100, initial_backlog: int = 0, 
-                    logger: BeerGameLogger = None):
+                    initial_balance: float = 1000.0, logger: BeerGameLogger = None):
         """Create a BeerGameAgent with configurable initial values."""
         return cls(
             role_name=role_name,
             inventory=initial_inventory,
             backlog=initial_backlog,
+            balance=initial_balance,
             shipments_in_transit={0: 0, 1: 0},  # Start with no shipments in transit
             orders_in_transit={0: 0, 1: 0},    # NEW: Start with no orders in transit
             production_queue={0: 0, 1: 0},     # NEW: Start with no production in queue
@@ -267,7 +276,7 @@ class BeerGameAgent(BaseModel):
             other_agent_roles=[agent.role_name for agent in other_agents],
             round_index=round_index,
             last_order_placed=self.last_order_placed,
-            profit_accumulated=self.profit_accumulated
+            profit_accumulated=self.balance
         )
         
         self.last_communication_prompt = prompt
@@ -415,10 +424,19 @@ class BeerGameAgent(BaseModel):
         if performance_data:
             self.memory.add_performance_memory(
                 round_number=round_number,
-                profit=performance_data.get('profit', self.profit_accumulated),
+                profit=performance_data.get('profit', self.balance),
                 inventory=self.inventory,
                 backlog=self.backlog,
                 units_sold=performance_data.get('units_sold', 0),
                 holding_cost=performance_data.get('holding_cost', 0.0),
                 backlog_cost=performance_data.get('backlog_cost', 0.0)
             )               
+
+    # Compatibility alias so existing code using profit_accumulated continues to work
+    @property
+    def profit_accumulated(self):
+        return self.balance
+
+    @profit_accumulated.setter
+    def profit_accumulated(self, value):
+        self.balance = value               
