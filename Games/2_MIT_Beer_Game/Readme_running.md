@@ -715,3 +715,12 @@ python executeMITBeerGame.py --provider anthropic --anthropic_model claude-3-hai
   * `orchestrator_order` column in CSV/JSON.
   * Recommendations stored in aggregated JSON under `orchestrator_recommendations`.
 - Visuals: Combined plot now includes "Orchestrator Recommended Orders" subplot.
+
+### 2025-07-18 - Progress Summary PDF Generator
+
+**Files Created:** `generate_progress_summary.py`, `docs/Progress_Summary_July2025.pdf`, updated `requirements.txt`
+
+**Change Description:**
+- Added an automated ReportLab-based script that compiles a three-page PDF summarising the entire repository status.
+- Embedded four representative plots (Beer Game, Fishery, Prisoner’s Dilemma) for quick visual inspection.
+- Included new dependency `reportlab>=3.6.0` in `requirements.txt` and generated the first PDF at the indicated location.
