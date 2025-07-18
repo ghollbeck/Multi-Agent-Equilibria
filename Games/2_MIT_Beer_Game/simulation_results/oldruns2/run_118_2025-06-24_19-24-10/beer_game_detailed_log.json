@@ -1,0 +1,290 @@
+{
+  "hyperparameters": {
+    "num_rounds": 1,
+    "holding_cost_per_unit": 0.5,
+    "backlog_cost_per_unit": 1.5,
+    "profit_per_unit_sold": 5,
+    "roles": [
+      "Retailer",
+      "Wholesaler",
+      "Distributor",
+      "Factory"
+    ],
+    "timestamp": "2025-06-24_19-24-10",
+    "external_demand_pattern": [
+      10
+    ],
+    "enable_communication": true,
+    "communication_rounds": 0,
+    "enable_memory": false,
+    "memory_retention_rounds": 5,
+    "enable_shared_memory": false,
+    "initial_inventory": 100,
+    "initial_backlog": 0
+  },
+  "rounds_log": [
+    {
+      "round_index": 0,
+      "generation": 1,
+      "external_demand": 10,
+      "communication": [],
+      "agents": {
+        "Retailer": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Retailer",
+          "inventory": 90,
+          "backlog": 0,
+          "order_placed": 10,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 10,
+          "profit": 5.0,
+          "last_decision_output": {
+            "role_name": "Retailer",
+            "inventory": 90,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              10
+            ],
+            "incoming_shipments": [
+              10
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 10,
+            "confidence": 0.9,
+            "rationale": "I have enough inventory to meet current demand and maintain a buffer for potential fluctuations.",
+            "risk_assessment": "The risk is underestimating future demand, but current inventory is sufficient to avoid stock-outs.",
+            "order_quantity": 10
+          },
+          "last_update_output": {},
+          "last_init_output": {
+            "role_name": "Retailer",
+            "inventory": 100,
+            "backlog": 0,
+            "confidence": 0.8,
+            "rationale": "With a current inventory of 100 units and no backlog, I can meet expected demand while avoiding stock-outs. I will order to maintain a buffer for potential demand fluctuations.",
+            "risk_assessment": "The main risk is underestimating demand, which could lead to stock-outs. I need to ensure I have enough inventory to cover both current and expected demand.",
+            "expected_demand_next_round": 20,
+            "order_quantity": 20
+          },
+          "llm_reported_inventory": 90,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            10
+          ],
+          "llm_incoming_shipments": [
+            10
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.9,
+          "llm_rationale": "I have enough inventory to meet current demand and maintain a buffer for potential fluctuations.",
+          "llm_risk_assessment": "The risk is underestimating future demand, but current inventory is sufficient to avoid stock-outs.",
+          "llm_expected_demand_next_round": 10
+        },
+        "Wholesaler": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Wholesaler",
+          "inventory": 90,
+          "backlog": 10,
+          "order_placed": 10,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 10,
+          "profit": 5.0,
+          "last_decision_output": {
+            "role_name": "Wholesaler",
+            "inventory": 90,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              10
+            ],
+            "incoming_shipments": [
+              10
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 10,
+            "confidence": 0.8,
+            "rationale": "I will order enough to cover expected demand and maintain a buffer to avoid stockouts.",
+            "risk_assessment": "There is a risk of over-ordering if demand decreases unexpectedly, leading to higher holding costs.",
+            "order_quantity": 10
+          },
+          "last_update_output": {},
+          "last_init_output": {
+            "role_name": "Wholesaler",
+            "inventory": 100,
+            "backlog": 0,
+            "confidence": 0.8,
+            "rationale": "I will maintain a buffer to avoid stockouts and fulfill potential retailer demand while minimizing holding costs.",
+            "risk_assessment": "There is a risk of over-ordering if demand fluctuates unexpectedly, leading to higher holding costs.",
+            "expected_demand_next_round": 20,
+            "order_quantity": 20
+          },
+          "llm_reported_inventory": 90,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            10
+          ],
+          "llm_incoming_shipments": [
+            10
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.8,
+          "llm_rationale": "I will order enough to cover expected demand and maintain a buffer to avoid stockouts.",
+          "llm_risk_assessment": "There is a risk of over-ordering if demand decreases unexpectedly, leading to higher holding costs.",
+          "llm_expected_demand_next_round": 10
+        },
+        "Distributor": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Distributor",
+          "inventory": 90,
+          "backlog": 10,
+          "order_placed": 10,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 10,
+          "profit": 5.0,
+          "last_decision_output": {
+            "role_name": "Distributor",
+            "inventory": 90,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              10
+            ],
+            "incoming_shipments": [
+              10
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 10,
+            "confidence": 0.9,
+            "rationale": "I will order to meet expected demand while maintaining a buffer to avoid stockouts.",
+            "risk_assessment": "Demand may fluctuate, but current inventory allows for a safe order without excess.",
+            "order_quantity": 10
+          },
+          "last_update_output": {},
+          "last_init_output": {
+            "role_name": "Distributor",
+            "inventory": 100,
+            "backlog": 0,
+            "confidence": 0.8,
+            "rationale": "With a stable inventory and no backlog, I will order to maintain a buffer for expected demand while avoiding excess inventory.",
+            "risk_assessment": "Potential fluctuations in demand could lead to either excess inventory or backlog if not managed carefully.",
+            "expected_demand_next_round": 20,
+            "order_quantity": 20
+          },
+          "llm_reported_inventory": 90,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            10
+          ],
+          "llm_incoming_shipments": [
+            10
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.9,
+          "llm_rationale": "I will order to meet expected demand while maintaining a buffer to avoid stockouts.",
+          "llm_risk_assessment": "Demand may fluctuate, but current inventory allows for a safe order without excess.",
+          "llm_expected_demand_next_round": 10
+        },
+        "Factory": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Factory",
+          "inventory": 90,
+          "backlog": 10,
+          "order_placed": 10,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 10,
+          "profit": 5.0,
+          "last_decision_output": {
+            "role_name": "Factory",
+            "inventory": 90,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              10
+            ],
+            "incoming_shipments": [
+              10
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 10,
+            "confidence": 0.9,
+            "rationale": "I will produce enough to meet the expected demand while maintaining a buffer to avoid stockouts.",
+            "risk_assessment": "The risk is overproducing if demand decreases unexpectedly, leading to excess inventory.",
+            "order_quantity": 10
+          },
+          "last_update_output": {},
+          "last_init_output": {
+            "role_name": "Factory",
+            "inventory": 100,
+            "backlog": 0,
+            "confidence": 0.8,
+            "rationale": "With no backlog and sufficient inventory, I will maintain production to meet potential demand while avoiding excess stock.",
+            "risk_assessment": "The main risk is underestimating future demand, which could lead to backlog if production is too low.",
+            "expected_demand_next_round": 20,
+            "order_quantity": 20
+          },
+          "llm_reported_inventory": 90,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            10
+          ],
+          "llm_incoming_shipments": [
+            10
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.9,
+          "llm_rationale": "I will produce enough to meet the expected demand while maintaining a buffer to avoid stockouts.",
+          "llm_risk_assessment": "The risk is overproducing if demand decreases unexpectedly, leading to excess inventory.",
+          "llm_expected_demand_next_round": 10
+        }
+      }
+    }
+  ],
+  "flat_rounds_log": [
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Retailer",
+      "inventory": 90,
+      "backlog": 0,
+      "order_placed": 10,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 10,
+      "profit": 5.0
+    },
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Wholesaler",
+      "inventory": 90,
+      "backlog": 10,
+      "order_placed": 10,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 10,
+      "profit": 5.0
+    },
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Distributor",
+      "inventory": 90,
+      "backlog": 10,
+      "order_placed": 10,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 10,
+      "profit": 5.0
+    },
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Factory",
+      "inventory": 90,
+      "backlog": 10,
+      "order_placed": 10,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 10,
+      "profit": 5.0
+    }
+  ],
+  "communication_log": []
+}

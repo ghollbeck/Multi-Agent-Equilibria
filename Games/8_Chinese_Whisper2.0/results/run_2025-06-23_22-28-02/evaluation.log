@@ -1,0 +1,49 @@
+2025-06-23 22:29:18,843 - INFO - 
+==================================================
+How Drift is Evaluated
+==================================================
+
+The drift is calculated as:
+    Drift = |rows_returned - baseline_rows|
+
+Where:
+• baseline_rows: Number of rows returned by the baseline query (typically step 0 - the original story's SQL)
+• rows_returned: Number of rows returned by each agent's SQL query  
+• The result is the absolute difference in row counts
+
+What the Values Mean:
+• 0 drift: The SQL query returns exactly the same number of rows as the baseline
+• Higher drift: The SQL query returns that many more/fewer rows than the baseline
+
+This measures semantic drift in LLM chains - how meaning changes as stories pass through multiple agents
+and how well the final SQL captures the original intent.
+==================================================
+
+2025-06-23 22:29:18,843 - INFO - Attempting to find baseline for step: 5
+2025-06-23 22:29:18,843 - INFO - Executing baseline query for step 5: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';
+2025-06-23 22:29:18,848 - INFO - Baseline (step 5) row count: 0
+2025-06-23 22:29:18,848 - INFO - ------------------------------
+2025-06-23 22:29:18,848 - INFO - Executing query for step 0: SELECT * 
+FROM students 
+WHERE is_active = 0 
+  AND is_highschool = 1 
+  AND speaks_english = 1 
+  AND grade_english_pass = 1 
+  AND (grade_math_pass = 0 OR grade_science_pass = 0);
+2025-06-23 22:29:18,848 - INFO - Step 0: 6 rows (diff: 6) Rows: [{'student_id': 71, 'first_name': 'Alice71', 'last_name': 'Student', 'speaks_english': 1, 'speaks_spanish': 0, 'grade_math_pass': 0, 'grade_science_pass': 0, 'grade_english_pass': 1, 'is_highschool': 1, 'is_active': 0}, {'student_id': 79, 'first_name': 'Alice79', 'last_name': 'Student', 'speaks_english': 1, 'speaks_spanish': 0, 'grade_math_pass': 0, 'grade_science_pass': 1, 'grade_english_pass': 1, 'is_highschool': 1, 'is_active': 0}, {'student_id': 87, 'first_name': 'Alice87', 'last_name': 'Student', 'speaks_english': 1, 'speaks_spanish': 0, 'grade_math_pass': 1, 'grade_science_pass': 0, 'grade_english_pass': 1, 'is_highschool': 1, 'is_active': 0}, {'student_id': 103, 'first_name': 'Alice103', 'last_name': 'Student', 'speaks_english': 1, 'speaks_spanish': 1, 'grade_math_pass': 0, 'grade_science_pass': 0, 'grade_english_pass': 1, 'is_highschool': 1, 'is_active': 0}, {'student_id': 111, 'first_name': 'Alice111', 'last_name': 'Student', 'speaks_english': 1, 'speaks_spanish': 1, 'grade_math_pass': 0, 'grade_science_pass': 1, 'grade_english_pass': 1, 'is_highschool': 1, 'is_active': 0}, '...and 1 more rows']
+2025-06-23 22:29:18,848 - INFO - Executing query for step 1: SELECT first_name, last_name 
+FROM students 
+WHERE speaks_english = 1 
+AND grade_english_pass = 0 
+AND is_active = 1;
+2025-06-23 22:29:18,848 - INFO - Step 1: 16 rows (diff: 16) Rows: [{'first_name': 'Alice66', 'last_name': 'Student'}, {'first_name': 'Alice68', 'last_name': 'Student'}, {'first_name': 'Alice74', 'last_name': 'Student'}, {'first_name': 'Alice76', 'last_name': 'Student'}, {'first_name': 'Alice82', 'last_name': 'Student'}, '...and 11 more rows']
+2025-06-23 22:29:18,848 - INFO - Executing query for step 2: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';
+2025-06-23 22:29:18,848 - ERROR - Skipping diff calculation for step 2 due to query execution error.
+2025-06-23 22:29:18,848 - INFO - Executing query for step 3: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';
+2025-06-23 22:29:18,848 - ERROR - Skipping diff calculation for step 3 due to query execution error.
+2025-06-23 22:29:18,848 - INFO - Executing query for step 4: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';
+2025-06-23 22:29:18,848 - ERROR - Skipping diff calculation for step 4 due to query execution error.
+2025-06-23 22:29:18,848 - INFO - Executing query for step 5: SELECT * FROM students WHERE first_name = 'Olivia' AND last_name = 'Hudson';
+2025-06-23 22:29:18,849 - ERROR - Skipping diff calculation for step 5 due to query execution error.
+2025-06-23 22:29:18,849 - INFO - ------------------------------
+2025-06-23 22:29:21,311 - INFO - Plot saved to /Users/gaborhollbeck/Desktop/GitHub/32_Stanford_Research/Multi-Agent-Equilibria/Games/8_Chinese_Whisper2.0/results/run_2025-06-23_22-28-02/diff_vs_agent.png

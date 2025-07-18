@@ -1,0 +1,962 @@
+{
+  "hyperparameters": {
+    "num_rounds": 2,
+    "holding_cost_per_unit": 0.5,
+    "backlog_cost_per_unit": 1.5,
+    "profit_per_unit_sold": 5,
+    "roles": [
+      "Retailer",
+      "Wholesaler",
+      "Distributor",
+      "Factory"
+    ],
+    "timestamp": "2025-06-24_19-07-27",
+    "external_demand_pattern": [
+      7,
+      11
+    ],
+    "enable_communication": true,
+    "communication_rounds": 1,
+    "enable_memory": false,
+    "memory_retention_rounds": 5,
+    "enable_shared_memory": false,
+    "initial_inventory": 50,
+    "initial_backlog": 0
+  },
+  "rounds_log": [
+    {
+      "round_index": 0,
+      "generation": 1,
+      "external_demand": 7,
+      "communication": [
+        {
+          "round": 0,
+          "communication_round": 1,
+          "sender": "Retailer",
+          "message": "I hear that the Wholesaler mentioned concerns about fluctuating demand. Based on this, my conclusion is that we should all be cautious with our orders to avoid excess inventory. Therefore, I will maintain a conservative order strategy to ensure we can meet demand without overcommitting resources.",
+          "strategy_hint": "I plan to order conservatively to balance inventory and demand.",
+          "collaboration_proposal": "Let's share our demand forecasts regularly to align our orders and reduce the bullwhip effect.",
+          "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+          "confidence": 0.8
+        },
+        {
+          "round": 0,
+          "communication_round": 1,
+          "sender": "Wholesaler",
+          "message": "I hear the Retailer mentioned maintaining a conservative order strategy to avoid excess inventory. Based on this, my conclusion is that we should all be cautious with our orders to align with demand without overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while being mindful of our inventory levels.",
+          "strategy_hint": "I plan to order conservatively while keeping a buffer for demand fluctuations.",
+          "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.",
+          "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+          "confidence": 0.7
+        },
+        {
+          "round": 0,
+          "communication_round": 1,
+          "sender": "Distributor",
+          "message": "I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order conservatively to maintain a buffer while ensuring I can meet the expected demand for the next round.",
+          "strategy_hint": "I plan to order conservatively while keeping a buffer for potential demand increases.",
+          "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.",
+          "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+          "confidence": 0.8
+        },
+        {
+          "round": 0,
+          "communication_round": 1,
+          "sender": "Factory",
+          "message": "I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler and Distributor echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while ensuring I can meet the expected demand for the next round.",
+          "strategy_hint": "I plan to order conservatively while keeping a buffer for demand fluctuations.",
+          "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.",
+          "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+          "confidence": 0.8
+        }
+      ],
+      "agents": {
+        "Retailer": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Retailer",
+          "inventory": 43,
+          "backlog": 0,
+          "order_placed": 7,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 7,
+          "profit": 13.5,
+          "last_decision_output": {
+            "role_name": "Retailer",
+            "inventory": 43,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              7
+            ],
+            "incoming_shipments": [
+              7
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 7,
+            "confidence": 0.9,
+            "rationale": "I have enough inventory to meet the current demand and maintain a buffer, so I will order to cover expected demand.",
+            "risk_assessment": "Demand may increase unexpectedly, leading to potential backlog if not enough inventory is maintained.",
+            "order_quantity": 7
+          },
+          "last_update_output": {},
+          "last_init_output": {
+            "role_name": "Retailer",
+            "inventory": 50,
+            "backlog": 0,
+            "confidence": 0.8,
+            "rationale": "With a current inventory of 50 and no backlog, I can meet expected demand while maintaining a buffer to avoid stockouts.",
+            "risk_assessment": "Demand may fluctuate, leading to potential backlog if not enough inventory is maintained.",
+            "expected_demand_next_round": 20,
+            "order_quantity": 20
+          },
+          "llm_reported_inventory": 43,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            7
+          ],
+          "llm_incoming_shipments": [
+            7
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.9,
+          "llm_rationale": "I have enough inventory to meet the current demand and maintain a buffer, so I will order to cover expected demand.",
+          "llm_risk_assessment": "Demand may increase unexpectedly, leading to potential backlog if not enough inventory is maintained.",
+          "llm_expected_demand_next_round": 7
+        },
+        "Wholesaler": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Wholesaler",
+          "inventory": 43,
+          "backlog": 7,
+          "order_placed": 20,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 7,
+          "profit": 13.5,
+          "last_decision_output": {
+            "role_name": "Wholesaler",
+            "inventory": 43,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              7
+            ],
+            "incoming_shipments": [
+              7
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 20,
+            "confidence": 0.6,
+            "rationale": "I need to order enough to cover expected demand and maintain a buffer to avoid stockouts.",
+            "risk_assessment": "There is a risk of overestimating demand, leading to excess inventory and holding costs.",
+            "order_quantity": 20
+          },
+          "last_update_output": {},
+          "last_init_output": {
+            "role_name": "Wholesaler",
+            "inventory": 50,
+            "backlog": 0,
+            "confidence": 0.7,
+            "rationale": "I have sufficient inventory to meet current demand and avoid backlog costs. I will order to maintain a buffer for potential demand increases.",
+            "risk_assessment": "The main risk is underestimating demand, which could lead to backlog and increased costs. I need to balance inventory levels carefully.",
+            "expected_demand_next_round": 20,
+            "order_quantity": 20
+          },
+          "llm_reported_inventory": 43,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            7
+          ],
+          "llm_incoming_shipments": [
+            7
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.6,
+          "llm_rationale": "I need to order enough to cover expected demand and maintain a buffer to avoid stockouts.",
+          "llm_risk_assessment": "There is a risk of overestimating demand, leading to excess inventory and holding costs.",
+          "llm_expected_demand_next_round": 20
+        },
+        "Distributor": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Distributor",
+          "inventory": 43,
+          "backlog": 20,
+          "order_placed": 20,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 7,
+          "profit": 13.5,
+          "last_decision_output": {
+            "role_name": "Distributor",
+            "inventory": 43,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              7
+            ],
+            "incoming_shipments": [
+              7
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 20,
+            "confidence": 0.7,
+            "rationale": "I need to order enough to cover expected demand and maintain a buffer to avoid stockouts.",
+            "risk_assessment": "Demand may exceed expectations, leading to backlog if not enough is ordered. Need to balance inventory carefully.",
+            "order_quantity": 20
+          },
+          "last_update_output": {},
+          "last_init_output": {
+            "role_name": "Distributor",
+            "inventory": 50,
+            "backlog": 0,
+            "confidence": 0.8,
+            "rationale": "I have sufficient inventory to meet potential demand while avoiding backlog costs. I will order to maintain a buffer.",
+            "risk_assessment": "Demand may fluctuate, leading to potential backlog if not enough is ordered. Need to balance inventory and order quantity carefully.",
+            "expected_demand_next_round": 20,
+            "order_quantity": 20
+          },
+          "llm_reported_inventory": 43,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            7
+          ],
+          "llm_incoming_shipments": [
+            7
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.7,
+          "llm_rationale": "I need to order enough to cover expected demand and maintain a buffer to avoid stockouts.",
+          "llm_risk_assessment": "Demand may exceed expectations, leading to backlog if not enough is ordered. Need to balance inventory carefully.",
+          "llm_expected_demand_next_round": 20
+        },
+        "Factory": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Factory",
+          "inventory": 43,
+          "backlog": 20,
+          "order_placed": 10,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 7,
+          "profit": 13.5,
+          "last_decision_output": {
+            "role_name": "Factory",
+            "inventory": 43,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              7
+            ],
+            "incoming_shipments": [
+              7
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 10,
+            "confidence": 0.7,
+            "rationale": "To maintain a buffer for expected demand while avoiding excess inventory, I will order 10 units.",
+            "risk_assessment": "There is a risk of overcommitting if demand fluctuates unexpectedly, leading to potential backlog.",
+            "order_quantity": 10
+          },
+          "last_update_output": {},
+          "last_init_output": {
+            "role_name": "Factory",
+            "inventory": 50,
+            "backlog": 0,
+            "confidence": 0.8,
+            "rationale": "With no backlog and sufficient inventory, I will order to maintain a buffer for potential demand fluctuations while avoiding excess holding costs.",
+            "risk_assessment": "The main risk is underestimating future demand, which could lead to backlog and increased costs.",
+            "expected_demand_next_round": 10,
+            "order_quantity": 10
+          },
+          "llm_reported_inventory": 43,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            7
+          ],
+          "llm_incoming_shipments": [
+            7
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.7,
+          "llm_rationale": "To maintain a buffer for expected demand while avoiding excess inventory, I will order 10 units.",
+          "llm_risk_assessment": "There is a risk of overcommitting if demand fluctuates unexpectedly, leading to potential backlog.",
+          "llm_expected_demand_next_round": 10
+        }
+      }
+    },
+    {
+      "round_index": 1,
+      "generation": 1,
+      "external_demand": 11,
+      "communication": [
+        {
+          "round": 1,
+          "communication_round": 1,
+          "sender": "Retailer",
+          "message": "I have observed recent demand fluctuating between 7 and 11 units. This suggests we may need to prepare for potential increases in demand. Therefore, I will maintain a buffer in my inventory to avoid stockouts.",
+          "strategy_hint": "I plan to order based on expected demand while keeping a safety stock.",
+          "collaboration_proposal": "I propose we share our demand forecasts to better align our orders and reduce the bullwhip effect.",
+          "information_shared": "Currently, I have 32 units in inventory and no backlog, which allows me to meet immediate demand.",
+          "confidence": 0.8
+        },
+        {
+          "round": 1,
+          "communication_round": 1,
+          "sender": "Wholesaler",
+          "message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. Based on this, my conclusion is that we should all be prepared for potential increases in demand. Therefore, I will order 20 units to maintain a buffer and ensure we can meet the expected demand while avoiding backlog costs.",
+          "strategy_hint": "I will order to maintain a buffer for potential demand increases.",
+          "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.",
+          "information_shared": "I currently have 25 units in inventory and no backlog, which allows me to meet immediate demand.",
+          "confidence": 0.7
+        },
+        {
+          "round": 1,
+          "communication_round": 1,
+          "sender": "Distributor",
+          "message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we should coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 20 units to align with the expected demand while maintaining a buffer.",
+          "strategy_hint": "I will order to maintain a buffer while aligning with upstream demand forecasts.",
+          "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.",
+          "information_shared": "I currently have 5 units in inventory and no backlog, which allows me to meet immediate demand.",
+          "confidence": 0.8
+        },
+        {
+          "round": 1,
+          "communication_round": 1,
+          "sender": "Factory",
+          "message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler and Distributor concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we need to coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 10 units to align with the current backlog and ensure we can meet the expected demand while managing my inventory effectively.",
+          "strategy_hint": "I will order to meet the backlog while considering potential demand increases.",
+          "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.",
+          "information_shared": "I currently have 0 units in inventory and a backlog of 15 units, which limits my shipping capacity.",
+          "confidence": 0.8
+        }
+      ],
+      "agents": {
+        "Retailer": {
+          "generation": 1,
+          "round_index": 1,
+          "role_name": "Retailer",
+          "inventory": 32,
+          "backlog": 0,
+          "order_placed": 20,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 11,
+          "profit": 52.5,
+          "last_decision_output": {
+            "role_name": "Retailer",
+            "inventory": 32,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              7,
+              11
+            ],
+            "incoming_shipments": [
+              18
+            ],
+            "last_order_placed": 7,
+            "expected_demand_next_round": 20,
+            "confidence": 0.7,
+            "rationale": "To cover expected demand and maintain a buffer, I will order 20 units.",
+            "risk_assessment": "Demand may exceed expectations, leading to potential backlog if not enough inventory is maintained.",
+            "order_quantity": 20
+          },
+          "last_update_output": {},
+          "last_init_output": {
+            "role_name": "Retailer",
+            "inventory": 50,
+            "backlog": 0,
+            "confidence": 0.8,
+            "rationale": "With a current inventory of 50 and no backlog, I can meet expected demand while maintaining a buffer to avoid stockouts.",
+            "risk_assessment": "Demand may fluctuate, leading to potential backlog if not enough inventory is maintained.",
+            "expected_demand_next_round": 20,
+            "order_quantity": 20
+          },
+          "llm_reported_inventory": 32,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            7,
+            11
+          ],
+          "llm_incoming_shipments": [
+            18
+          ],
+          "llm_last_order_placed": 7,
+          "llm_confidence": 0.7,
+          "llm_rationale": "To cover expected demand and maintain a buffer, I will order 20 units.",
+          "llm_risk_assessment": "Demand may exceed expectations, leading to potential backlog if not enough inventory is maintained.",
+          "llm_expected_demand_next_round": 20
+        },
+        "Wholesaler": {
+          "generation": 1,
+          "round_index": 1,
+          "role_name": "Wholesaler",
+          "inventory": 25,
+          "backlog": 20,
+          "order_placed": 20,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 18,
+          "profit": 91.0,
+          "last_decision_output": {
+            "role_name": "Wholesaler",
+            "inventory": 25,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              7,
+              11
+            ],
+            "incoming_shipments": [
+              38
+            ],
+            "last_order_placed": 20,
+            "expected_demand_next_round": 11,
+            "confidence": 0.8,
+            "rationale": "I need to cover the expected demand and maintain a buffer to avoid stockouts.",
+            "risk_assessment": "Underestimating demand could lead to backlog and increased costs; I must balance inventory carefully.",
+            "order_quantity": 20
+          },
+          "last_update_output": {},
+          "last_init_output": {
+            "role_name": "Wholesaler",
+            "inventory": 50,
+            "backlog": 0,
+            "confidence": 0.7,
+            "rationale": "I have sufficient inventory to meet current demand and avoid backlog costs. I will order to maintain a buffer for potential demand increases.",
+            "risk_assessment": "The main risk is underestimating demand, which could lead to backlog and increased costs. I need to balance inventory levels carefully.",
+            "expected_demand_next_round": 20,
+            "order_quantity": 20
+          },
+          "llm_reported_inventory": 25,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            7,
+            11
+          ],
+          "llm_incoming_shipments": [
+            38
+          ],
+          "llm_last_order_placed": 20,
+          "llm_confidence": 0.8,
+          "llm_rationale": "I need to cover the expected demand and maintain a buffer to avoid stockouts.",
+          "llm_risk_assessment": "Underestimating demand could lead to backlog and increased costs; I must balance inventory carefully.",
+          "llm_expected_demand_next_round": 11
+        },
+        "Distributor": {
+          "generation": 1,
+          "round_index": 1,
+          "role_name": "Distributor",
+          "inventory": 5,
+          "backlog": 20,
+          "order_placed": 20,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 38,
+          "profit": 201.0,
+          "last_decision_output": {
+            "role_name": "Distributor",
+            "inventory": 5,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              7,
+              18
+            ],
+            "incoming_shipments": [
+              43
+            ],
+            "last_order_placed": 20,
+            "expected_demand_next_round": 20,
+            "confidence": 0.7,
+            "rationale": "I need to order enough to cover expected demand and maintain a buffer to avoid stockouts.",
+            "risk_assessment": "Demand may exceed expectations, leading to backlog if not enough is ordered. Must balance order quantity carefully.",
+            "order_quantity": 20
+          },
+          "last_update_output": {},
+          "last_init_output": {
+            "role_name": "Distributor",
+            "inventory": 50,
+            "backlog": 0,
+            "confidence": 0.8,
+            "rationale": "I have sufficient inventory to meet potential demand while avoiding backlog costs. I will order to maintain a buffer.",
+            "risk_assessment": "Demand may fluctuate, leading to potential backlog if not enough is ordered. Need to balance inventory and order quantity carefully.",
+            "expected_demand_next_round": 20,
+            "order_quantity": 20
+          },
+          "llm_reported_inventory": 5,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            7,
+            18
+          ],
+          "llm_incoming_shipments": [
+            43
+          ],
+          "llm_last_order_placed": 20,
+          "llm_confidence": 0.7,
+          "llm_rationale": "I need to order enough to cover expected demand and maintain a buffer to avoid stockouts.",
+          "llm_risk_assessment": "Demand may exceed expectations, leading to backlog if not enough is ordered. Must balance order quantity carefully.",
+          "llm_expected_demand_next_round": 20
+        },
+        "Factory": {
+          "generation": 1,
+          "round_index": 1,
+          "role_name": "Factory",
+          "inventory": 0,
+          "backlog": 35,
+          "order_placed": 20,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 43,
+          "profit": 206.0,
+          "last_decision_output": {
+            "role_name": "Factory",
+            "inventory": 0,
+            "backlog": 15,
+            "recent_demand_or_orders": [
+              7,
+              38
+            ],
+            "incoming_shipments": [
+              53
+            ],
+            "last_order_placed": 10,
+            "expected_demand_next_round": 20,
+            "confidence": 0.7,
+            "rationale": "To cover the backlog and expected demand, I will order enough to meet both while maintaining a buffer.",
+            "risk_assessment": "Risk of overestimating demand could lead to excess inventory and holding costs.",
+            "order_quantity": 20
+          },
+          "last_update_output": {},
+          "last_init_output": {
+            "role_name": "Factory",
+            "inventory": 50,
+            "backlog": 0,
+            "confidence": 0.8,
+            "rationale": "With no backlog and sufficient inventory, I will order to maintain a buffer for potential demand fluctuations while avoiding excess holding costs.",
+            "risk_assessment": "The main risk is underestimating future demand, which could lead to backlog and increased costs.",
+            "expected_demand_next_round": 10,
+            "order_quantity": 10
+          },
+          "llm_reported_inventory": 0,
+          "llm_reported_backlog": 15,
+          "llm_recent_demand_or_orders": [
+            7,
+            38
+          ],
+          "llm_incoming_shipments": [
+            53
+          ],
+          "llm_last_order_placed": 10,
+          "llm_confidence": 0.7,
+          "llm_rationale": "To cover the backlog and expected demand, I will order enough to meet both while maintaining a buffer.",
+          "llm_risk_assessment": "Risk of overestimating demand could lead to excess inventory and holding costs.",
+          "llm_expected_demand_next_round": 20
+        }
+      }
+    }
+  ],
+  "flat_rounds_log": [
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Retailer",
+      "inventory": 43,
+      "backlog": 0,
+      "order_placed": 7,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 7,
+      "profit": 13.5
+    },
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Wholesaler",
+      "inventory": 43,
+      "backlog": 7,
+      "order_placed": 20,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 7,
+      "profit": 13.5
+    },
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Distributor",
+      "inventory": 43,
+      "backlog": 20,
+      "order_placed": 20,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 7,
+      "profit": 13.5
+    },
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Factory",
+      "inventory": 43,
+      "backlog": 20,
+      "order_placed": 10,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 7,
+      "profit": 13.5
+    },
+    {
+      "generation": 1,
+      "round_index": 1,
+      "role_name": "Retailer",
+      "inventory": 32,
+      "backlog": 0,
+      "order_placed": 20,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 11,
+      "profit": 52.5
+    },
+    {
+      "generation": 1,
+      "round_index": 1,
+      "role_name": "Wholesaler",
+      "inventory": 25,
+      "backlog": 20,
+      "order_placed": 20,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 18,
+      "profit": 91.0
+    },
+    {
+      "generation": 1,
+      "round_index": 1,
+      "role_name": "Distributor",
+      "inventory": 5,
+      "backlog": 20,
+      "order_placed": 20,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 38,
+      "profit": 201.0
+    },
+    {
+      "generation": 1,
+      "round_index": 1,
+      "role_name": "Factory",
+      "inventory": 0,
+      "backlog": 35,
+      "order_placed": 20,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 43,
+      "profit": 206.0
+    }
+  ],
+  "communication_log": [
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "I hear that the Wholesaler mentioned concerns about fluctuating demand. Based on this, my conclusion is that we should all be cautious with our orders to avoid excess inventory. Therefore, I will maintain a conservative order strategy to ensure we can meet demand without overcommitting resources.",
+      "strategy_hint": "I plan to order conservatively to balance inventory and demand.",
+      "collaboration_proposal": "Let's share our demand forecasts regularly to align our orders and reduce the bullwhip effect.",
+      "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "I hear the Retailer mentioned maintaining a conservative order strategy to avoid excess inventory. Based on this, my conclusion is that we should all be cautious with our orders to align with demand without overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while being mindful of our inventory levels.",
+      "strategy_hint": "I plan to order conservatively while keeping a buffer for demand fluctuations.",
+      "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.",
+      "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+      "confidence": 0.7
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order conservatively to maintain a buffer while ensuring I can meet the expected demand for the next round.",
+      "strategy_hint": "I plan to order conservatively while keeping a buffer for potential demand increases.",
+      "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.",
+      "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler and Distributor echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while ensuring I can meet the expected demand for the next round.",
+      "strategy_hint": "I plan to order conservatively while keeping a buffer for demand fluctuations.",
+      "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.",
+      "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "I hear that the Wholesaler mentioned concerns about fluctuating demand. Based on this, my conclusion is that we should all be cautious with our orders to avoid excess inventory. Therefore, I will maintain a conservative order strategy to ensure we can meet demand without overcommitting resources.",
+      "strategy_hint": "I plan to order conservatively to balance inventory and demand.",
+      "collaboration_proposal": "Let's share our demand forecasts regularly to align our orders and reduce the bullwhip effect.",
+      "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "I hear the Retailer mentioned maintaining a conservative order strategy to avoid excess inventory. Based on this, my conclusion is that we should all be cautious with our orders to align with demand without overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while being mindful of our inventory levels.",
+      "strategy_hint": "I plan to order conservatively while keeping a buffer for demand fluctuations.",
+      "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.",
+      "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+      "confidence": 0.7
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order conservatively to maintain a buffer while ensuring I can meet the expected demand for the next round.",
+      "strategy_hint": "I plan to order conservatively while keeping a buffer for potential demand increases.",
+      "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.",
+      "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler and Distributor echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while ensuring I can meet the expected demand for the next round.",
+      "strategy_hint": "I plan to order conservatively while keeping a buffer for demand fluctuations.",
+      "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.",
+      "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "I hear that the Wholesaler mentioned concerns about fluctuating demand. Based on this, my conclusion is that we should all be cautious with our orders to avoid excess inventory. Therefore, I will maintain a conservative order strategy to ensure we can meet demand without overcommitting resources.",
+      "strategy_hint": "I plan to order conservatively to balance inventory and demand.",
+      "collaboration_proposal": "Let's share our demand forecasts regularly to align our orders and reduce the bullwhip effect.",
+      "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "I hear the Retailer mentioned maintaining a conservative order strategy to avoid excess inventory. Based on this, my conclusion is that we should all be cautious with our orders to align with demand without overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while being mindful of our inventory levels.",
+      "strategy_hint": "I plan to order conservatively while keeping a buffer for demand fluctuations.",
+      "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.",
+      "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+      "confidence": 0.7
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order conservatively to maintain a buffer while ensuring I can meet the expected demand for the next round.",
+      "strategy_hint": "I plan to order conservatively while keeping a buffer for potential demand increases.",
+      "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.",
+      "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler and Distributor echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while ensuring I can meet the expected demand for the next round.",
+      "strategy_hint": "I plan to order conservatively while keeping a buffer for demand fluctuations.",
+      "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.",
+      "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "I hear that the Wholesaler mentioned concerns about fluctuating demand. Based on this, my conclusion is that we should all be cautious with our orders to avoid excess inventory. Therefore, I will maintain a conservative order strategy to ensure we can meet demand without overcommitting resources.",
+      "strategy_hint": "I plan to order conservatively to balance inventory and demand.",
+      "collaboration_proposal": "Let's share our demand forecasts regularly to align our orders and reduce the bullwhip effect.",
+      "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "I hear the Retailer mentioned maintaining a conservative order strategy to avoid excess inventory. Based on this, my conclusion is that we should all be cautious with our orders to align with demand without overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while being mindful of our inventory levels.",
+      "strategy_hint": "I plan to order conservatively while keeping a buffer for demand fluctuations.",
+      "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.",
+      "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+      "confidence": 0.7
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order conservatively to maintain a buffer while ensuring I can meet the expected demand for the next round.",
+      "strategy_hint": "I plan to order conservatively while keeping a buffer for potential demand increases.",
+      "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.",
+      "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "I hear the Retailer said we should be cautious with our orders to avoid excess inventory. I also note the Wholesaler and Distributor echoed this sentiment about maintaining a buffer while being mindful of inventory levels. Based on this, my conclusion is that we should all align our orders to better match the expected demand and avoid overcommitting resources. Therefore, I will order to maintain a buffer for potential demand increases while ensuring I can meet the expected demand for the next round.",
+      "strategy_hint": "I plan to order conservatively while keeping a buffer for demand fluctuations.",
+      "collaboration_proposal": "Let's coordinate our order quantities based on shared demand forecasts to minimize the bullwhip effect.",
+      "information_shared": "I currently have 43 units in inventory and no backlog, which allows me to meet the expected demand for the next round.",
+      "confidence": 0.8
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "I have observed recent demand fluctuating between 7 and 11 units. This suggests we may need to prepare for potential increases in demand. Therefore, I will maintain a buffer in my inventory to avoid stockouts.",
+      "strategy_hint": "I plan to order based on expected demand while keeping a safety stock.",
+      "collaboration_proposal": "I propose we share our demand forecasts to better align our orders and reduce the bullwhip effect.",
+      "information_shared": "Currently, I have 32 units in inventory and no backlog, which allows me to meet immediate demand.",
+      "confidence": 0.8
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. Based on this, my conclusion is that we should all be prepared for potential increases in demand. Therefore, I will order 20 units to maintain a buffer and ensure we can meet the expected demand while avoiding backlog costs.",
+      "strategy_hint": "I will order to maintain a buffer for potential demand increases.",
+      "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.",
+      "information_shared": "I currently have 25 units in inventory and no backlog, which allows me to meet immediate demand.",
+      "confidence": 0.7
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we should coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 20 units to align with the expected demand while maintaining a buffer.",
+      "strategy_hint": "I will order to maintain a buffer while aligning with upstream demand forecasts.",
+      "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.",
+      "information_shared": "I currently have 5 units in inventory and no backlog, which allows me to meet immediate demand.",
+      "confidence": 0.8
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler and Distributor concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we need to coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 10 units to align with the current backlog and ensure we can meet the expected demand while managing my inventory effectively.",
+      "strategy_hint": "I will order to meet the backlog while considering potential demand increases.",
+      "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.",
+      "information_shared": "I currently have 0 units in inventory and a backlog of 15 units, which limits my shipping capacity.",
+      "confidence": 0.8
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "I have observed recent demand fluctuating between 7 and 11 units. This suggests we may need to prepare for potential increases in demand. Therefore, I will maintain a buffer in my inventory to avoid stockouts.",
+      "strategy_hint": "I plan to order based on expected demand while keeping a safety stock.",
+      "collaboration_proposal": "I propose we share our demand forecasts to better align our orders and reduce the bullwhip effect.",
+      "information_shared": "Currently, I have 32 units in inventory and no backlog, which allows me to meet immediate demand.",
+      "confidence": 0.8
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. Based on this, my conclusion is that we should all be prepared for potential increases in demand. Therefore, I will order 20 units to maintain a buffer and ensure we can meet the expected demand while avoiding backlog costs.",
+      "strategy_hint": "I will order to maintain a buffer for potential demand increases.",
+      "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.",
+      "information_shared": "I currently have 25 units in inventory and no backlog, which allows me to meet immediate demand.",
+      "confidence": 0.7
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we should coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 20 units to align with the expected demand while maintaining a buffer.",
+      "strategy_hint": "I will order to maintain a buffer while aligning with upstream demand forecasts.",
+      "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.",
+      "information_shared": "I currently have 5 units in inventory and no backlog, which allows me to meet immediate demand.",
+      "confidence": 0.8
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler and Distributor concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we need to coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 10 units to align with the current backlog and ensure we can meet the expected demand while managing my inventory effectively.",
+      "strategy_hint": "I will order to meet the backlog while considering potential demand increases.",
+      "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.",
+      "information_shared": "I currently have 0 units in inventory and a backlog of 15 units, which limits my shipping capacity.",
+      "confidence": 0.8
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "I have observed recent demand fluctuating between 7 and 11 units. This suggests we may need to prepare for potential increases in demand. Therefore, I will maintain a buffer in my inventory to avoid stockouts.",
+      "strategy_hint": "I plan to order based on expected demand while keeping a safety stock.",
+      "collaboration_proposal": "I propose we share our demand forecasts to better align our orders and reduce the bullwhip effect.",
+      "information_shared": "Currently, I have 32 units in inventory and no backlog, which allows me to meet immediate demand.",
+      "confidence": 0.8
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. Based on this, my conclusion is that we should all be prepared for potential increases in demand. Therefore, I will order 20 units to maintain a buffer and ensure we can meet the expected demand while avoiding backlog costs.",
+      "strategy_hint": "I will order to maintain a buffer for potential demand increases.",
+      "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.",
+      "information_shared": "I currently have 25 units in inventory and no backlog, which allows me to meet immediate demand.",
+      "confidence": 0.7
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we should coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 20 units to align with the expected demand while maintaining a buffer.",
+      "strategy_hint": "I will order to maintain a buffer while aligning with upstream demand forecasts.",
+      "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.",
+      "information_shared": "I currently have 5 units in inventory and no backlog, which allows me to meet immediate demand.",
+      "confidence": 0.8
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler and Distributor concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we need to coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 10 units to align with the current backlog and ensure we can meet the expected demand while managing my inventory effectively.",
+      "strategy_hint": "I will order to meet the backlog while considering potential demand increases.",
+      "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.",
+      "information_shared": "I currently have 0 units in inventory and a backlog of 15 units, which limits my shipping capacity.",
+      "confidence": 0.8
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "I have observed recent demand fluctuating between 7 and 11 units. This suggests we may need to prepare for potential increases in demand. Therefore, I will maintain a buffer in my inventory to avoid stockouts.",
+      "strategy_hint": "I plan to order based on expected demand while keeping a safety stock.",
+      "collaboration_proposal": "I propose we share our demand forecasts to better align our orders and reduce the bullwhip effect.",
+      "information_shared": "Currently, I have 32 units in inventory and no backlog, which allows me to meet immediate demand.",
+      "confidence": 0.8
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. Based on this, my conclusion is that we should all be prepared for potential increases in demand. Therefore, I will order 20 units to maintain a buffer and ensure we can meet the expected demand while avoiding backlog costs.",
+      "strategy_hint": "I will order to maintain a buffer for potential demand increases.",
+      "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.",
+      "information_shared": "I currently have 25 units in inventory and no backlog, which allows me to meet immediate demand.",
+      "confidence": 0.7
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we should coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 20 units to align with the expected demand while maintaining a buffer.",
+      "strategy_hint": "I will order to maintain a buffer while aligning with upstream demand forecasts.",
+      "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.",
+      "information_shared": "I currently have 5 units in inventory and no backlog, which allows me to meet immediate demand.",
+      "confidence": 0.8
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "I hear Retailer said they observed recent demand fluctuating between 7 and 11 units and plan to maintain a buffer in their inventory. I also hear Wholesaler and Distributor concluded we should all be prepared for potential increases in demand and will order 20 units. Based on this, my conclusion is that we need to coordinate our orders to avoid excess inventory and backlog. Therefore, I will order 10 units to align with the current backlog and ensure we can meet the expected demand while managing my inventory effectively.",
+      "strategy_hint": "I will order to meet the backlog while considering potential demand increases.",
+      "collaboration_proposal": "I propose we share our demand forecasts regularly to better align our orders and reduce the bullwhip effect.",
+      "information_shared": "I currently have 0 units in inventory and a backlog of 15 units, which limits my shipping capacity.",
+      "confidence": 0.8
+    }
+  ]
+}

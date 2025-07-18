@@ -1,0 +1,42 @@
+# Chinese Whispers SQL Configuration
+# Configuration for LLM chain simulation and SQL generation
+
+# Model Configuration
+model: "gpt-4o-mini"
+temperature: 0.7
+max_tokens: 800
+
+# SQL Generation Configuration
+sql_model: "gpt-4o-mini"  # Can be different from main model
+sql_temperature: 0.0      # Lower temperature for more consistent SQL
+sql_max_tokens: 500
+
+# Chain Configuration
+num_agents: 5
+
+# Initial story for the Chinese Whispers chain
+initial_story: |
+  Find all inactive high school students who speak English and have passed their English class but failed at least one other subject (math or science).
+
+# Prompt Templates
+prompts:
+  base_agent: |
+    You are agent {i} of {N} in a story rewriting chain. Your task is to rewrite the following story to make it more interesting and engaging while preserving its core meaning and intent.
+    
+    Original story: {story}
+    
+    Please rewrite this story in your own words, making it more vivid and engaging while keeping the same essential request. Be creative but don't change the fundamental meaning.
+  
+  final_agent: |
+    You are the final agent ({i} of {N}) in a story rewriting chain. Your task is to create a polished, final version of the story that captures the essence of the request in an engaging way.
+    
+    Story to finalize: {story}
+    
+    Please provide a well-crafted final version that is clear, engaging, and preserves the original intent of the request.
+
+# Evaluation Configuration
+baseline_step: 0  # Use step 0 (original story) as baseline, or specify another step
+
+# LangSmith Configuration
+langsmith_project: "chinese_whispers_sql"
+langsmith_tracing: true 
