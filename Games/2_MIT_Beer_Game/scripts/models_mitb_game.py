@@ -91,6 +91,9 @@ class BeerGameAgent(BaseModel):
     orders_in_transit: Dict[int,int] = Field(default_factory=lambda: {0:0, 1:0})  # NEW: Order delay pipeline
     production_queue: Dict[int,int] = Field(default_factory=lambda: {0:0, 1:0})  # NEW: Factory production delay
     downstream_orders_history: List[int] = Field(default_factory=list)
+    # NEW: Track profit and balance history over rounds
+    profit_history: List[float] = Field(default_factory=list)
+    balance_history: List[float] = Field(default_factory=list)
     strategy: dict = Field(default_factory=dict)
     prompts: ClassVar[BeerGamePrompts] = BeerGamePrompts
     logger: BeerGameLogger = Field(default=None, exclude=True)
@@ -223,7 +226,10 @@ class BeerGameAgent(BaseModel):
             current_strategy=self.strategy,
             profit_per_unit_sold=profit_per_unit_sold,
             last_order_placed=last_order_placed,
-            last_profit=last_profit
+            last_profit=last_profit,
+            profit_history=self.profit_history,
+            balance_history=self.balance_history,
+            current_balance=self.balance
         )
         self.last_decision_prompt = prompt
         system_prompt = self.prompts.get_system_prompt(self.role_name)
@@ -276,7 +282,10 @@ class BeerGameAgent(BaseModel):
             other_agent_roles=[agent.role_name for agent in other_agents],
             round_index=round_index,
             last_order_placed=self.last_order_placed,
-            profit_accumulated=self.balance
+            profit_accumulated=self.balance,
+            profit_history=self.profit_history,
+            balance_history=self.balance_history,
+            last_profit=self.last_profit
         )
         
         self.last_communication_prompt = prompt
@@ -331,7 +340,10 @@ class BeerGameAgent(BaseModel):
                 profit_per_unit_sold=profit_per_unit_sold,
                 last_order_placed=self.last_order_placed,
                 last_profit=self.last_profit,
-                recent_communications=recent_communications
+                recent_communications=recent_communications,
+                profit_history=self.profit_history,
+                balance_history=self.balance_history,
+                current_balance=self.balance
             )
             
             self.last_decision_prompt = prompt
@@ -431,6 +443,44 @@ class BeerGameAgent(BaseModel):
                 holding_cost=performance_data.get('holding_cost', 0.0),
                 backlog_cost=performance_data.get('backlog_cost', 0.0)
             )               
+
+    def update_profit_history(self, round_profit: float, new_balance: float):
+        """Update profit and balance history after each round"""
+        self.profit_history.append(round_profit)
+        self.balance_history.append(new_balance)
+        # Keep only recent history to prevent memory bloat (last 10 rounds)
+        if len(self.profit_history) > 10:
+            self.profit_history = self.profit_history[-10:]
+        if len(self.balance_history) > 10:
+            self.balance_history = self.balance_history[-10:]
+
+    def get_profit_trend(self) -> str:
+        """Get a summary of recent profit trends for agent decision making"""
+        if len(self.profit_history) < 2:
+            return "Insufficient history"
+        
+        recent_profits = self.profit_history[-3:]  # Last 3 rounds
+        if all(p > 0 for p in recent_profits):
+            return "Profitable trend"
+        elif all(p < 0 for p in recent_profits):
+            return "Loss trend"
+        elif recent_profits[-1] > recent_profits[0]:
+            return "Improving"
+        else:
+            return "Declining"
+
+    def get_balance_trend(self) -> str:
+        """Get a summary of recent balance trends for agent decision making"""
+        if len(self.balance_history) < 2:
+            return "Insufficient history"
+        
+        recent_balances = self.balance_history[-3:]  # Last 3 rounds
+        if recent_balances[-1] > recent_balances[0]:
+            return "Growing balance"
+        elif recent_balances[-1] < recent_balances[0]:
+            return "Declining balance"
+        else:
+            return "Stable balance"
 
     # Compatibility alias so existing code using profit_accumulated continues to work
     @property

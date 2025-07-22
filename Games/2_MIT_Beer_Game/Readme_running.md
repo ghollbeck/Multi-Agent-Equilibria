@@ -43,6 +43,7 @@ This simulation replaces human players with **Large Language Model (LLM) agents*
 - **Dynamic Strategy**: Agents can update strategies between generations
 - **Communication System**: Agents can coordinate via structured messaging
 - **Memory Integration**: Past experiences inform future decisions
+- **Full State Access**: Agents have complete access to their current balance, inventory, and backlog during both communication and decision phases
 
 ### **Supply Chain Flow**
 ```
@@ -52,6 +53,22 @@ External Demand → [Retailer] → [Wholesaler] → [Distributor] → [Factory] 
                       ↓           ↓            ↓           ↓
                   Shipments   Shipments   Shipments   Shipments
 ```
+
+### **Agent Information Access During Communication**
+**CONFIRMED**: Agents have **full access** to their current state information during communication rounds, including:
+
+- ✅ **Current Inventory**: Exact inventory level (units)
+- ✅ **Current Backlog**: Unfilled orders requiring fulfillment  
+- ✅ **Total Profit/Balance**: Complete financial status (${profit_accumulated:.2f})
+- ✅ **Recent Orders**: History of downstream demand/orders
+- ✅ **Last Order Placed**: Most recent ordering decision
+- ✅ **Current Strategy**: Strategic approach being followed
+- ✅ **Communication History**: Previous messages from other agents
+
+**Implementation Location**: `models_mitb_game.py` - `generate_communication_message()` method
+**Prompt Structure**: Same comprehensive state information provided during decision-making phases
+
+This ensures agents can make **informed communications** about their situation and propose **realistic coordination strategies** based on their actual financial and inventory status.
 
 ### **Agent Decision Process**
 1. **Observe State**: Inventory, backlog, recent orders, incoming shipments
@@ -724,3 +741,47 @@ python executeMITBeerGame.py --provider anthropic --anthropic_model claude-3-hai
 - Added an automated ReportLab-based script that compiles a three-page PDF summarising the entire repository status.
 - Embedded four representative plots (Beer Game, Fishery, Prisoner’s Dilemma) for quick visual inspection.
 - Included new dependency `reportlab>=3.6.0` in `requirements.txt` and generated the first PDF at the indicated location.
+
+### 2025-01-XX - Agent Information Access Investigation
+
+**Investigation Focus:** Determined what information agents have access to during communication rounds
+
+**Key Findings:**
+- ✅ **CONFIRMED**: Agents have **complete access** to their current balance/status information during communication rounds
+- Information includes: current inventory, backlog, total profit/balance, recent orders, last order placed, current strategy, and communication history
+- **Implementation**: Information is passed via `generate_communication_message()` method in `models_mitb_game.py`
+- **Prompt Structure**: Communication prompts include identical state information as decision-making prompts
+- **Code Location**: `prompts_mitb_game.py` lines 200-205 show explicit inclusion of balance (`${profit_accumulated:.2f}`) in communication prompts
+
+**Documentation Added:**
+- Added "Agent Information Access During Communication" section to explain what data is available
+- Updated "Key Simulation Features" to include "Full State Access" feature
+- Confirmed agents can make informed communications based on their actual financial and inventory status
+
+### 2025-01-XX - Enhanced Agent Historical Information Access
+
+**Major Feature Enhancement:** Implemented comprehensive profit and balance history tracking for agents
+
+**Key Changes:**
+- ✅ **NEW: Profit History Tracking** - Agents now maintain `profit_history` list of last 10 rounds
+- ✅ **NEW: Balance History Tracking** - Agents now maintain `balance_history` list of last 10 rounds  
+- ✅ **NEW: Trend Analysis Methods** - Added `get_profit_trend()` and `get_balance_trend()` for strategic analysis
+- ✅ **Enhanced Decision Prompts** - All decision-making phases now include comprehensive historical information
+- ✅ **Enhanced Communication Prompts** - Communication rounds now include profit/balance history for better coordination
+- ✅ **Consistent Information Access** - Historical data passed to ALL phases: decision, communication, strategy updates
+
+**Technical Implementation:**
+- **Files Modified:** `models_mitb_game.py`, `prompts_mitb_game.py`, `langraph_workflow.py`, `MIT_Beer_Game.py`
+- **New Agent Fields:** `profit_history: List[float]`, `balance_history: List[float]`
+- **New Methods:** `update_profit_history()`, `get_profit_trend()`, `get_balance_trend()`
+- **Updated Prompt Functions:** Enhanced all prompt generators with historical parameters
+
+**Agent Information Now Includes:**
+- Current inventory, backlog, balance
+- Last round profit + profit history (last 10 rounds)
+- Balance history (last 10 rounds) with trend analysis
+- Recent demand/orders history
+- Profit trend analysis ("Profitable trend", "Loss trend", "Improving", "Declining")
+- Balance trend analysis ("Growing balance", "Declining balance", "Stable balance")
+
+**Impact:** Agents can now make more informed decisions based on their financial trajectory and performance trends, enabling better strategic planning and risk management

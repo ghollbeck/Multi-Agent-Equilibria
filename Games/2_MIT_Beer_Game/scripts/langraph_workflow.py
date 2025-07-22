@@ -233,10 +233,21 @@ class BeerGameWorkflow:
             holding_cost = agent.inventory * 0.5  # $0.5 per unit per round
             backlog_cost = agent.backlog * 1.0    # $1.0 per unit per round
             revenue = sent * state["profit_per_unit_sold"]
-            round_profit = revenue - holding_cost - backlog_cost
-            
+            # NEW: include purchase/production cost based on role
+            if agent.role_name == "Factory":
+                unit_cost = 1.5  # production cost per unit (could be parameterised)
+            else:
+                unit_cost = 2.5  # purchase cost per unit (could be parameterised)
+            purchase_cost = state["orders_placed"].get(agent.role_name, 0) * unit_cost
+            round_profit = revenue - holding_cost - backlog_cost - purchase_cost
+
+            # Deduct purchase/production cost immediately from balance
+            agent.balance -= purchase_cost
+
             agent.profit_accumulated += round_profit
             agent.last_profit = round_profit
+            # NEW: Update profit and balance history
+            agent.update_profit_history(round_profit, agent.profit_accumulated)
             
             if agent.role_name not in state["agent_states"]:
                 state["agent_states"][agent.role_name] = {}
@@ -244,7 +255,8 @@ class BeerGameWorkflow:
                 "profit": round_profit,
                 "units_sold": sent,
                 "holding_cost": holding_cost,
-                "backlog_cost": backlog_cost
+                "backlog_cost": backlog_cost,
+                "purchase_cost": purchase_cost
             }
             
             round_data = RoundData(

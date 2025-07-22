@@ -134,8 +134,15 @@ class BeerGamePrompts:
                             current_strategy: dict,
                             profit_per_unit_sold: float = 2.5,
                             last_order_placed: int = None,
-                            last_profit: float = None) -> str:
+                            last_profit: float = None,
+                            profit_history: List[float] = None,
+                            balance_history: List[float] = None,
+                            current_balance: float = None) -> str:
         role_context = BeerGamePrompts._role_context(role_name)
+        # Handle None values gracefully for formatting
+        display_balance = f"${current_balance:.2f}" if current_balance is not None else "N/A"
+        profits_list = profit_history or []
+        balance_list = balance_history or []
         return f"""
         You are the {role_name} in the MIT Beer Game. {role_context}
         Current State:
@@ -146,6 +153,9 @@ class BeerGamePrompts:
           - Profit per unit sold: ${profit_per_unit_sold}
           - Last order placed: {last_order_placed}
           - Last round profit: {last_profit}
+          - Current bank balance: {display_balance}
+          - Profit history (last {len(profits_list)} rounds): {profits_list}
+          - Balance history (last {len(balance_list)} rounds): {[f"${b:.2f}" for b in balance_list]}
 
         Your known lead time is 1 round for any order you place.
 
@@ -192,7 +202,10 @@ class BeerGamePrompts:
                                 recent_demand_or_orders: List[int], current_strategy: dict,
                                 message_history: List[Dict], other_agent_roles: List[str],
                                 round_index: int, last_order_placed: int = None,
-                                profit_accumulated: float = 0.0) -> str:
+                                profit_accumulated: float = 0.0,
+                                profit_history: List[float] = None,
+                                balance_history: List[float] = None,
+                                last_profit: float = None) -> str:
         role_context = BeerGamePrompts._role_context(role_name)
         return f"""
         You are the {role_name} in the MIT Beer Game, Round {round_index}. {role_context}
@@ -202,7 +215,10 @@ class BeerGamePrompts:
           - Backlog: {backlog} units  
           - Recent demand/orders: {recent_demand_or_orders}
           - Last order placed: {last_order_placed}
+          - Last round profit: {last_profit}
           - Total profit so far: ${profit_accumulated:.2f}
+          - Profit history (last {len(profit_history or [])} rounds): {profit_history or []}
+          - Balance history (last {len(balance_history or [])} rounds): {[f"${b:.2f}" for b in (balance_history or [])]}
           - Current strategy: {json.dumps(current_strategy, indent=2)}
         
         CRITICAL SUPPLY CHAIN CONTEXT:
@@ -267,10 +283,14 @@ class BeerGamePrompts:
                                             recent_demand_or_orders: List[int], incoming_shipments: List[int],
                                             current_strategy: dict, profit_per_unit_sold: float = 2.5,
                                             last_order_placed: int = None, last_profit: float = None,
-                                            recent_communications: List[Dict] = None) -> str:
+                                            recent_communications: List[Dict] = None,
+                                            profit_history: List[float] = None,
+                                            balance_history: List[float] = None,
+                                            current_balance: float = None) -> str:
         base_prompt = BeerGamePrompts.get_decision_prompt(
             role_name, inventory, backlog, recent_demand_or_orders, incoming_shipments,
-            current_strategy, profit_per_unit_sold, last_order_placed, last_profit
+            current_strategy, profit_per_unit_sold, last_order_placed, last_profit,
+            profit_history, balance_history, current_balance
         )
         
         if recent_communications:
@@ -322,11 +342,15 @@ class BeerGamePrompts:
                                       recent_demand_or_orders: List[int], incoming_shipments: List[int],
                                       current_strategy: dict, profit_per_unit_sold: float = 2.5,
                                       last_order_placed: int = None, last_profit: float = None,
-                                      agent_memory = None, memory_retention_rounds: int = 5) -> str:
+                                      agent_memory = None, memory_retention_rounds: int = 5,
+                                      profit_history: List[float] = None,
+                                      balance_history: List[float] = None,
+                                      current_balance: float = None) -> str:
         """Enhanced decision prompt that incorporates agent memory if available."""
         base_prompt = BeerGamePrompts.get_decision_prompt(
             role_name, inventory, backlog, recent_demand_or_orders, incoming_shipments,
-            current_strategy, profit_per_unit_sold, last_order_placed, last_profit
+            current_strategy, profit_per_unit_sold, last_order_placed, last_profit,
+            profit_history, balance_history, current_balance
         )
         
         if agent_memory:
@@ -352,11 +376,15 @@ class BeerGamePrompts:
                                            message_history: List[Dict], other_agent_roles: List[str],
                                            round_index: int, last_order_placed: int = None,
                                            profit_accumulated: float = 0.0, agent_memory = None,
-                                           memory_retention_rounds: int = 5) -> str:
+                                           memory_retention_rounds: int = 5,
+                                           profit_history: List[float] = None,
+                                           balance_history: List[float] = None,
+                                           last_profit: float = None) -> str:
         """Enhanced communication prompt that incorporates agent memory if available."""
         base_prompt = BeerGamePrompts.get_communication_prompt(
             role_name, inventory, backlog, recent_demand_or_orders, current_strategy,
-            message_history, other_agent_roles, round_index, last_order_placed, profit_accumulated
+            message_history, other_agent_roles, round_index, last_order_placed, profit_accumulated,
+            profit_history, balance_history, last_profit
         )
         
         if agent_memory:

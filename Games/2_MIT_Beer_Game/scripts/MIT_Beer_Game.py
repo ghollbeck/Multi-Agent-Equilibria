@@ -476,16 +476,21 @@ async def run_beer_game_generation(
             backlog_cost = agent.backlog * backlog_cost_per_unit
             units_sold = shipments_sent_downstream[idx]
             revenue = units_sold * sale_price_per_unit
+            # Calculate round profit before updating balance
+            round_profit = revenue - holding_cost - backlog_cost
             # Apply to balance
             agent.balance += revenue
             agent.balance -= (holding_cost + backlog_cost)
+            # Update profit tracking
+            agent.last_profit = round_profit
+            agent.update_profit_history(round_profit, agent.balance)
 
             revenues.append(revenue)
             holding_costs.append(holding_cost)
             backlog_costs.append(backlog_cost)
 
             if logger:
-                logger.log(f"Agent {agent.role_name}: Revenue: {revenue}, Holding cost: {holding_cost}, Backlog cost: {backlog_cost}, New balance: {agent.balance}")
+                logger.log(f"Agent {agent.role_name}: Revenue: {revenue}, Holding cost: {holding_cost}, Backlog cost: {backlog_cost}, Round profit: {round_profit}, New balance: {agent.balance}")
 
         communication_messages = []
         if enable_communication:
@@ -674,6 +679,8 @@ async def run_beer_game_generation(
                 base_fields = list(asdict(round_entries[0][0]).keys())
                 if 'external_demand' not in base_fields:
                     base_fields.append('external_demand')
+                if 'profit_accumulated' not in base_fields:
+                    base_fields.append('profit_accumulated')
                 fieldnames = base_fields + llm_output_keys
                 
                 with open(csv_log_path, 'a', newline='') as csvfile:
@@ -699,6 +706,8 @@ async def run_beer_game_generation(
                             'llm_rationale': llm_decision.get('rationale', ''),
                             'llm_risk_assessment': llm_decision.get('risk_assessment', ''),
                             'llm_expected_demand_next_round': llm_decision.get('expected_demand_next_round', None)
+                            ,
+                            'profit_accumulated': agent.balance
                         })
                         writer.writerow(row_data)
             
@@ -731,6 +740,7 @@ async def run_beer_game_generation(
                         'llm_rationale': llm_decision.get('rationale', ''),
                         'llm_risk_assessment': llm_decision.get('risk_assessment', ''),
                         'llm_expected_demand_next_round': llm_decision.get('expected_demand_next_round', None),
+                        'profit_accumulated': agent.balance,
                         'orchestrator_order': orchestrator_recs.get(agent.role_name, {}).get('order_quantity', 0),
                         'orchestrator_rationale': orchestrator_recs.get(agent.role_name, {}).get('rationale', '')
                     })
