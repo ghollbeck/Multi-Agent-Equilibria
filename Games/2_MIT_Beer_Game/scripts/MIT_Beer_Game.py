@@ -589,17 +589,24 @@ async def run_beer_game_generation(
                 order_decision_tasks = []
                 for agent in agents:
                     order_decision_tasks.append(
-                        agent.decide_order_quantity_with_communication(
-                            temperature=temperature, 
+                        agent.llm_decision(
+                            "decision",
+                            comm_history=recent_messages if use_comm else None,
+                            orchestrator_advice=orchestrator_recs.get(agent.role_name, {}).get("rationale") if enable_orchestrator and orchestrator_recs else None,
+                            history_limit=10,
+                            temperature=temperature,
                             profit_per_unit_sold=sale_price_per_unit,
-                            recent_communications=recent_messages
+                            holding_cost_per_unit=holding_cost_per_unit,
+                            backlog_cost_per_unit=backlog_cost_per_unit,
+                            total_chain_inventory=sum(a.inventory for a in agents),
+                            total_chain_backlog=sum(a.backlog for a in agents),
                         )
                     )
                 decisions = await asyncio.gather(*order_decision_tasks)
             else:
                 order_decision_tasks = []
                 for agent in agents:
-                    order_decision_tasks.append(agent.decide_order_quantity(temperature=temperature, profit_per_unit_sold=sale_price_per_unit))
+                    order_decision_tasks.append(agent.decide_order_quantity(temperature=temperature, profit_per_unit_sold=sale_price_per_unit, holding_cost_per_unit=holding_cost_per_unit, backlog_cost_per_unit=backlog_cost_per_unit))
                 decisions = await asyncio.gather(*order_decision_tasks)
 
         # 6. LLM decisions for strategic planning (logged but not used for immediate orders)
@@ -669,7 +676,6 @@ async def run_beer_game_generation(
             
             # Write all entries to CSV after collecting them (outside the agent loop)
             if csv_log_path and round_entries:
-                write_header = not os.path.exists(csv_log_path) or os.path.getsize(csv_log_path) == 0
                 # Define the new fieldnames based on LLM decision output
                 llm_output_keys = [
                     'llm_reported_inventory', 'llm_reported_backlog', 'llm_recent_demand_or_orders',
@@ -683,37 +689,40 @@ async def run_beer_game_generation(
                     base_fields.append('profit_accumulated')
                 fieldnames = base_fields + llm_output_keys
                 
-                with open(csv_log_path, 'a', newline='') as csvfile:
+                # Write complete CSV file (overwrite each round)
+                with open(csv_log_path, 'w', newline='') as csvfile:
                     writer = csv.DictWriter(csvfile, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
-                    if write_header:
-                        writer.writeheader()
+                    writer.writeheader()
                     
-                    # Write all agent entries for this round
-                    for entry, agent in round_entries:
-                        # Prepare the row data including new LLM fields
-                        row_data = asdict(entry)
-                        # Add external demand for this round (same for all agents)
-                        row_data['external_demand'] = retailer_demand
-                        llm_decision = getattr(agent, 'last_decision_output', {})
-                        row_data.update({
-                            # Add new LLM fields with prefixes
-                            'llm_reported_inventory': llm_decision.get('inventory', None),
-                            'llm_reported_backlog': llm_decision.get('backlog', None),
-                            'llm_recent_demand_or_orders': json.dumps(llm_decision.get('recent_demand_or_orders', None)), # Stringify list
-                            'llm_incoming_shipments': json.dumps(llm_decision.get('incoming_shipments', None)), # Stringify list
-                            'llm_last_order_placed': llm_decision.get('last_order_placed', None),
-                            'llm_confidence': llm_decision.get('confidence', None),
-                            'llm_rationale': llm_decision.get('rationale', ''),
-                            'llm_risk_assessment': llm_decision.get('risk_assessment', ''),
-                            'llm_expected_demand_next_round': llm_decision.get('expected_demand_next_round', None)
-                            ,
-                            'profit_accumulated': agent.balance
-                        })
-                        writer.writerow(row_data)
+                    # Write all rounds up to current round
+                    for r in range(round_index + 1):
+                        for idx, agent in enumerate(agents):
+                            # Get the entry for this round and agent
+                            entry_index = r * len(agents) + idx
+                            if entry_index < len(sim_data.rounds_log):
+                                entry = sim_data.rounds_log[entry_index]
+                                # Prepare the row data including new LLM fields
+                                row_data = asdict(entry)
+                                # Add external demand for this round (same for all agents)
+                                row_data['external_demand'] = external_demand[r] if r < len(external_demand) else 0
+                                llm_decision = getattr(agent, 'last_decision_output', {})
+                                row_data.update({
+                                    # Add new LLM fields with prefixes
+                                    'llm_reported_inventory': llm_decision.get('inventory', None),
+                                    'llm_reported_backlog': llm_decision.get('backlog', None),
+                                    'llm_recent_demand_or_orders': json.dumps(llm_decision.get('recent_demand_or_orders', None)), # Stringify list
+                                    'llm_incoming_shipments': json.dumps(llm_decision.get('incoming_shipments', None)), # Stringify list
+                                    'llm_last_order_placed': llm_decision.get('last_order_placed', None),
+                                    'llm_confidence': llm_decision.get('confidence', None),
+                                    'llm_rationale': llm_decision.get('rationale', ''),
+                                    'llm_risk_assessment': llm_decision.get('risk_assessment', ''),
+                                    'llm_expected_demand_next_round': llm_decision.get('expected_demand_next_round', None),
+                                    'profit_accumulated': agent.balance
+                                })
+                                writer.writerow(row_data)
             
-            # Write all entries to JSON after collecting them (outside the agent loop)
-            # NOTE: Removed old JSON writing here - we now write the complete nested structure at the end
-            
+            # Write complete JSON file (overwrite each round)
+            if json_log_path:
                 # ---- Aggregated round structure for nested logging ----
                 # Collect communication messages for this specific round
                 round_communication_messages = []
@@ -758,6 +767,44 @@ async def run_beer_game_generation(
                 
                 if sim_data:
                     sim_data.add_aggregated_round(aggregated_round)
+                
+                # Write complete JSON structure (overwrite each round)
+                complete_sim_data = sim_data.to_dict()
+                nested_json_structure = {
+                    "hyperparameters": complete_sim_data['hyperparameters'],
+                    "rounds_log": complete_sim_data['aggregated_rounds'],
+                    "flat_rounds_log": complete_sim_data['rounds_log'],
+                    "communication_log": complete_sim_data['communication_log']
+                }
+                
+                with open(json_log_path, 'w') as jsonfile:
+                    json.dump(nested_json_structure, jsonfile, indent=2)
+            
+                # Generate plots after each round (overwrite previous plots)
+    try:
+        df_rounds = pd.DataFrame([asdict(r) for r in sim_data.rounds_log])
+        # Create run settings dictionary
+        run_settings = {
+            'num_rounds': num_rounds,
+            'holding_cost_per_unit': holding_cost_per_unit,
+            'backlog_cost_per_unit': backlog_cost_per_unit,
+            'sale_price_per_unit': sale_price_per_unit,
+            'purchase_cost_per_unit': purchase_cost_per_unit,
+            'production_cost_per_unit': production_cost_per_unit,
+            'temperature': temperature,
+            'enable_communication': enable_communication,
+            'communication_rounds': communication_rounds,
+            'enable_memory': enable_memory,
+            'memory_retention_rounds': memory_retention_rounds,
+            'enable_orchestrator': enable_orchestrator,
+            'orchestrator_override': orchestrator_override
+        }
+        plot_beer_game_results(df_rounds, os.path.dirname(csv_log_path), external_demand[:round_index+1], run_settings)
+        if logger:
+            logger.log(f"📊 Plots updated after round {round_index+1}")
+    except Exception as e:
+        if logger:
+            logger.log(f"❌ Error generating plots after round {round_index+1}: {e}")
 
         # Write human-readable log for the round
         if human_log_file:
@@ -846,6 +893,8 @@ async def run_beer_game_simulation(
     purchase_cost_per_unit: float = 2.5,
     production_cost_per_unit: float = 1.5,
     initial_balance: float = 1000.0,
+    holding_cost_per_unit: float = 0.5,
+    backlog_cost_per_unit: float = 1.5,
     enable_orchestrator: bool = False,
     orchestrator_history: int = 3,
     orchestrator_override: bool = False
@@ -923,18 +972,7 @@ async def run_beer_game_simulation(
 
     csv_log_path = os.path.join(results_folder, "beer_game_detailed_log.csv")
     json_log_path = os.path.join(results_folder, "beer_game_detailed_log.json")
-    # Create empty files at the start
-    with open(csv_log_path, 'w', newline='') as csvfile:
-        pass
-    with open(json_log_path, 'w') as jsonfile:
-        # Create initial nested structure
-        initial_structure = {
-            "hyperparameters": {},
-            "rounds_log": [],
-            "flat_rounds_log": [],
-            "communication_log": []
-        }
-        json.dump(initial_structure, jsonfile)
+    # Files will be created and overwritten after each round
 
     logger.log(f"\n--- Starting Simulation ---")
     print(f"\n🎮 Starting Beer Game Simulation with {num_rounds} rounds")
@@ -945,8 +983,8 @@ async def run_beer_game_simulation(
         agents=agents,
         external_demand=external_demand_pattern,
         num_rounds=num_rounds,
-        holding_cost_per_unit=0.5,
-        backlog_cost_per_unit=1.5,
+        holding_cost_per_unit=holding_cost_per_unit,
+        backlog_cost_per_unit=backlog_cost_per_unit,
         sale_price_per_unit=sale_price_per_unit,
         purchase_cost_per_unit=purchase_cost_per_unit,
         production_cost_per_unit=production_cost_per_unit,
@@ -973,22 +1011,26 @@ async def run_beer_game_simulation(
     # Ensure df_rounds is defined for saving and plotting
     df_rounds = pd.DataFrame([asdict(r) for r in sim_data.rounds_log])
     
-    # Save complete simulation data with nested structure
-    complete_sim_data = sim_data.to_dict()
-    
-    # Create the nested JSON structure with hyperparameters and aggregated rounds
-    nested_json_structure = {
-        "hyperparameters": complete_sim_data['hyperparameters'],
-        "rounds_log": complete_sim_data['aggregated_rounds'],  # Use aggregated rounds for nested structure
-        "flat_rounds_log": complete_sim_data['rounds_log'],  # Keep flat structure for backward compatibility
-        "communication_log": complete_sim_data['communication_log']  # Separate communication log for reference
-    }
-    
-    with open(json_log_path, 'w') as jsonfile:
-        json.dump(nested_json_structure, jsonfile, indent=2)
+    # JSON file is already written after each round, so no need to write again here
 
     # Generate visualizations
-    plot_beer_game_results(df_rounds, results_folder, external_demand_pattern)
+    # Create run settings dictionary for final plot
+    run_settings = {
+        'num_rounds': num_rounds,
+        'holding_cost_per_unit': holding_cost_per_unit,
+        'backlog_cost_per_unit': backlog_cost_per_unit,
+        'sale_price_per_unit': sale_price_per_unit,
+        'purchase_cost_per_unit': purchase_cost_per_unit,
+        'production_cost_per_unit': production_cost_per_unit,
+        'temperature': temperature,
+        'enable_communication': enable_communication,
+        'communication_rounds': communication_rounds,
+        'enable_memory': enable_memory,
+        'memory_retention_rounds': memory_retention_rounds,
+        'enable_orchestrator': enable_orchestrator,
+        'orchestrator_override': orchestrator_override
+    }
+    plot_beer_game_results(df_rounds, results_folder, external_demand_pattern, run_settings)
 
     # Calculate Nash equilibrium deviations (assumed equilibrium order quantity = 10)
     deviations = calculate_nash_deviation(df_rounds, equilibrium_order=10)
@@ -997,8 +1039,9 @@ async def run_beer_game_simulation(
         human_log_file.write("Role: {} - Average Absolute Deviation: {:.2f}\n".format(role, dev))
 
     # Log LLM session summary
-    from llm_calls_mitb_game import lite_client
-    session_summary = lite_client.get_session_summary()
+    from llm_calls_mitb_game import lite_client, get_default_client
+    client = lite_client or get_default_client()
+    session_summary = client.get_session_summary()
     
     print(f"\n📈 Simulation Summary:")
     print(f"   Total Rounds: {num_rounds}")

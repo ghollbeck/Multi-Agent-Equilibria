@@ -785,3 +785,94 @@ python executeMITBeerGame.py --provider anthropic --anthropic_model claude-3-hai
 - Balance trend analysis ("Growing balance", "Declining balance", "Stable balance")
 
 **Impact:** Agents can now make more informed decisions based on their financial trajectory and performance trends, enabling better strategic planning and risk management
+
+# MIT Beer Game - Running Log
+
+## Latest Changes
+
+### 2025-01-27 - Run Settings Display on Combined Plots
+- **Enhancement**: Added run settings display to the combined plots for better experiment tracking
+- **Implementation**: 
+  - Modified `plot_beer_game_results()` function to accept optional `run_settings` parameter
+  - Added settings text box in top-right corner of combined plots showing all command line parameters
+  - Updated both plotting calls in `MIT_Beer_Game.py` to pass run settings
+  - Settings include: num_rounds, holding_cost_per_unit, backlog_cost_per_unit, sale_price_per_unit, purchase_cost_per_unit, production_cost_per_unit, temperature, enable_communication, communication_rounds, enable_memory, memory_retention_rounds, enable_orchestrator, orchestrator_override
+- **Files modified**:
+  - `analysis_mitb_game.py`: Added run_settings parameter and text box display
+  - `MIT_Beer_Game.py`: Updated plotting calls to pass run settings
+- **Benefits**: 
+  - Easy identification of experiment parameters from plots
+  - No need to check command line history or logs to know settings
+  - Better experiment reproducibility and documentation
+  - Settings visible on both real-time plots (after each round) and final plots
+
+### 2025-01-27 - Dynamic Cost Parameters in Prompts
+- **Enhancement**: Made holding and backlog costs dynamic parameters instead of hardcoded values
+- **Implementation**: 
+  - Updated all prompt methods to accept `holding_cost_per_unit` and `backlog_cost_per_unit` parameters
+  - Modified `AgentContext` dataclass to include cost parameters
+  - Updated `PromptEngine` to pass cost parameters to prompt methods
+  - Modified simulation functions to accept and pass cost parameters through the entire chain
+- **Files modified**:
+  - `prompts_mitb_game.py`: All prompt methods now accept cost parameters
+  - `models_mitb_game.py`: Updated to pass cost parameters to prompts
+  - `MIT_Beer_Game.py`: Updated simulation functions to accept cost parameters
+  - `executeMITBeerGame.py`: Added cost parameters to simulation call
+- **Benefits**: 
+  - Cost parameters can now be set via command line arguments
+  - Prompts dynamically reflect the actual costs being used in simulation
+  - More flexible experimentation with different cost structures
+  - Agents receive accurate cost information in their prompts
+
+### 2025-01-27 - Fixed LLM Client Initialization Issue
+- **Bug Fix**: Resolved connection error when using `--provider anthropic` flag
+- **Issue**: `lite_client` was initialized at module level as `LiteLLMClient()`, causing connection to ETHZ endpoint even when Anthropic provider was selected
+- **Root Cause**: Module-level initialization happened before script could override the client
+- **Solution**: 
+  - Changed `lite_client` initialization to `None` at module level
+  - Added `get_default_client()` function for lazy initialization
+  - Updated all client usage to handle `None` case with fallback
+  - Modified `executeMITBeerGame.py` to properly initialize client based on provider
+- **Files modified**:
+  - `llm_calls_mitb_game.py`: Changed client initialization pattern
+  - `models_mitb_game.py`: Added client fallback handling
+  - `orchestrator_mitb_game.py`: Added client fallback handling
+  - `MIT_Beer_Game.py`: Added client fallback for session summary
+  - `executeMITBeerGame.py`: Improved client initialization logic
+- **Result**: `--provider anthropic` now correctly uses Anthropic API instead of ETHZ endpoint
+
+### 2025-01-27 - Real-Time File Saving and Plotting Implementation
+- **Enhancement**: Modified pipeline to save CSV/JSON files and generate plots after every round
+- **Implementation**: 
+  - CSV file: Now overwrites complete file after each round with all data up to current round
+  - JSON file: Now overwrites complete nested structure after each round
+  - Plots: Now regenerated and overwritten after each round with current data
+- **Files modified**:
+  - `MIT_Beer_Game.py`: Updated CSV/JSON writing logic in `run_beer_game_generation()`
+  - `analysis_mitb_game.py`: Added empty dataframe handling for real-time plotting
+  - `executeMITBeerGame.py`: Removed initial file creation (now handled per-round)
+- **Benefits**: 
+  - Real-time monitoring of simulation progress
+  - Immediate access to current data and visualizations
+  - No need to wait for simulation completion to see results
+  - Files always contain complete data up to current round
+
+### 2025-01-27 - Added Zero-Order Option for High Holding Costs
+- **Enhancement**: Added explicit option for agents to order 0 units when holding costs are too high
+- **Implementation**: Modified all prompt templates in `prompts_mitb_game.py` to include this strategy
+- **Prompt changes**:
+  - Strategy generation prompt: Added "ORDERING OPTIONS" section
+  - Strategy update prompt: Added zero-order option guidance
+  - Decision prompt: Added explicit permission to order 0 units
+  - System prompt: Added ordering options note
+- **Rationale**: Agents can now explicitly choose not to order when they have excess inventory and want to reduce storage costs
+- **Impact**: More realistic supply chain behavior where agents can strategically reduce inventory
+
+### 2025-01-27 - Factory vs Other Agents Analysis
+- **Analysis**: Identified key differences between Factory and other agents in Beer Game simulation
+- **Factory characteristics**: 
+  - Lower purchase_cost (15.0 vs 25.0-27.5 for others)
+  - No incoming shipments (llm_incoming_shipments = "[0]")
+  - Acts as production source rather than intermediary
+- **Other agents**: Purchase from upstream, add markup, resell downstream
+- **Impact**: Standard supply chain design where Factory is original producer with lower costs

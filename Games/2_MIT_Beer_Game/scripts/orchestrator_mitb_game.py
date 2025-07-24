@@ -3,7 +3,7 @@ import json
 import asyncio
 
 from models_mitb_game import BeerGameAgent, BeerGameLogger
-from llm_calls_mitb_game import lite_client, MODEL_NAME, safe_parse_json
+from llm_calls_mitb_game import lite_client, MODEL_NAME, safe_parse_json, get_default_client
 
 class BeerGameOrchestrator:
     """LLM-based orchestrator that recommends order quantities for each role each round."""
@@ -64,8 +64,11 @@ class BeerGameOrchestrator:
         sys_prompt = "You are a top-tier operations research expert coordinating a supply chain."
 
         try:
-            resp = await lite_client.chat_completion(
-                model=self.model_name,
+            client = lite_client or get_default_client()
+            # Get the current model name from the module
+            from llm_calls_mitb_game import MODEL_NAME as current_model
+            resp = await client.chat_completion(
+                model=current_model,
                 system_prompt=sys_prompt,
                 user_prompt=prompt,
                 temperature=temperature,

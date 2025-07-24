@@ -153,15 +153,24 @@ class BeerGameWorkflow:
         
         for agent in state["agents"]:
             if state["enable_communication"] and recent_communications:
-                task = agent.decide_order_quantity_with_communication(
+                task = agent.llm_decision(
+                    "decision",
+                    comm_history=recent_communications,
+                    history_limit=10,
                     temperature=state["temperature"],
                     profit_per_unit_sold=state["profit_per_unit_sold"],
-                    recent_communications=recent_communications
+                    total_chain_inventory=sum(a.inventory for a in state["agents"]),
+                    total_chain_backlog=sum(a.backlog for a in state["agents"]),
                 )
             else:
-                task = agent.decide_order_quantity(
+                task = agent.llm_decision(
+                    "decision",
+                    comm_history=None,
+                    history_limit=10,
                     temperature=state["temperature"],
-                    profit_per_unit_sold=state["profit_per_unit_sold"]
+                    profit_per_unit_sold=state["profit_per_unit_sold"],
+                    total_chain_inventory=sum(a.inventory for a in state["agents"]),
+                    total_chain_backlog=sum(a.backlog for a in state["agents"]),
                 )
             decision_tasks.append(task)
         

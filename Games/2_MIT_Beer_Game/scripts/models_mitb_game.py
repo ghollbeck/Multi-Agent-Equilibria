@@ -2,9 +2,9 @@ import asyncio
 import json
 from pydantic import BaseModel, Field
 from dataclasses import dataclass, field, asdict
-from typing import List, Dict, Optional, ClassVar
+from typing import List, Dict, Optional, ClassVar, Literal
 from prompts_mitb_game import BeerGamePrompts
-from llm_calls_mitb_game import lite_client, safe_parse_json, MODEL_NAME
+from llm_calls_mitb_game import lite_client, safe_parse_json, MODEL_NAME, get_default_client
 from memory_storage import AgentMemory
 
 @dataclass
@@ -131,88 +131,90 @@ class BeerGameAgent(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    async def initialize_strategy(self, temperature=0, profit_per_unit_sold=2.5):
-        if self.logger:
-            self.logger.log(f"[Agent {self.role_name}] Initializing strategy...")
-        prompt = self.prompts.get_strategy_generation_prompt(
-            self.role_name, self.inventory, self.backlog, profit_per_unit_sold)
-        self.last_init_prompt = prompt
-        system_prompt = self.prompts.get_system_prompt(self.role_name)
-        self.last_init_system_prompt = system_prompt
-        # if self.logger:
-        #     self.logger.log(f"[LLM SYSTEM PROMPT]: {system_prompt}")
-        #     self.logger.log(f"[LLM USER PROMPT]: {prompt}")
-        try:
-            response_str = await lite_client.chat_completion(
-                model=MODEL_NAME,
-                system_prompt=system_prompt,
-                user_prompt=prompt,
-                temperature=temperature,
-                agent_role=self.role_name,
-                decision_type="strategy_initialization"
-            )
-        except Exception as e:
-            # print(f"❌ [Agent {self.role_name}] initialize_strategy: LLM call failed. Error: {e}")  # Commented out
-            response_str = "{}"
-        if self.logger:
-            # self.logger.log(f"[Agent {self.role_name}] Strategy response: {response_str}")  # Commented out
-            pass
-        default_strategy = {
-            "order_quantity": 10,
-            "confidence": 1.0,
-            "rationale": "Default initial strategy",
-            "risk_assessment": "No risk",
-            "expected_demand_next_round": 10
-        }
-        try:
-            response = safe_parse_json(response_str)
-        except Exception:
-            response = default_strategy
-        self.strategy = response
-        self.last_init_output = response
+    async def llm_decision(self, phase: Literal["decision", "communication"], *,
+                          comm_history: Optional[list] = None,
+                          orchestrator_advice: str = None,
+                          history_limit: int = 10,
+                          temperature: float = 0.7,
+                          profit_per_unit_sold: float = 2.5,
+                          other_agent_roles: Optional[list] = None,
+                          round_index: int = 0,
+                          **kwargs) -> dict:
+        """Unified gateway to the LLM – returns JSON dict."""
+        from prompts_mitb_game import AgentContext, PromptEngine  # local import to avoid circular
 
-    async def update_strategy(self, performance_log: str, temperature=0.7, profit_per_unit_sold=2.5):
-        if self.logger:
-            self.logger.log(f"[Agent {self.role_name}] Updating strategy with performance log: {performance_log}")
-        prompt = self.prompts.get_strategy_update_prompt(
-            self.role_name, performance_log, self.strategy,
-            self.inventory, self.backlog, profit_per_unit_sold
+        ctx_kwargs = dict(
+            inventory=self.inventory,
+            backlog=self.backlog,
+            recent_demand_or_orders=self.downstream_orders_history[-history_limit:],
+            incoming_shipments=[self.shipments_in_transit[1]],
+            current_strategy=self.strategy,
+            profit_per_unit_sold=profit_per_unit_sold,
+            holding_cost_per_unit=kwargs.get('holding_cost_per_unit', 0.5),
+            backlog_cost_per_unit=kwargs.get('backlog_cost_per_unit', 1.5),
+            last_order_placed=self.last_order_placed,
+            last_profit=self.last_profit,
+            profit_history=self.profit_history,
+            balance_history=self.balance_history,
+            current_balance=self.balance,
+            total_chain_inventory=kwargs.get('total_chain_inventory'),
+            total_chain_backlog=kwargs.get('total_chain_backlog'),
         )
-        self.last_update_prompt = prompt
-        system_prompt = self.prompts.get_system_prompt(self.role_name)
-        self.last_update_system_prompt = system_prompt
-        # if self.logger:
-        #     self.logger.log(f"[LLM SYSTEM PROMPT]: {system_prompt}")
-        #     self.logger.log(f"[LLM USER PROMPT]: {prompt}")
-        try:
-            response_str = await lite_client.chat_completion(
-                model=MODEL_NAME,
-                system_prompt=system_prompt,
-                user_prompt=prompt,
-                temperature=temperature,
-                agent_role=self.role_name,
-                decision_type="strategy_update"
-            )
-        except Exception as e:
-            # print(f"❌ [Agent {self.role_name}] update_strategy: LLM call failed. Error: {e}")  # Commented out
-            response_str = "{}"
-        if self.logger:
-            self.logger.log(f"[Agent {self.role_name}] Update response: {response_str}")
-        default_update = {
-            "order_quantity": 10,
-            "confidence": 1.0,
-            "rationale": "Default update strategy",
-            "risk_assessment": "No risk",
-            "expected_demand_next_round": 10
-        }
+        ctx = AgentContext(**ctx_kwargs)
+
+        prompt = PromptEngine.build_prompt(
+            role_name=self.role_name,
+            phase=phase,
+            ctx=ctx,
+            comm_history=comm_history,
+            orchestrator_advice=orchestrator_advice,
+            history_limit=history_limit,
+            other_agent_roles=other_agent_roles,
+            round_index=round_index,
+        )
+
+        system_prompt = self.prompts.get_system_prompt(self.role_name, enable_communication=(phase=="communication"))
+        decision_type = f"{phase}_prompt"
+
+        client = lite_client or get_default_client()
+        # Get the current model name from the module
+        from llm_calls_mitb_game import MODEL_NAME as current_model
+        response_str = await client.chat_completion(
+            model=current_model,
+            system_prompt=system_prompt,
+            user_prompt=prompt,
+            temperature=temperature,
+            agent_role=self.role_name,
+            decision_type=decision_type
+        )
+
         try:
             response = safe_parse_json(response_str)
         except Exception:
-            response = default_update
-        self.strategy = response
-        self.last_update_output = response
+            response = {}
 
-    async def decide_order_quantity(self, temperature=0.7, profit_per_unit_sold=2.5) -> dict:
+        # bookkeeping
+        if phase == "decision":
+            self.last_decision_prompt = prompt
+            self.last_decision_output = response
+        else:
+            self.last_communication_prompt = prompt
+            self.last_communication_output = response
+
+        return response
+
+    # ------------------------------
+    # Deprecated wrappers (kept for compatibility)
+    # ------------------------------
+    async def initialize_strategy(self, *args, **kwargs):
+        """Deprecated – use llm_decision('decision')."""
+        return await self.llm_decision("decision", temperature=kwargs.get('temperature',0.7))
+
+    async def update_strategy(self, *args, **kwargs):
+        """Deprecated – use llm_decision('decision')."""
+        return await self.llm_decision("decision", temperature=kwargs.get('temperature',0.7))
+
+    async def decide_order_quantity(self, temperature=0.7, profit_per_unit_sold=2.5, holding_cost_per_unit=0.5, backlog_cost_per_unit=1.5) -> dict:
         if self.logger:
             self.logger.log(f"[Agent {self.role_name}] Deciding order quantity. Inventory: {self.inventory}, Backlog: {self.backlog}, Downstream: {self.downstream_orders_history[-3:]}, Shipments: {[self.shipments_in_transit[1]]}, Orders arriving: {[self.orders_in_transit[0]]}")
         last_order_placed = self.last_order_placed
@@ -225,6 +227,8 @@ class BeerGameAgent(BaseModel):
             incoming_shipments=[self.shipments_in_transit[1]],
             current_strategy=self.strategy,
             profit_per_unit_sold=profit_per_unit_sold,
+            holding_cost_per_unit=holding_cost_per_unit,
+            backlog_cost_per_unit=backlog_cost_per_unit,
             last_order_placed=last_order_placed,
             last_profit=last_profit,
             profit_history=self.profit_history,
@@ -238,8 +242,11 @@ class BeerGameAgent(BaseModel):
         #     self.logger.log(f"[LLM SYSTEM PROMPT]: {system_prompt}")
         #     self.logger.log(f"[LLM USER PROMPT]: {prompt}")
         try:
-            response_str = await lite_client.chat_completion(
-                model=MODEL_NAME,
+            client = lite_client or get_default_client()
+            # Get the current model name from the module
+            from llm_calls_mitb_game import MODEL_NAME as current_model
+            response_str = await client.chat_completion(
+                model=current_model,
                 system_prompt=system_prompt,
                 user_prompt=prompt,
                 temperature=temperature,
@@ -267,63 +274,17 @@ class BeerGameAgent(BaseModel):
         return response
 
     async def generate_communication_message(self, round_index: int, other_agents: List['BeerGameAgent'], 
-                                          message_history: List[Dict], temperature: float = 0.7) -> dict:
-        """Generate a message to communicate with other agents about strategy and collaboration."""
-        if self.logger:
-            self.logger.log(f"[Agent {self.role_name}] Generating communication message for round {round_index}")
-        
-        prompt = self.prompts.get_communication_prompt(
-            role_name=self.role_name,
-            inventory=self.inventory,
-            backlog=self.backlog,
-            recent_demand_or_orders=self.downstream_orders_history[-3:],
-            current_strategy=self.strategy,
-            message_history=message_history,
+                                           message_history: List[Dict], temperature: float = 0.7) -> dict:
+        """Deprecated wrapper – now delegates to llm_decision('communication')."""
+        return await self.llm_decision(
+            "communication",
+            comm_history=message_history,
+            history_limit=10,
+            temperature=temperature,
+            profit_per_unit_sold=2.5,
             other_agent_roles=[agent.role_name for agent in other_agents],
             round_index=round_index,
-            last_order_placed=self.last_order_placed,
-            profit_accumulated=self.balance,
-            profit_history=self.profit_history,
-            balance_history=self.balance_history,
-            last_profit=self.last_profit
         )
-        
-        self.last_communication_prompt = prompt
-        system_prompt = self.prompts.get_system_prompt(self.role_name, enable_communication=True)
-        self.last_communication_system_prompt = system_prompt
-        
-        # if self.logger:
-        #     self.logger.log(f"[LLM SYSTEM PROMPT]: {system_prompt}")
-        #     self.logger.log(f"[LLM USER PROMPT]: {prompt}")
-        
-        try:
-            response_str = await lite_client.chat_completion(
-                model=MODEL_NAME,
-                system_prompt=system_prompt,
-                user_prompt=prompt,
-                temperature=temperature,
-                agent_role=self.role_name,
-                decision_type="communication"
-            )
-        except Exception as e:
-            # print(f"❌ [Agent {self.role_name}] generate_communication_message: LLM call failed. Error: {e}")  # Commented out
-            response_str = "{}"
-        
-        default_message = {
-            "message": f"Hello from {self.role_name}. Let's work together efficiently.",
-            "strategy_hint": "Maintaining steady orders",
-            "collaboration_proposal": "Share demand information",
-            "information_shared": "Current inventory and backlog status",
-            "confidence": 0.5
-        }
-        
-        try:
-            response = safe_parse_json(response_str)
-        except Exception:
-            response = default_message
-        
-        self.last_communication_output = response
-        return response
 
     async def decide_order_quantity_with_communication(self, temperature: float = 0.7, 
                                                      profit_per_unit_sold: float = 2.5,

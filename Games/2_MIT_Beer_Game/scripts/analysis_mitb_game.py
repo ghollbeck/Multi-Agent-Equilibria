@@ -15,12 +15,18 @@ mpl.rcParams.update({
 })
 
 
-def plot_beer_game_results(rounds_df: pd.DataFrame, results_folder: str, external_demand: Optional[List[int]] = None):
+def plot_beer_game_results(rounds_df: pd.DataFrame, results_folder: str, external_demand: Optional[List[int]] = None, run_settings: Optional[Dict] = None):
     """
     Basic plots: inventory over time, backlog over time, cost, etc.
     If external_demand is provided, it will be plotted as well.
+    Now supports real-time plotting with overwriting of previous plots.
     """
     os.makedirs(results_folder, exist_ok=True)
+
+    # Handle empty dataframe case
+    if rounds_df.empty:
+        print("Warning: No data to plot")
+        return
 
     # -------------------------------------------------------------
     # If multiple generations were run, the same round_index values
@@ -32,7 +38,7 @@ def plot_beer_game_results(rounds_df: pd.DataFrame, results_folder: str, externa
     # -------------------------------------------------------------
 
     # Determine number of rounds per generation (assume constant)
-    rounds_per_gen = rounds_df["round_index"].max()
+    rounds_per_gen = rounds_df["round_index"].max() if len(rounds_df) > 0 else 1
     # Create a global_round column if it doesn't already exist
     rounds_df = rounds_df.copy()
     rounds_df["global_round"] = (rounds_df["generation"] - 1) * rounds_per_gen + rounds_df["round_index"]
@@ -91,7 +97,19 @@ def plot_beer_game_results(rounds_df: pd.DataFrame, results_folder: str, externa
 
     # Combined plot with subplots for Inventory, Backlog, Profit, Orders, Orchestrator Advice, and External Demand
     num_subplots = 5 + (1 if external_demand else 0)
-    fig, axes = plt.subplots(num_subplots, 1, figsize=(10, 6 * num_subplots))
+    fig, axes = plt.subplots(num_subplots, 1, figsize=(12, 6 * num_subplots))
+    
+    # Add run settings as text box if provided
+    if run_settings:
+        settings_text = "Run Settings:\n"
+        for key, value in run_settings.items():
+            if key != 'run_settings':  # Avoid recursive display
+                settings_text += f"{key}: {value}\n"
+        
+        # Add text box in the top-right corner
+        fig.text(0.98, 0.98, settings_text, transform=fig.transFigure, 
+                fontsize=8, verticalalignment='top', horizontalalignment='right',
+                bbox=dict(boxstyle='round,pad=0.5', facecolor='lightgray', alpha=0.8))
 
     # Subplot 1: Inventory
     for role in rounds_df["role_name"].unique():

@@ -28,11 +28,11 @@ def parse_args():
         help="Number of rounds to simulate (canonical MIT Beer Game uses 36-50 rounds)"
     )
     parser.add_argument(
-        "--holding_cost_per_unit", type=float, default=0.5,
+        "--holding_cost_per_unit", type=float, default=0.1,
         help="Holding cost per unit per round"
     )
     parser.add_argument(
-        "--backlog_cost_per_unit", type=float, default=1.5,
+        "--backlog_cost_per_unit", type=float, default=5.0,
         help="Backlog cost per unit per round"
     )
     parser.add_argument(
@@ -131,6 +131,8 @@ def main():
         print(f"🔄 Using Anthropic Claude model: {args.anthropic_model}")
     else:
         # Default to LiteLLM provider (OpenAI-compatible)
+        from llm_calls_mitb_game import LiteLLMClient
+        llm_calls_mitb_game.lite_client = LiteLLMClient()
         llm_calls_mitb_game.MODEL_NAME = args.model_name
         print(f"🔄 Using LiteLLM/OpenAI model: {args.model_name}")
 
@@ -158,6 +160,8 @@ def main():
             purchase_cost_per_unit=args.purchase_cost,
             production_cost_per_unit=args.production_cost,
             initial_balance=args.initial_balance,
+            holding_cost_per_unit=args.holding_cost_per_unit,
+            backlog_cost_per_unit=args.backlog_cost_per_unit,
             enable_orchestrator=args.enable_orchestrator,
             orchestrator_history=args.orchestrator_history,
             orchestrator_override=args.orchestrator_override,

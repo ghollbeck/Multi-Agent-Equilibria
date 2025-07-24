@@ -413,8 +413,12 @@ CLIENT_MAP = {
 }
 
 # Default client instance (LiteLLMClient). Can be overridden at runtime by execute script.
-# (Existing code already sets lite_client to LiteLLMClient(); we overwrite that section.)
-# Remove existing instantiation if duplicate; keep latest below.
+# Initialize as None to allow proper override
+lite_client = None
 
-# Overwrite previous lite_client with default provider client for clarity
-lite_client = LiteLLMClient()           
+def get_default_client():
+    """Get the default client, initializing if needed."""
+    global lite_client
+    if lite_client is None:
+        lite_client = LiteLLMClient()
+    return lite_client           

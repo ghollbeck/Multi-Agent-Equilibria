@@ -1,5 +1,6 @@
 import json
-from typing import List, Dict
+from typing import List, Dict, Optional, Literal
+from dataclasses import dataclass
 
 class BeerGamePrompts:
     """
@@ -36,7 +37,7 @@ class BeerGamePrompts:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def get_strategy_generation_prompt(role_name: str, inventory: int = 100, backlog: int = 0, profit_per_unit_sold: float = 2.5) -> str:
+    def get_strategy_generation_prompt(role_name: str, inventory: int = 100, backlog: int = 0, profit_per_unit_sold: float = 2.5, holding_cost_per_unit: float = 0.5, backlog_cost_per_unit: float = 1.5) -> str:
         role_context = BeerGamePrompts._role_context(role_name)
         return f"""
         You are the {role_name} in the MIT Beer Game. {role_context}
@@ -53,14 +54,15 @@ class BeerGamePrompts:
           • You have a 1-round lead time for the orders you place
           • You observe demand (if Retailer) or incoming orders (for other roles)
           • You want to avoid large swings (the Bullwhip effect)
-          • You have a holding cost of 0.5 per unit per round
-          • You have a backlog cost of 1.5 per unit per round of unmet demand (3x higher than holding cost)
+          • You have a holding cost of {holding_cost_per_unit} per unit per round
+          • You have a backlog cost of {backlog_cost_per_unit} per unit per round of unmet demand
           • You earn ${profit_per_unit_sold} profit for each unit sold
           • 🚨 BANKRUPTCY RULE: If your bank-account balance ever reaches $0 or below, you are bankrupt and the simulation ends. Plan orders so your balance always stays positive.
           • IMPORTANT: When determining order quantities, you must account for BOTH your current backlog AND expected new demand - backlog represents unfilled orders that must be fulfilled in addition to meeting new demand
           • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
           • Never let the inventory go to zero.
           • **If your profits are negative or consistently low, consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
+          • **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
 
         Please return only valid JSON with the following fields in order:
 
@@ -80,7 +82,7 @@ class BeerGamePrompts:
 
     @staticmethod
     def get_strategy_update_prompt(role_name: str, performance_log: str, current_strategy: dict,
-                                 inventory: int = 100, backlog: int = 0, profit_per_unit_sold: float = 2.5) -> str:
+                                 inventory: int = 100, backlog: int = 0, profit_per_unit_sold: float = 2.5, holding_cost_per_unit: float = 0.5, backlog_cost_per_unit: float = 1.5) -> str:
         role_context = BeerGamePrompts._role_context(role_name)
         return f"""
         You are the {role_name} in the MIT Beer Game. {role_context}
@@ -108,6 +110,7 @@ class BeerGamePrompts:
           • SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
           • Never let the inventory go to zero.
           • **If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.**
+          • **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
           
         Return only valid JSON with the following fields in order:
 
@@ -133,6 +136,8 @@ class BeerGamePrompts:
                             incoming_shipments: List[int],
                             current_strategy: dict,
                             profit_per_unit_sold: float = 2.5,
+                            holding_cost_per_unit: float = 0.5,
+                            backlog_cost_per_unit: float = 1.5,
                             last_order_placed: int = None,
                             last_profit: float = None,
                             profit_history: List[float] = None,
@@ -160,12 +165,14 @@ class BeerGamePrompts:
         Your known lead time is 1 round for any order you place.
 
         Economics:
-          - Holding cost: $0.5 per unit per round
-          - Backlog cost: $1.5 per unfilled unit per round (3x higher than holding cost)
+          - Holding cost: ${holding_cost_per_unit} per unit per round
+          - Backlog cost: ${backlog_cost_per_unit} per unfilled unit per round
           - Profit: ${profit_per_unit_sold} per unit sold
+          - 💀 **BALANCE IS YOUR LIFELINE**: Your bank balance is the most critical survival metric. Every order you place costs money immediately (purchase/production cost), and every unit you hold costs money per round (holding cost). If your balance reaches $0 or below, you go bankrupt and the entire simulation ends. Monitor your spending carefully and always ensure you have enough funds to cover your costs.
           - 🚨 BANKRUPTCY RULE: Keep your bank-account balance > $0 at all times. Planning that risks a zero or negative balance is unacceptable.
           - Never let the inventory go to zero.
           - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
+          - **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
 
         **Important Supply Chain Rules:**
         - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
@@ -174,6 +181,7 @@ class BeerGamePrompts:
         - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
         - Review how much you have ordered and earned in the last round(s) to inform your decision.
         - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+        - 🎯 **LONG-TERM STRATEGY**: Think beyond just the next round. Consider trends in demand patterns, seasonal variations, and build inventory strategically to serve multiple future rounds. Don't just react to immediate needs - plan ahead to ensure you can consistently meet demand while managing costs effectively.
 
         Current Strategy:
         {json.dumps(current_strategy, indent=2)}
@@ -203,6 +211,9 @@ class BeerGamePrompts:
                                 message_history: List[Dict], other_agent_roles: List[str],
                                 round_index: int, last_order_placed: int = None,
                                 profit_accumulated: float = 0.0,
+                                profit_per_unit_sold: float = 2.5,
+                                holding_cost_per_unit: float = 0.5,
+                                backlog_cost_per_unit: float = 1.5,
                                 profit_history: List[float] = None,
                                 balance_history: List[float] = None,
                                 last_profit: float = None) -> str:
@@ -223,9 +234,11 @@ class BeerGamePrompts:
         
         CRITICAL SUPPLY CHAIN CONTEXT:
         ⏱️ LEAD TIME: All orders take EXACTLY 1 round to arrive (no exceptions)
-        💰 ECONOMICS: Holding cost $0.5/unit, Backlog cost $1.5/unit, Profit $2.5/unit sold
+        💰 ECONOMICS: Holding cost ${holding_cost_per_unit}/unit, Backlog cost ${backlog_cost_per_unit}/unit, Profit ${profit_per_unit_sold}/unit sold
+        💀 **BALANCE SURVIVAL**: Your bank balance is your lifeline - if it reaches $0, you bankrupt and the simulation ends. Every order costs money immediately, every unit held costs money per round. Monitor spending carefully!
         📦 SHIPMENT RULE: Can only ship (downstream_order + your_backlog) - no oversupply allowed
         🏭 FACTORY SPECIAL: Factory schedules production (not orders) with same 1-round delay
+        🎯 **STRATEGIC PLANNING**: Consider long-term demand trends and build inventory to serve multiple future rounds, not just immediate needs.
         
         Other agents in the supply chain: {', '.join(other_agent_roles)}
         
@@ -282,6 +295,7 @@ class BeerGamePrompts:
     def get_decision_prompt_with_communication(role_name: str, inventory: int, backlog: int,
                                             recent_demand_or_orders: List[int], incoming_shipments: List[int],
                                             current_strategy: dict, profit_per_unit_sold: float = 2.5,
+                                            holding_cost_per_unit: float = 0.5, backlog_cost_per_unit: float = 1.5,
                                             last_order_placed: int = None, last_profit: float = None,
                                             recent_communications: List[Dict] = None,
                                             profit_history: List[float] = None,
@@ -341,6 +355,7 @@ class BeerGamePrompts:
     def get_decision_prompt_with_memory(role_name: str, inventory: int, backlog: int,
                                       recent_demand_or_orders: List[int], incoming_shipments: List[int],
                                       current_strategy: dict, profit_per_unit_sold: float = 2.5,
+                                      holding_cost_per_unit: float = 0.5, backlog_cost_per_unit: float = 1.5,
                                       last_order_placed: int = None, last_profit: float = None,
                                       agent_memory = None, memory_retention_rounds: int = 5,
                                       profit_history: List[float] = None,
@@ -377,6 +392,9 @@ class BeerGamePrompts:
                                            round_index: int, last_order_placed: int = None,
                                            profit_accumulated: float = 0.0, agent_memory = None,
                                            memory_retention_rounds: int = 5,
+                                           profit_per_unit_sold: float = 2.5,
+                                           holding_cost_per_unit: float = 0.5,
+                                           backlog_cost_per_unit: float = 1.5,
                                            profit_history: List[float] = None,
                                            balance_history: List[float] = None,
                                            last_profit: float = None) -> str:
@@ -436,5 +454,129 @@ The upcoming USER message will always provide:
 
 **IMPORTANT PROFITABILITY NOTE:** If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.
 
+**ORDERING OPTIONS:** You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.
+
 Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
 """       
+
+@dataclass
+class AgentContext:
+    """Lightweight container with the info needed to build prompts."""
+    inventory: int
+    backlog: int
+    recent_demand_or_orders: list
+    incoming_shipments: list
+    current_strategy: dict
+    profit_per_unit_sold: float
+    holding_cost_per_unit: float = 0.5
+    backlog_cost_per_unit: float = 1.5
+    last_order_placed: Optional[int] = None
+    last_profit: Optional[float] = None
+    profit_history: Optional[list] = None
+    balance_history: Optional[list] = None
+    current_balance: Optional[float] = None
+    # Market-level metrics (optional)
+    total_chain_inventory: Optional[int] = None
+    total_chain_backlog: Optional[int] = None
+
+class PromptEngine:
+    """Unified interface that builds either a decision or communication prompt.
+    For now it delegates to the existing prompt helpers so behaviour is unchanged.
+    """
+
+    @staticmethod
+    def build_prompt(
+        role_name: str,
+        phase: Literal["decision", "communication"],
+        ctx: AgentContext,
+        comm_history: Optional[list] = None,
+        memory_text: str = None,
+        orchestrator_advice: str = None,
+        history_limit: int = 10,
+        other_agent_roles: Optional[list] = None,
+        round_index: int = 0,
+    ) -> str:
+        """Return a full prompt string for the requested phase.
+        memory_text and orchestrator_advice are appended if supplied (simple concat for now).
+        """
+        # Trim histories if needed
+        demand_hist = (ctx.recent_demand_or_orders[-history_limit:] if history_limit else ctx.recent_demand_or_orders)
+        shipments_hist = ctx.incoming_shipments[-history_limit:] if history_limit else ctx.incoming_shipments
+        profit_hist = (ctx.profit_history[-history_limit:] if ctx.profit_history else None)
+        balance_hist = (ctx.balance_history[-history_limit:] if ctx.balance_history else None)
+
+        if phase == "decision":
+            base_prompt = BeerGamePrompts.get_decision_prompt(
+                role_name=role_name,
+                inventory=ctx.inventory,
+                backlog=ctx.backlog,
+                recent_demand_or_orders=demand_hist,
+                incoming_shipments=shipments_hist,
+                current_strategy=ctx.current_strategy,
+                profit_per_unit_sold=ctx.profit_per_unit_sold,
+                holding_cost_per_unit=ctx.holding_cost_per_unit,
+                backlog_cost_per_unit=ctx.backlog_cost_per_unit,
+                last_order_placed=ctx.last_order_placed,
+                last_profit=ctx.last_profit,
+                profit_history=profit_hist,
+                balance_history=balance_hist,
+                current_balance=ctx.current_balance,
+            )
+
+            # Insert market overview and improvement sentence
+            market_lines = ""
+            if ctx.total_chain_inventory is not None and ctx.total_chain_backlog is not None:
+                market_lines = (
+                    f"\nMARKET OVERVIEW (entire chain):\n"
+                    f"  - Total inventory across chain: {ctx.total_chain_inventory} units\n"
+                    f"  - Total backlog  across chain: {ctx.total_chain_backlog} units\n"
+                )
+
+            improve_sentence = ("Based on your performance and the desire to minimise holding & backlog costs "
+                                 "while maximising profits longterm, please propose any improvements to your ordering plan.")
+
+            base_prompt = market_lines + "\n" + improve_sentence + "\n" + base_prompt
+            # Inject optional memory / orchestrator sections
+            inserts = []
+            if comm_history:
+                inserts.append("\n\nRecent Communications:\n" + json.dumps(comm_history[-history_limit:], indent=2))
+            if memory_text:
+                inserts.append("\n\nMEMORY CONTEXT:\n" + memory_text)
+            if orchestrator_advice:
+                inserts.append("\n\nORCHESTRATOR ADVICE:\n" + orchestrator_advice)
+            return "\n".join(inserts) + "\n" + base_prompt if inserts else base_prompt
+        else:  # communication
+            base_prompt = BeerGamePrompts.get_communication_prompt(
+                role_name=role_name,
+                inventory=ctx.inventory,
+                backlog=ctx.backlog,
+                recent_demand_or_orders=demand_hist,
+                current_strategy=ctx.current_strategy,
+                message_history=comm_history or [],
+                other_agent_roles=other_agent_roles or [],
+                round_index=round_index,
+                last_order_placed=ctx.last_order_placed,
+                profit_accumulated=ctx.current_balance or 0.0,
+                profit_per_unit_sold=ctx.profit_per_unit_sold,
+                holding_cost_per_unit=ctx.holding_cost_per_unit,
+                backlog_cost_per_unit=ctx.backlog_cost_per_unit,
+                profit_history=profit_hist,
+                balance_history=balance_hist,
+                last_profit=ctx.last_profit,
+            )
+            if orchestrator_advice:
+                base_prompt += "\n\nORCHESTRATOR ADVICE for All Agents:\n" + orchestrator_advice
+            if memory_text:
+                base_prompt += "\n\nMEMORY CONTEXT:\n" + memory_text
+
+        # after building communication prompt, add checklist for speaking
+        checklist = (
+            "\nWhen you speak:\n"
+            "  1. State your inventory / backlog truthfully.\n"
+            "  2. Propose a concrete order plan (e.g. “I will order 8”).\n"
+            "  3. Summarize what other agents have proposed or are planning, and state what the group should conclude from this.\n"
+            "  4. Suggest a shared target (e.g. “Let’s all aim for 1-round cover”).\n"
+            "  5. Propose a strategy to improve the supply chain (e.g. “Let’s all aim for 1-round cover”).\n"
+        )
+        return base_prompt + checklist
+        
