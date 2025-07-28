@@ -28,11 +28,11 @@ def parse_args():
         help="Number of rounds to simulate (canonical MIT Beer Game uses 36-50 rounds)"
     )
     parser.add_argument(
-        "--holding_cost_per_unit", type=float, default=0.1,
+        "--holding_cost_per_unit", type=float, default=0.0,
         help="Holding cost per unit per round"
     )
     parser.add_argument(
-        "--backlog_cost_per_unit", type=float, default=5.0,
+        "--backlog_cost_per_unit", type=float, default=2.5,
         help="Backlog cost per unit per round"
     )
     parser.add_argument(
@@ -52,8 +52,8 @@ def parse_args():
         help="Which LLM provider to use: 'litellm' (default) or 'anthropic'"
     )
     parser.add_argument(
-        "--anthropic_model", type=str, default="claude-3-haiku-20240307",
-        help="Claude model name to use when --provider anthropic (default: claude-3-haiku-20240307)"
+        "--anthropic_model", type=str, default="claude-3-5-sonnet-latest",
+        help="Claude model name to use when --provider anthropic (default: claude-3-5-sonnet-latest)"
     )
     parser.add_argument(
         "--enable_communication", action="store_true", default=True,
@@ -101,7 +101,7 @@ def parse_args():
         help="Factory production cost per unit (default: 1.5)"
     )
     parser.add_argument(
-        "--initial_balance", type=float, default=200.0,
+        "--initial_balance", type=float, default=1000.0,
         help="Initial bank account balance for all agents (default: 1000.0)"
     )
     # Orchestrator options
@@ -116,6 +116,23 @@ def parse_args():
     parser.add_argument(
         "--orchestrator_override", action="store_true",
         help="If set, orchestrator recommendations override agent order quantities"
+    )
+    parser.add_argument(
+        "--longtermplanning_boolean", action="store_true",
+        help="Enable collaborative long-term planning mode. If enabled, agents optimize for collective supply chain success. If disabled (default), agents focus on individual profit maximization."
+    )
+    # New hyperparameter arguments for inventory management
+    parser.add_argument(
+        "--safety_stock_target", type=float, default=60.0,
+        help="Target safety stock level S_s for all agents (default: 10.0 units)"
+    )
+    parser.add_argument(
+        "--backlog_clearance_rate", type=float, default=0.5,
+        help="Backlog clearance rate γ ∈ [0,1] for inventory management (default: 0.5)"
+    )
+    parser.add_argument(
+        "--demand_smoothing_factor", type=float, default=0.3,
+        help="Demand smoothing parameter δ for order quantity adjustments (default: 0.3)"
     )
     return parser.parse_args()
 
@@ -165,6 +182,10 @@ def main():
             enable_orchestrator=args.enable_orchestrator,
             orchestrator_history=args.orchestrator_history,
             orchestrator_override=args.orchestrator_override,
+            longtermplanning_boolean=args.longtermplanning_boolean,
+            safety_stock_target=args.safety_stock_target,
+            backlog_clearance_rate=args.backlog_clearance_rate,
+            demand_smoothing_factor=args.demand_smoothing_factor,
         )
     )
 
@@ -208,4 +229,4 @@ if __name__ == "__main__":
 
 
 # or like this 
-# python executeMITBeerGame.py --provider anthropic --anthropic_model claude-3-haiku-20240307 --num_rounds 5
+# python executeMITBeerGame.py --provider anthropic --anthropic_model claude-3-haiku-20240307  --num_rounds 5

@@ -2,7 +2,7 @@ import asyncio
 import json
 from pydantic import BaseModel, Field
 from dataclasses import dataclass, field, asdict
-from typing import List, Dict, Optional, ClassVar, Literal
+from typing import List, Dict, Optional, ClassVar, Literal, Any
 from prompts_mitb_game import BeerGamePrompts
 from llm_calls_mitb_game import lite_client, safe_parse_json, MODEL_NAME, get_default_client
 from memory_storage import AgentMemory
@@ -97,6 +97,7 @@ class BeerGameAgent(BaseModel):
     strategy: dict = Field(default_factory=dict)
     prompts: ClassVar[BeerGamePrompts] = BeerGamePrompts
     logger: BeerGameLogger = Field(default=None, exclude=True)
+    human_log_file: Optional[Any] = Field(default=None, exclude=True)  # NEW: For real-time logging
     last_decision_prompt: str = ""
     last_decision_output: dict = Field(default_factory=dict)
     last_update_prompt: str = ""
@@ -115,7 +116,7 @@ class BeerGameAgent(BaseModel):
 
     @classmethod
     def create_agent(cls, role_name: str, initial_inventory: int = 100, initial_backlog: int = 0, 
-                    initial_balance: float = 1000.0, logger: BeerGameLogger = None):
+                    initial_balance: float = 1000.0, logger: BeerGameLogger = None, human_log_file: Optional[Any] = None):
         """Create a BeerGameAgent with configurable initial values."""
         return cls(
             role_name=role_name,
@@ -125,20 +126,54 @@ class BeerGameAgent(BaseModel):
             shipments_in_transit={0: 0, 1: 0},  # Start with no shipments in transit
             orders_in_transit={0: 0, 1: 0},    # NEW: Start with no orders in transit
             production_queue={0: 0, 1: 0},     # NEW: Start with no production in queue
-            logger=logger
+            logger=logger,
+            human_log_file=human_log_file
         )
 
     class Config:
         arbitrary_types_allowed = True
 
+    def log_llm_call_immediately(self, call_type: str, system_prompt: str, user_prompt: str, model_output: dict, round_index: int = None):
+        """Log LLM call immediately to human-readable log file."""
+        if not self.human_log_file:
+            return
+        
+        try:
+            self.human_log_file.write(f"\n🤖 LLM {call_type.upper()} CALL - {self.role_name}")
+            if round_index is not None:
+                self.human_log_file.write(f" (Round {round_index})")
+            self.human_log_file.write("\n")
+            self.human_log_file.write("─" * 60 + "\n")
+            
+            if system_prompt:
+                self.human_log_file.write("🔧 System Prompt:\n")
+                self.human_log_file.write(f"{system_prompt}\n\n")
+            
+            if user_prompt:
+                self.human_log_file.write("👤 User Prompt:\n")
+                self.human_log_file.write(f"{user_prompt}\n\n")
+            
+            if model_output:
+                self.human_log_file.write("🎯 Model Output:\n")
+                self.human_log_file.write(f"{json.dumps(model_output, indent=2)}\n\n")
+            
+            self.human_log_file.write("─" * 60 + "\n\n")
+            self.human_log_file.flush()  # Ensure immediate write
+        except Exception as e:
+            if self.logger:
+                self.logger.log(f"Error logging LLM call for {self.role_name}: {e}")
+
     async def llm_decision(self, phase: Literal["decision", "communication"], *,
                           comm_history: Optional[list] = None,
                           orchestrator_advice: str = None,
-                          history_limit: int = 10,
+                          history_limit: int = 20,
                           temperature: float = 0.7,
-                          profit_per_unit_sold: float = 2.5,
+                          selling_price_per_unit: float = None,
+                          unit_cost_per_unit: float = None,
                           other_agent_roles: Optional[list] = None,
                           round_index: int = 0,
+                          longtermplanning_boolean: bool = False,
+                          profit_per_unit_sold: float = None,  # Deprecated - for backward compatibility
                           **kwargs) -> dict:
         """Unified gateway to the LLM – returns JSON dict."""
         from prompts_mitb_game import AgentContext, PromptEngine  # local import to avoid circular
@@ -149,9 +184,10 @@ class BeerGameAgent(BaseModel):
             recent_demand_or_orders=self.downstream_orders_history[-history_limit:],
             incoming_shipments=[self.shipments_in_transit[1]],
             current_strategy=self.strategy,
-            profit_per_unit_sold=profit_per_unit_sold,
-            holding_cost_per_unit=kwargs.get('holding_cost_per_unit', 0.5),
-            backlog_cost_per_unit=kwargs.get('backlog_cost_per_unit', 1.5),
+            selling_price_per_unit=selling_price_per_unit,
+            unit_cost_per_unit=unit_cost_per_unit,
+            holding_cost_per_unit=kwargs.get('holding_cost_per_unit'),
+            backlog_cost_per_unit=kwargs.get('backlog_cost_per_unit'),
             last_order_placed=self.last_order_placed,
             last_profit=self.last_profit,
             profit_history=self.profit_history,
@@ -159,6 +195,14 @@ class BeerGameAgent(BaseModel):
             current_balance=self.balance,
             total_chain_inventory=kwargs.get('total_chain_inventory'),
             total_chain_backlog=kwargs.get('total_chain_backlog'),
+            # Additional financial metrics
+            cumulative_profit=sum(self.profit_history) if self.profit_history else 0.0,
+            # Add hyperparameters
+            safety_stock_target=kwargs.get('safety_stock_target'),
+            backlog_clearance_rate=kwargs.get('backlog_clearance_rate'),
+            demand_smoothing_factor=kwargs.get('demand_smoothing_factor'),
+            # Keep for backward compatibility
+            profit_per_unit_sold=profit_per_unit_sold
         )
         ctx = AgentContext(**ctx_kwargs)
 
@@ -171,6 +215,7 @@ class BeerGameAgent(BaseModel):
             history_limit=history_limit,
             other_agent_roles=other_agent_roles,
             round_index=round_index,
+            longtermplanning_boolean=longtermplanning_boolean
         )
 
         system_prompt = self.prompts.get_system_prompt(self.role_name, enable_communication=(phase=="communication"))
@@ -196,10 +241,15 @@ class BeerGameAgent(BaseModel):
         # bookkeeping
         if phase == "decision":
             self.last_decision_prompt = prompt
+            self.last_decision_system_prompt = system_prompt
             self.last_decision_output = response
         else:
             self.last_communication_prompt = prompt
+            self.last_communication_system_prompt = system_prompt
             self.last_communication_output = response
+
+        # Log immediately to human-readable file
+        self.log_llm_call_immediately(phase, system_prompt, prompt, response, round_index)
 
         return response
 
@@ -208,32 +258,46 @@ class BeerGameAgent(BaseModel):
     # ------------------------------
     async def initialize_strategy(self, *args, **kwargs):
         """Deprecated – use llm_decision('decision')."""
-        return await self.llm_decision("decision", temperature=kwargs.get('temperature',0.7))
+        return await self.llm_decision("decision", 
+                                      temperature=kwargs.get('temperature', 0.7),
+                                      selling_price_per_unit=kwargs.get('selling_price_per_unit'),
+                                      unit_cost_per_unit=kwargs.get('unit_cost_per_unit'),
+                                      holding_cost_per_unit=kwargs.get('holding_cost_per_unit'),
+                                      backlog_cost_per_unit=kwargs.get('backlog_cost_per_unit'),
+                                      safety_stock_target=kwargs.get('safety_stock_target'),
+                                      backlog_clearance_rate=kwargs.get('backlog_clearance_rate'),
+                                      demand_smoothing_factor=kwargs.get('demand_smoothing_factor'))
 
     async def update_strategy(self, *args, **kwargs):
         """Deprecated – use llm_decision('decision')."""
         return await self.llm_decision("decision", temperature=kwargs.get('temperature',0.7))
 
-    async def decide_order_quantity(self, temperature=0.7, profit_per_unit_sold=2.5, holding_cost_per_unit=0.5, backlog_cost_per_unit=1.5) -> dict:
+    async def decide_order_quantity(self, temperature=0.7, selling_price_per_unit=None, unit_cost_per_unit=None, holding_cost_per_unit=None, backlog_cost_per_unit=None, round_index=None, longtermplanning_boolean=False, profit_per_unit_sold=None, safety_stock_target=None, backlog_clearance_rate=None, demand_smoothing_factor=None, history_limit=20) -> dict:
         if self.logger:
-            self.logger.log(f"[Agent {self.role_name}] Deciding order quantity. Inventory: {self.inventory}, Backlog: {self.backlog}, Downstream: {self.downstream_orders_history[-3:]}, Shipments: {[self.shipments_in_transit[1]]}, Orders arriving: {[self.orders_in_transit[0]]}")
+            self.logger.log(f"[Agent {self.role_name}] Deciding order quantity. Inventory: {self.inventory}, Backlog: {self.backlog}, Downstream: {self.downstream_orders_history[-history_limit:]}, Shipments: {[self.shipments_in_transit[1]]}, Orders arriving: {[self.orders_in_transit[0]]}")
         last_order_placed = self.last_order_placed
         last_profit = self.last_profit
         prompt = self.prompts.get_decision_prompt(
             role_name=self.role_name,
             inventory=self.inventory,
             backlog=self.backlog,
-            recent_demand_or_orders=self.downstream_orders_history[-3:],
+            recent_demand_or_orders=self.downstream_orders_history[-history_limit:],
             incoming_shipments=[self.shipments_in_transit[1]],
             current_strategy=self.strategy,
-            profit_per_unit_sold=profit_per_unit_sold,
+            selling_price_per_unit=selling_price_per_unit,
+            unit_cost_per_unit=unit_cost_per_unit,
             holding_cost_per_unit=holding_cost_per_unit,
             backlog_cost_per_unit=backlog_cost_per_unit,
             last_order_placed=last_order_placed,
             last_profit=last_profit,
             profit_history=self.profit_history,
             balance_history=self.balance_history,
-            current_balance=self.balance
+            current_balance=self.balance,
+            round_index=round_index,
+            longtermplanning_boolean=longtermplanning_boolean,
+            safety_stock_target=safety_stock_target,
+            backlog_clearance_rate=backlog_clearance_rate,
+            demand_smoothing_factor=demand_smoothing_factor
         )
         self.last_decision_prompt = prompt
         system_prompt = self.prompts.get_system_prompt(self.role_name)
@@ -271,23 +335,38 @@ class BeerGameAgent(BaseModel):
             response = default_decision
         self.last_decision_output = response
         self.last_profit = response.get('profit', None)
+        
+        # Log immediately to human-readable file
+        self.log_llm_call_immediately("decision", system_prompt, prompt, response)
+        
         return response
 
     async def generate_communication_message(self, round_index: int, other_agents: List['BeerGameAgent'], 
-                                           message_history: List[Dict], temperature: float = 0.7) -> dict:
+                                           message_history: List[Dict], temperature: float = 0.7, longtermplanning_boolean: bool = False, 
+                                           selling_price_per_unit: float = None, unit_cost_per_unit: float = None,
+                                           holding_cost_per_unit: float = None, backlog_cost_per_unit: float = None,
+                                           profit_per_unit_sold: float = None) -> dict:
         """Deprecated wrapper – now delegates to llm_decision('communication')."""
         return await self.llm_decision(
             "communication",
             comm_history=message_history,
-            history_limit=10,
-            temperature=temperature,
-            profit_per_unit_sold=2.5,
-            other_agent_roles=[agent.role_name for agent in other_agents],
+            other_agent_roles=[a.role_name for a in other_agents],
             round_index=round_index,
+            temperature=temperature,
+            selling_price_per_unit=selling_price_per_unit,
+            unit_cost_per_unit=unit_cost_per_unit,
+            holding_cost_per_unit=holding_cost_per_unit,
+            backlog_cost_per_unit=backlog_cost_per_unit,
+            longtermplanning_boolean=longtermplanning_boolean
         )
 
     async def decide_order_quantity_with_communication(self, temperature: float = 0.7, 
-                                                     profit_per_unit_sold: float = 2.5,
+                                                     selling_price_per_unit: float = None,
+                                                     unit_cost_per_unit: float = None,
+                                                     holding_cost_per_unit: float = None,
+                                                     backlog_cost_per_unit: float = None,
+                                                     round_index: int = None,
+                                                     profit_per_unit_sold: float = None,
                                                      recent_communications: List[Dict] = None) -> dict:
         """Enhanced decision making that incorporates communication messages."""
         if recent_communications:
@@ -298,13 +377,18 @@ class BeerGameAgent(BaseModel):
                 recent_demand_or_orders=self.downstream_orders_history[-3:],
                 incoming_shipments=[self.shipments_in_transit[1]],
                 current_strategy=self.strategy,
+                selling_price_per_unit=selling_price_per_unit,
+                unit_cost_per_unit=unit_cost_per_unit,
+                holding_cost_per_unit=holding_cost_per_unit,
+                backlog_cost_per_unit=backlog_cost_per_unit,
                 profit_per_unit_sold=profit_per_unit_sold,
                 last_order_placed=self.last_order_placed,
                 last_profit=self.last_profit,
                 recent_communications=recent_communications,
                 profit_history=self.profit_history,
                 balance_history=self.balance_history,
-                current_balance=self.balance
+                current_balance=self.balance,
+                round_index=round_index
             )
             
             self.last_decision_prompt = prompt
@@ -409,11 +493,11 @@ class BeerGameAgent(BaseModel):
         """Update profit and balance history after each round"""
         self.profit_history.append(round_profit)
         self.balance_history.append(new_balance)
-        # Keep only recent history to prevent memory bloat (last 10 rounds)
-        if len(self.profit_history) > 10:
-            self.profit_history = self.profit_history[-10:]
-        if len(self.balance_history) > 10:
-            self.balance_history = self.balance_history[-10:]
+        # Keep only recent history to prevent memory bloat (last 20 rounds)
+        if len(self.profit_history) > 20:
+            self.profit_history = self.profit_history[-20:]
+        if len(self.balance_history) > 20:
+            self.balance_history = self.balance_history[-20:]
 
     def get_profit_trend(self) -> str:
         """Get a summary of recent profit trends for agent decision making"""

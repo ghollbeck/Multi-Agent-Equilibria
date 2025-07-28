@@ -76,6 +76,14 @@ Beyond the Iterated Prisoner's Dilemma, the repository now includes several othe
 | # | Game | Folder | Core Script | Brief Description |
 |---|------|--------|-------------|-------------------|
 | 2 | **MIT Beer Game** | `Games/2_MIT_Beer_Game` | `test.py` | Four-role supply-chain game (Retailer, Wholesaler, Distributor, Factory) that asks an LLM to generate adaptive ordering policies and tracks inventory, backlog, bullwhip and cost metrics. |
+
+
+
+
+![MIT Beer Game Results](Games/2_MIT_Beer_Game/simulation_results/run_241_2025-07-28_15-55-10/combined_plots.png)
+
+*Figure: Example output from a single MIT Beer Game simulation run. The graphic shows the evolution of inventory, backlog, and profit for each supply chain role (Retailer, Wholesaler, Distributor, Factory) across all rounds. This visualization helps illustrate the bullwhip effect, cost dynamics, and the impact of LLM-driven ordering strategies over time.*
+
 | 3 | **Fishery (Common-Pool Resource) Game** | `Games/3_Fishery_Game` | `fishery_game.py` / `enhanced_fishery_game.py` | Agents harvest from a regenerative fish stock and learn extraction levels over generations. Computes Gini coefficients, equilibrium distance and logistic growth dynamics. |
 | 4 | **Market Impact Game** | `Games/4_Market_Impact_Game` | `market_impact_game.py` | Simulates algorithmic traders whose BUY/SELL/HOLD decisions move prices. Logs P&L, market depth and equilibrium metrics across rounds & generations. |
 | 5 | **Oligopoly Simulation** | `Games/5_oligopoly_simulation` | `oligopoly.py` + `run_experiments.py` | Classical price-setting oligopoly with baseline, heuristic, LLM and mixed agent types; explores markup, HHI and time-to-collusion under varying N, noise and cost asymmetries. |

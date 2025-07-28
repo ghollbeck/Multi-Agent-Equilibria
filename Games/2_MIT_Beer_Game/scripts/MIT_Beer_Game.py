@@ -273,11 +273,14 @@ async def run_beer_game_generation(
     agents: List[BeerGameAgent],
     external_demand: List[int],
     num_rounds: int = 2,
-    holding_cost_per_unit: float = 0.5,
-    backlog_cost_per_unit: float = 1.5,
-    sale_price_per_unit: float = 5.0,
-    purchase_cost_per_unit: float = 2.5,
-    production_cost_per_unit: float = 1.5,
+    holding_cost_per_unit: float = None,
+    backlog_cost_per_unit: float = None,
+    sale_price_per_unit: float = None,
+    purchase_cost_per_unit: float = None,
+    production_cost_per_unit: float = None,
+    initial_inventory: int = 100,
+    initial_backlog: int = 0,
+    initial_balance: float = 1000.0,
     temperature: float = 0,
     generation_index: int = 1,
     sim_data: SimulationData = None,
@@ -292,7 +295,11 @@ async def run_beer_game_generation(
     enable_shared_memory: bool = False,
     enable_orchestrator: bool = False,
     orchestrator_history: int = 3,
-    orchestrator_override: bool = False
+    orchestrator_override: bool = False,
+    longtermplanning_boolean: bool = False,
+    safety_stock_target: float = 10.0,
+    backlog_clearance_rate: float = 0.5,
+    demand_smoothing_factor: float = 0.3
 ):
     """
     Runs one generation of the Beer Game with the provided agents.
@@ -346,11 +353,43 @@ async def run_beer_game_generation(
     distributor = agents[2] if len(agents) > 2 else None
     factory = agents[3] if len(agents) > 3 else None
 
-    # Each round, do the Beer Game steps:
+    # Log initial state (before any rounds are processed) as Round 0
+    if sim_data:
+        logger.log("📊 Logging initial state (Round 0 - before any processing)")
+        for idx, agent in enumerate(agents):
+            initial_entry = RoundData(
+                generation = generation_index,
+                round_index = 0,  # Round 0 represents initial state
+                role_name = agent.role_name,
+                inventory = agent.inventory,  # This is the true initial inventory
+                backlog = agent.backlog,      # This is the true initial backlog
+                order_placed = 0,             # No orders placed yet
+                order_received = 0,           # No orders received yet
+                shipment_received = 0,        # No shipments received yet
+                shipment_sent_downstream = 0, # No shipments sent yet
+                starting_balance = agent.balance,
+                revenue = 0,                  # No revenue yet
+                purchase_cost = 0,            # No purchase costs yet
+                holding_cost = 0,             # No holding costs yet (will be calculated at end of round 1)
+                backlog_cost = 0,             # No backlog costs yet
+                ending_balance = agent.balance,
+                orchestrator_order = 0,       # No orchestrator recommendations yet
+                orchestrator_rationale = "Initial state"
+            )
+            sim_data.add_round_entry(initial_entry)
+
+    # Each round, do the Beer Game steps (now starting from round 1):
     for round_index in range(num_rounds):
         logger.log(f"\n--- Starting Round {round_index+1} ---")
         print(f"   🎲 Round {round_index+1}/{num_rounds} - External demand: {external_demand[round_index]}")
         retailer_demand = external_demand[round_index]
+        
+        # Log round start to human-readable file
+        if human_log_file:
+            human_log_file.write("\n" + "🎲" + "="*76 + "🎲\n")
+            human_log_file.write(f"🎮 ROUND {round_index+1}/{num_rounds} - External Demand: {retailer_demand} 🎮\n")
+            human_log_file.write("🎲" + "="*76 + "🎲\n\n")
+            human_log_file.flush()
 
         # 1. Retailer sees external demand
         retailer_demand = external_demand[round_index]
@@ -498,6 +537,12 @@ async def run_beer_game_generation(
                 logger.log(f"Starting communication phase with {communication_rounds} rounds")
             print(f"   💬 Communication phase ({communication_rounds} rounds)")
             
+            # Log communication phase start
+            if human_log_file:
+                human_log_file.write("💬 COMMUNICATION PHASE\n")
+                human_log_file.write("─" * 60 + "\n\n")
+                human_log_file.flush()
+            
             for comm_round in range(communication_rounds):
                 if logger:
                     logger.log(f"Communication round {comm_round + 1}/{communication_rounds}")
@@ -509,7 +554,12 @@ async def run_beer_game_generation(
                         round_index=round_index,
                         other_agents=[a for a in agents if a != agent],
                         message_history=communication_messages,
-                        temperature=temperature
+                        temperature=temperature,
+                        longtermplanning_boolean=longtermplanning_boolean,
+                        selling_price_per_unit=sale_price_per_unit,
+                        unit_cost_per_unit=purchase_cost_per_unit if agent.role_name != "Factory" else production_cost_per_unit,
+                        holding_cost_per_unit=holding_cost_per_unit,
+                        backlog_cost_per_unit=backlog_cost_per_unit
                     )
                     
                     message_entry = {
@@ -546,6 +596,10 @@ async def run_beer_game_generation(
                 )
                 if logger:
                     logger.log(f"📊 [Orchestrator] Recommendations: {orchestrator_recs}")
+                # Also log to human-readable log file
+                if human_log_file:
+                    human_log_file.write("\n📊 ORCHESTRATOR RECOMMENDATIONS (Round {0})\n".format(round_index))
+                    human_log_file.write(json.dumps(orchestrator_recs, indent=2) + "\n")
             except Exception as e:
                 if logger:
                     logger.log(f"[Orchestrator] Failed to generate recommendations: {e}")
@@ -570,6 +624,12 @@ async def run_beer_game_generation(
 
         # 5. Each role decides on new order quantity from upstream
         print(f"   🤔 Agents making ordering decisions...")
+        
+        # Log decision phase start
+        if human_log_file:
+            human_log_file.write("🎯 DECISION PHASE\n")
+            human_log_file.write("─" * 60 + "\n\n")
+            human_log_file.flush()
         if workflow:
             initial_state = workflow.create_initial_state(
                 round_index=round_index,
@@ -585,29 +645,31 @@ async def run_beer_game_generation(
         else:
             use_comm = enable_communication or enable_orchestrator
             recent_messages = communication_messages[-len(agents)*2:] if use_comm else []
-            if use_comm and recent_messages:
-                order_decision_tasks = []
-                for agent in agents:
-                    order_decision_tasks.append(
-                        agent.llm_decision(
-                            "decision",
-                            comm_history=recent_messages if use_comm else None,
-                            orchestrator_advice=orchestrator_recs.get(agent.role_name, {}).get("rationale") if enable_orchestrator and orchestrator_recs else None,
-                            history_limit=10,
-                            temperature=temperature,
-                            profit_per_unit_sold=sale_price_per_unit,
-                            holding_cost_per_unit=holding_cost_per_unit,
-                            backlog_cost_per_unit=backlog_cost_per_unit,
-                            total_chain_inventory=sum(a.inventory for a in agents),
-                            total_chain_backlog=sum(a.backlog for a in agents),
-                        )
+            
+            # Always use llm_decision for consistent logging, regardless of communication
+            order_decision_tasks = []
+            for agent in agents:
+                order_decision_tasks.append(
+                    agent.llm_decision(
+                        "decision",
+                        comm_history=recent_messages if recent_messages else None,
+                        orchestrator_advice=orchestrator_recs.get(agent.role_name, {}).get("rationale") if enable_orchestrator and orchestrator_recs else None,
+                        history_limit=20,
+                        temperature=temperature,
+                        selling_price_per_unit=sale_price_per_unit,
+                        unit_cost_per_unit=purchase_cost_per_unit if agent.role_name != "Factory" else production_cost_per_unit,
+                        holding_cost_per_unit=holding_cost_per_unit,
+                        backlog_cost_per_unit=backlog_cost_per_unit,
+                        total_chain_inventory=sum(a.inventory for a in agents),
+                        total_chain_backlog=sum(a.backlog for a in agents),
+                        longtermplanning_boolean=longtermplanning_boolean,
+                        safety_stock_target=safety_stock_target,
+                        backlog_clearance_rate=backlog_clearance_rate,
+                        demand_smoothing_factor=demand_smoothing_factor,
+                        round_index=round_index
                     )
-                decisions = await asyncio.gather(*order_decision_tasks)
-            else:
-                order_decision_tasks = []
-                for agent in agents:
-                    order_decision_tasks.append(agent.decide_order_quantity(temperature=temperature, profit_per_unit_sold=sale_price_per_unit, holding_cost_per_unit=holding_cost_per_unit, backlog_cost_per_unit=backlog_cost_per_unit))
-                decisions = await asyncio.gather(*order_decision_tasks)
+                )
+            decisions = await asyncio.gather(*order_decision_tasks)
 
         # 6. LLM decisions for strategic planning (logged but not used for immediate orders)
         orders_placed = []
@@ -647,7 +709,7 @@ async def run_beer_game_generation(
             for idx, agent in enumerate(agents):
                 entry = RoundData(
                     generation = generation_index,
-                    round_index = round_index,
+                    round_index = round_index + 1,  # Adjust since Round 0 is now initial state
                     role_name = agent.role_name,
                     inventory = agent.inventory,
                     backlog = agent.backlog,
@@ -690,6 +752,8 @@ async def run_beer_game_generation(
                 fieldnames = base_fields + llm_output_keys
                 
                 # Write complete CSV file (overwrite each round)
+                # Ensure directory exists before writing
+                os.makedirs(os.path.dirname(csv_log_path), exist_ok=True)
                 with open(csv_log_path, 'w', newline='') as csvfile:
                     writer = csv.DictWriter(csvfile, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
                     writer.writeheader()
@@ -777,94 +841,62 @@ async def run_beer_game_generation(
                     "communication_log": complete_sim_data['communication_log']
                 }
                 
+                # Ensure directory exists before writing
+                os.makedirs(os.path.dirname(json_log_path), exist_ok=True)
                 with open(json_log_path, 'w') as jsonfile:
                     json.dump(nested_json_structure, jsonfile, indent=2)
             
-                # Generate plots after each round (overwrite previous plots)
-    try:
-        df_rounds = pd.DataFrame([asdict(r) for r in sim_data.rounds_log])
-        # Create run settings dictionary
-        run_settings = {
-            'num_rounds': num_rounds,
-            'holding_cost_per_unit': holding_cost_per_unit,
-            'backlog_cost_per_unit': backlog_cost_per_unit,
-            'sale_price_per_unit': sale_price_per_unit,
-            'purchase_cost_per_unit': purchase_cost_per_unit,
-            'production_cost_per_unit': production_cost_per_unit,
-            'temperature': temperature,
-            'enable_communication': enable_communication,
-            'communication_rounds': communication_rounds,
-            'enable_memory': enable_memory,
-            'memory_retention_rounds': memory_retention_rounds,
-            'enable_orchestrator': enable_orchestrator,
-            'orchestrator_override': orchestrator_override
-        }
-        plot_beer_game_results(df_rounds, os.path.dirname(csv_log_path), external_demand[:round_index+1], run_settings)
-        if logger:
-            logger.log(f"📊 Plots updated after round {round_index+1}")
-    except Exception as e:
-        if logger:
-            logger.log(f"❌ Error generating plots after round {round_index+1}: {e}")
+            # Generate plots after each round (overwrite previous plots)
+            try:
+                df_rounds = pd.DataFrame([asdict(r) for r in sim_data.rounds_log])
+                # Create run settings dictionary
+                run_settings = {
+                    'num_rounds': num_rounds,
+                    'temperature': temperature,
+                    'sale_price_per_unit': sale_price_per_unit,
+                    'purchase_cost_per_unit': purchase_cost_per_unit,
+                    'production_cost_per_unit': production_cost_per_unit,
+                    'holding_cost_per_unit': holding_cost_per_unit,
+                    'backlog_cost_per_unit': backlog_cost_per_unit,
+                    'enable_communication': enable_communication,
+                    'communication_rounds': communication_rounds,
+                    'enable_memory': enable_memory,
+                    'memory_retention_rounds': memory_retention_rounds,
+                    'enable_orchestrator': enable_orchestrator,
+                    'orchestrator_history': orchestrator_history,
+                    'orchestrator_override': orchestrator_override,
+                    'initial_inventory': initial_inventory,
+                    'initial_backlog': initial_backlog,
+                    'initial_balance': initial_balance
+                }
+                plot_beer_game_results(df_rounds, os.path.dirname(csv_log_path), external_demand[:round_index+1], run_settings)
+                if logger:
+                    logger.log(f"📊 Plots updated after round {round_index+1}")
+            except Exception as e:
+                if logger:
+                    logger.log(f"❌ Error generating plots after round {round_index+1}: {e}")
 
-        # Write human-readable log for the round
+        # Write simple round summary to human-readable log (detailed LLM calls are logged immediately)
         if human_log_file:
-            human_log_file.write("\n--------------------- Round {} ---------------------\n".format(round_index+1))
-            human_log_file.write("External demand (Retailer): {}\n".format(retailer_demand))
-            human_log_file.write("Orders received per agent: {}\n".format(orders_received_from_downstream))
-            human_log_file.write("Shipments received per agent: {}\n".format(shipments_received_list))
+            human_log_file.write("\n" + "="*80 + "\n")
+            human_log_file.write(f"🎲 ROUND {round_index+1}/{num_rounds} SUMMARY\n")
+            human_log_file.write("="*80 + "\n\n")
             
-            # Log communication messages if they exist for this round
-            if enable_communication and communication_messages:
-                round_comm_messages = [msg for msg in communication_messages if msg["round"] == round_index]
-                if round_comm_messages:
-                    human_log_file.write("\n--- Communication Messages ---\n")
-                    for msg in round_comm_messages:
-                        human_log_file.write("Communication Round {}: {} says: {}\n".format(
-                            msg["communication_round"], msg["sender"], msg["message"]
-                        ))
-                        human_log_file.write("  Strategy Hint: {}\n".format(msg["strategy_hint"]))
-                        human_log_file.write("  Collaboration Proposal: {}\n".format(msg["collaboration_proposal"]))
-                        human_log_file.write("  Information Shared: {}\n".format(msg["information_shared"]))
-                        human_log_file.write("  Confidence: {}\n".format(msg["confidence"]))
-                    human_log_file.write("\n")
+            human_log_file.write(f"📊 External demand (Retailer): {retailer_demand}\n")
+            human_log_file.write(f"📦 Orders received per agent: {orders_received_from_downstream}\n")
+            human_log_file.write(f"🚚 Shipments received per agent: {shipments_received_list}\n\n")
+            
+            # Log agent state summary
+            human_log_file.write("🏢 AGENT STATE SUMMARY\n")
+            human_log_file.write("-" * 50 + "\n")
             for idx, agent in enumerate(agents):
-                human_log_file.write("Agent: {}: Inventory: {}, Backlog: {}, Order placed: {}, Units sold: {}, Profit: {:.2f}, Total Profit: {}\n".format(
-                    agent.role_name, agent.inventory, agent.backlog, orders_placed[idx], shipments_sent_downstream[idx], 
-                    shipments_sent_downstream[idx] * sale_price_per_unit, agent.profit_accumulated
-                ))
-                # Log the LLM decision output for this agent
-                decision = decisions[idx] if idx < len(decisions) else {}
-                if decision:
-                    # Updated format string to include all LLM output fields
-                    human_log_file.write(
-                        "    LLM Output: order_quantity={}, confidence={}, rationale={}, risk_assessment={}, expected_demand_next_round={}, "
-                        "llm_inventory={}, llm_backlog={}, llm_recent_demand={}, llm_incoming={}, llm_last_order={}\n".format(
-                            decision.get('order_quantity', 'N/A'),
-                            decision.get('confidence', 'N/A'),
-                            decision.get('rationale', 'N/A'),
-                            decision.get('risk_assessment', 'N/A'),
-                            decision.get('expected_demand_next_round', 'N/A'),
-                            decision.get('inventory', 'N/A'), # llm reported inventory
-                            decision.get('backlog', 'N/A'), # llm reported backlog
-                            decision.get('recent_demand_or_orders', 'N/A'),
-                            decision.get('incoming_shipments', 'N/A'),
-                            decision.get('last_order_placed', 'N/A')
-                    ))
-                # Log the LLM prompt and output (Decision Output is now more detailed)
-                human_log_file.write("    LLM Decision System Prompt: {}\n".format(getattr(agent, 'last_decision_system_prompt', '')))
-                human_log_file.write("    LLM Decision Prompt: {}\n".format(getattr(agent, 'last_decision_prompt', '')))
-                human_log_file.write("    LLM Decision Output: {}\n".format(json.dumps(getattr(agent, 'last_decision_output', {}))))
-                if enable_communication:
-                    human_log_file.write("    LLM Communication System Prompt: {}\n".format(getattr(agent, 'last_communication_system_prompt', '')))
-                    human_log_file.write("    LLM Communication Prompt: {}\n".format(getattr(agent, 'last_communication_prompt', '')))
-                    human_log_file.write("    LLM Communication Output: {}\n".format(json.dumps(getattr(agent, 'last_communication_output', {}))))
-                human_log_file.write("    LLM Update System Prompt: {}\n".format(getattr(agent, 'last_update_system_prompt', '')))
-                human_log_file.write("    LLM Update Prompt: {}\n".format(getattr(agent, 'last_update_prompt', '')))
-                human_log_file.write("    LLM Update Output: {}\n".format(json.dumps(getattr(agent, 'last_update_output', {}))))
-                human_log_file.write("    LLM Init System Prompt: {}\n".format(getattr(agent, 'last_init_system_prompt', '')))
-                human_log_file.write("    LLM Init Prompt: {}\n".format(getattr(agent, 'last_init_prompt', '')))
-                human_log_file.write("    LLM Init Output: {}\n".format(json.dumps(getattr(agent, 'last_init_output', {}))))
-            human_log_file.write("\n")
+                human_log_file.write(f"• {agent.role_name}: Inventory: {agent.inventory}, Backlog: {agent.backlog}, ")
+                human_log_file.write(f"Order placed: {orders_placed[idx]}, Units sold: {shipments_sent_downstream[idx]}, ")
+                human_log_file.write(f"Balance: ${agent.balance:.2f}\n")
+            
+            human_log_file.write(f"\n💬 Communication messages: {len([msg for msg in communication_messages if msg['round'] == round_index])}\n")
+            human_log_file.write(f"🤖 LLM calls this round: {len(agents) * (communication_rounds + 1) if enable_communication else len(agents)}\n\n")
+            
             human_log_file.flush()
 
         if logger:
@@ -889,15 +921,19 @@ async def run_beer_game_simulation(
     enable_shared_memory: bool = False,
     initial_inventory: int = 100,
     initial_backlog: int = 0,
-    sale_price_per_unit: float = 5.0,
-    purchase_cost_per_unit: float = 2.5,
-    production_cost_per_unit: float = 1.5,
+    sale_price_per_unit: float = None,
+    purchase_cost_per_unit: float = None,
+    production_cost_per_unit: float = None,
     initial_balance: float = 1000.0,
-    holding_cost_per_unit: float = 0.5,
-    backlog_cost_per_unit: float = 1.5,
+    holding_cost_per_unit: float = None,
+    backlog_cost_per_unit: float = None,
     enable_orchestrator: bool = False,
     orchestrator_history: int = 3,
-    orchestrator_override: bool = False
+    orchestrator_override: bool = False,
+    longtermplanning_boolean: bool = False,
+    safety_stock_target: float = 10.0,
+    backlog_clearance_rate: float = 0.5,
+    demand_smoothing_factor: float = 0.3
 ):
     """
     Orchestrates the Beer Game simulation with multiple rounds.
@@ -926,9 +962,34 @@ async def run_beer_game_simulation(
     # Open human-readable log file
     human_log_path = os.path.join(results_folder, "human_readable_log.txt")
     human_log_file = open(human_log_path, "w")
-    human_log_file.write("\n============================================================\n")
-    human_log_file.write("            Starting Beer Game Simulation\n")
-    human_log_file.write("============================================================\n\n")
+    human_log_file.write("🍺" + "="*78 + "🍺\n")
+    human_log_file.write("🎮        MIT BEER GAME SIMULATION - DETAILED LLM LOG       🎮\n")
+    human_log_file.write("🍺" + "="*78 + "🍺\n\n")
+    
+    human_log_file.write("📋 SIMULATION PARAMETERS\n")
+    human_log_file.write("-" * 50 + "\n")
+    human_log_file.write(f"🎯 Number of rounds: {num_rounds}\n")
+    human_log_file.write(f"🌡️  Temperature: {temperature}\n")
+    human_log_file.write(f"💰 Initial balance: ${initial_balance:.2f}\n")
+    human_log_file.write(f"📦 Initial inventory: {initial_inventory} units\n")
+    human_log_file.write(f"📋 Initial backlog: {initial_backlog} units\n")
+    human_log_file.write(f"💵 Sale price per unit: ${sale_price_per_unit:.2f}\n")
+    human_log_file.write(f"💸 Purchase cost per unit: ${purchase_cost_per_unit:.2f}\n")
+    human_log_file.write(f"🏭 Production cost per unit: ${production_cost_per_unit:.2f}\n")
+    human_log_file.write(f"🏪 Holding cost per unit: ${holding_cost_per_unit:.2f}\n")
+    human_log_file.write(f"⏰ Backlog cost per unit: ${backlog_cost_per_unit:.2f}\n")
+    human_log_file.write(f"💬 Communication enabled: {enable_communication}\n")
+    if enable_communication:
+        human_log_file.write(f"🔄 Communication rounds: {communication_rounds}\n")
+    human_log_file.write(f"🧠 Memory enabled: {enable_memory}\n")
+    if enable_memory:
+        human_log_file.write(f"📚 Memory retention rounds: {memory_retention_rounds}\n")
+    human_log_file.write(f"🎭 Shared memory enabled: {enable_shared_memory}\n")
+    human_log_file.write(f"🎼 Orchestrator enabled: {enable_orchestrator}\n")
+    if enable_orchestrator:
+        human_log_file.write(f"📊 Orchestrator history: {orchestrator_history}\n")
+        human_log_file.write(f"⚡ Orchestrator override: {orchestrator_override}\n")
+    human_log_file.write("\n")
 
     if logger is None:
         logger = BeerGameLogger()
@@ -937,10 +998,19 @@ async def run_beer_game_simulation(
     roles = ["Retailer", "Wholesaler", "Distributor", "Factory"]
     agents = [BeerGameAgent.create_agent(role_name=role, initial_inventory=initial_inventory, 
                                         initial_backlog=initial_backlog, initial_balance=initial_balance,
-                                        logger=logger) for role in roles]
+                                        logger=logger, human_log_file=human_log_file) for role in roles]
 
     # Each agent obtains an initial strategy from the LLM
-    await asyncio.gather(*(agent.initialize_strategy(temperature=temperature, profit_per_unit_sold=sale_price_per_unit) for agent in agents))
+    if human_log_file:
+        human_log_file.write("\n🚀 AGENT INITIALIZATION PHASE\n")
+        human_log_file.write("="*80 + "\n\n")
+        human_log_file.flush()
+    
+    await asyncio.gather(*(agent.initialize_strategy(temperature=temperature, selling_price_per_unit=sale_price_per_unit, unit_cost_per_unit=purchase_cost_per_unit if agent.role_name != "Factory" else production_cost_per_unit, holding_cost_per_unit=holding_cost_per_unit, backlog_cost_per_unit=backlog_cost_per_unit, safety_stock_target=safety_stock_target, backlog_clearance_rate=backlog_clearance_rate, demand_smoothing_factor=demand_smoothing_factor) for agent in agents))
+    
+    if human_log_file:
+        human_log_file.write("\n✅ All agents initialized successfully\n\n")
+        human_log_file.flush()
 
     # Example external demand across rounds:
     # In real usage, you might load or generate random demands.
@@ -1002,7 +1072,14 @@ async def run_beer_game_simulation(
         enable_shared_memory=enable_shared_memory,
         enable_orchestrator=enable_orchestrator,
         orchestrator_history=orchestrator_history,
-        orchestrator_override=orchestrator_override
+        orchestrator_override=orchestrator_override,
+        initial_inventory=initial_inventory,
+        initial_backlog=initial_backlog,
+        initial_balance=initial_balance,
+        longtermplanning_boolean=longtermplanning_boolean,
+        safety_stock_target=safety_stock_target,
+        backlog_clearance_rate=backlog_clearance_rate,
+        demand_smoothing_factor=demand_smoothing_factor
     )
 
     print(f"✅ Simulation complete")
@@ -1015,28 +1092,38 @@ async def run_beer_game_simulation(
 
     # Generate visualizations
     # Create run settings dictionary for final plot
+    from llm_calls_mitb_game import MODEL_NAME as _RUN_MODEL_NAME
     run_settings = {
         'num_rounds': num_rounds,
-        'holding_cost_per_unit': holding_cost_per_unit,
-        'backlog_cost_per_unit': backlog_cost_per_unit,
+        'temperature': temperature,
+        'model_name': _RUN_MODEL_NAME,
         'sale_price_per_unit': sale_price_per_unit,
         'purchase_cost_per_unit': purchase_cost_per_unit,
         'production_cost_per_unit': production_cost_per_unit,
-        'temperature': temperature,
+        'holding_cost_per_unit': holding_cost_per_unit,
+        'backlog_cost_per_unit': backlog_cost_per_unit,
         'enable_communication': enable_communication,
         'communication_rounds': communication_rounds,
         'enable_memory': enable_memory,
         'memory_retention_rounds': memory_retention_rounds,
         'enable_orchestrator': enable_orchestrator,
-        'orchestrator_override': orchestrator_override
+        'orchestrator_override': orchestrator_override,
+        'initial_inventory': initial_inventory,
+        'initial_backlog': initial_backlog,
+        'initial_balance': initial_balance
     }
     plot_beer_game_results(df_rounds, results_folder, external_demand_pattern, run_settings)
 
     # Calculate Nash equilibrium deviations (assumed equilibrium order quantity = 10)
     deviations = calculate_nash_deviation(df_rounds, equilibrium_order=10)
-    human_log_file.write("\n----- Nash Equilibrium Analysis -----\n")
+    human_log_file.write("\n" + "="*80 + "\n")
+    human_log_file.write("📊 SIMULATION RESULTS & ANALYSIS\n")
+    human_log_file.write("="*80 + "\n\n")
+    
+    human_log_file.write("🎯 NASH EQUILIBRIUM ANALYSIS\n")
+    human_log_file.write("-" * 50 + "\n")
     for role, dev in deviations.items():
-        human_log_file.write("Role: {} - Average Absolute Deviation: {:.2f}\n".format(role, dev))
+        human_log_file.write("🏢 {}: Average Absolute Deviation: {:.2f}\n".format(role, dev))
 
     # Log LLM session summary
     from llm_calls_mitb_game import lite_client, get_default_client
@@ -1057,19 +1144,24 @@ async def run_beer_game_simulation(
     # print(f"   ⏱️  Total Inference Time: {session_summary['total_inference_time_seconds']}s")  # Commented out
     # print(f"   📊 Average per Call: {session_summary['average_inference_time_seconds']:.3f}s, ${session_summary['average_cost_per_call_usd']:.6f}")  # Commented out
     
-    human_log_file.write("\n----- LLM Session Summary -----\n")
-    human_log_file.write("Total LLM Calls: {}\n".format(session_summary['total_calls']))
-    human_log_file.write("Total Cost: ${}\n".format(session_summary['total_cost_usd']))
-    human_log_file.write("Total Tokens: {} ({} input + {} output)\n".format(
+    human_log_file.write("\n🤖 LLM SESSION SUMMARY\n")
+    human_log_file.write("-" * 50 + "\n")
+    human_log_file.write("📞 Total LLM Calls: {}\n".format(session_summary['total_calls']))
+    human_log_file.write("💰 Total Cost: ${}\n".format(session_summary['total_cost_usd']))
+    human_log_file.write("📝 Total Tokens: {} ({} input + {} output)\n".format(
         session_summary['total_tokens'], 
         session_summary['total_input_tokens'], 
         session_summary['total_output_tokens']
     ))
-    human_log_file.write("Total Inference Time: {}s\n".format(session_summary['total_inference_time_seconds']))
-    human_log_file.write("Average per Call: {:.3f}s, ${:.6f}\n".format(
+    human_log_file.write("⏱️  Total Inference Time: {}s\n".format(session_summary['total_inference_time_seconds']))
+    human_log_file.write("📊 Average per Call: {:.3f}s, ${:.6f}\n".format(
         session_summary['average_inference_time_seconds'], 
         session_summary['average_cost_per_call_usd']
     ))
+    
+    human_log_file.write("\n🍺" + "="*78 + "🍺\n")
+    human_log_file.write("🎮           SIMULATION COMPLETED SUCCESSFULLY!           🎮\n")
+    human_log_file.write("🍺" + "="*78 + "🍺\n")
 
     # Save session summary to JSON
     session_summary_path = os.path.join(results_folder, "llm_session_summary.json")

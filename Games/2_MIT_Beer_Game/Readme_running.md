@@ -1,5 +1,81 @@
 # MIT Beer Game - Comprehensive Development Log & Documentation
 
+## Latest Changes (Most Recent First)
+
+### 2025-01-29: Prompt API Safety, Consistency, and Research Compliance
+- **Removed all numeric defaults for holding_cost_per_unit and backlog_cost_per_unit** in AgentContext and prompt methods; these must now be explicitly provided (None triggers error).
+- **Preflight validation**: All prompt builders now raise a clear error if any of p/c/h/b are missing.
+- **Safe currency formatting**: All `:.2f` interpolations are now guarded; None values display as 'N/A'.
+- **Communication checklist updated**: No item prescribes what other agents should order; instead, agents are told to suggest chain-level targets or coordination strategies (ranges OK, no role directives).
+- **Renamed profit_accumulated → current_balance** everywhere in prompt code and call sites. Added optional cumulative_profit as a separate field; if present, it is labeled and shown distinctly.
+- **Added optional hyper-parameters**: safety_stock_Ss, gamma_hint, delta_hint to AgentContext and all prompt builders. Decision prompt now says: "If not provided, choose γ ∈ [0.25,1.0] and δ ∈ [0, 0.5·μ]; include chosen values in calc."
+- **Shipment and logging event order**: Ensured exact phrase match for shipment rule and logging event order across all prompts (system, decision, communication).
+- **Removed all references to profit_per_unit_sold** and all legacy numeric economics from dataclasses and prompt text.
+
+**Acceptance checklist (all verified):**
+- [x] No 0.5/1.5 defaults exist; p/c/h/b validated before use.
+- [x] No formatting with None can occur.
+- [x] Communication checklist has no role-specific directives.
+- [x] current_balance label and parameter names are consistent; cumulative_profit (if shown) is distinct.
+- [x] Decision prompt mentions γ/δ ranges; calc includes the chosen values.
+- [x] Shipment + logging lines are text-identical across prompts.
+- [x] No user-visible mention of profit_per_unit_sold.
+
+**Files Modified:**
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: All changes above implemented and verified.
+
+---
+
+### 2025-01-27: Prompt Structure Restructure for Research Quality
+- **Major restructuring of all prompts in BeerGamePrompts class**: Implemented systematic target format for improved reasoning quality and cross-role consistency
+- **New unified structure**: All prompts now follow: ROLE & TASK (1 line) → CORE RULES → STATE SNAPSHOT → CONTEXT BLOCKS → RESEARCH GUIDANCE → OUTPUT CONTRACT
+- **Consolidated CORE_RULES constant**: Created shared rules section covering lead time (1 round), shipment constraints, profit objectives, bankruptcy guard, and inventory targets
+- **Enhanced context organization**: Moved checklists and additional context into proper CONTEXT BLOCKS before research guidance
+- **Unified tone**: Removed emojis and shouty language, adopted concise professional style throughout
+- **Fixed inventory contradictions**: Changed from "never zero inventory" to "~1 round of cover; zero inventory allowed if cost-optimal"
+- **Enhanced system prompt**: Added CORE RULES section and streamlined JSON-only instruction
+- **Updated PromptEngine**: Restructured to insert context blocks (market overview, communications, memory, orchestrator advice) before research guidance
+- **Research guidance integration**: Added behavioral cue encoding instructions (e.g., [aggressive-ordering], [coordination-seeking])
+- **Contract placement**: Made output contract the final section with no text following it
+- **Word count reduction**: Achieved ~20% reduction in prompt length while maintaining all information
+- **Cross-prompt consistency**: Ensured all cost parameters, rules, and structures match across decision, communication, and strategy prompts
+
+**Files Modified:**
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: Complete restructure of all prompt methods and PromptEngine
+- Added _CORE_RULES constant with unified rules
+- Updated get_strategy_generation_prompt, get_strategy_update_prompt, get_decision_prompt, get_communication_prompt
+- Restructured get_system_prompt with CORE RULES section
+- Enhanced PromptEngine.build_prompt to properly handle context blocks
+
+**Research Impact:**
+- Improved LLM reasoning quality through clearer structure
+- Enhanced cross-role consistency via shared CORE RULES
+- Better research suitability with behavioral cue encoding
+- Reduced cognitive load with shorter, more focused prompts
+- Maintained all existing APIs and JSON schemas
+
+### 2025-01-22: Real-Time LLM Logging System
+- **Real-time LLM call logging**: Every LLM call (decision-making, communication, initialization) is now logged immediately after it happens, providing live visibility into agent reasoning.
+- **Immediate log writing**: Each LLM interaction is written to `human_readable_log.txt` as soon as it completes, with automatic file flushing for real-time monitoring.
+- **Structured logging format**: Each LLM call shows:
+  - 🤖 Call type and agent name with optional round number
+  - 🔧 Complete system prompt
+  - 👤 Complete user prompt  
+  - 🎯 Complete model output (JSON formatted)
+  - ─ Visual separators for easy reading
+- **Phase organization**: Clear headers mark different simulation phases:
+  - 🚀 Agent initialization phase
+  - 🎲 Round start headers with external demand
+  - 💬 Communication phase headers
+  - 🎯 Decision phase headers
+  - 📊 Round summary with agent states
+- **Live debugging capability**: Developers can monitor LLM reasoning in real-time during simulation execution.
+- **Simplified round summaries**: Round-end logging now shows concise agent state summaries instead of duplicating detailed LLM calls.
+- **Complete traceability**: Every prompt and response is immediately available for analysis without waiting for simulation completion.
+- **Fixed Pydantic validation error**: Corrected type annotation for `human_log_file` field to use `Optional[Any]` instead of `TextIO` for proper Pydantic compatibility.
+
+---
+
 ## 📚 WHAT IS THE MIT BEER GAME?
 
 ### **Educational Background**
@@ -578,301 +654,1133 @@ The simulation logic remains intact and the Beer Game mechanics work properly wi
    - Added `balance: float = 1000.0` field to `BeerGameAgent`
    - Added compatibility alias `profit_accumulated` → `balance`
    - Updated `RoundData` to track: `starting_balance`, `revenue`, `purchase_cost`, `holding_cost`, `backlog_cost`, `ending_balance`
-   - Modified `create_agent()` to accept `initial_balance` parameter
-
-2. **Core Game Logic (`MIT_Beer_Game.py`)**:
-   - **Revenue**: Added to balance when units are sold downstream
-   - **Purchase costs**: Deducted immediately when orders are placed
-   - **Holding/backlog costs**: Deducted each round based on inventory/backlog
-   - **Bankruptcy check**: Simulation stops if any agent balance ≤ 0
-   - Added monetary parameters: `sale_price_per_unit`, `purchase_cost_per_unit`, `production_cost_per_unit`
-
-3. **CLI Interface (`executeMITBeerGame.py`)**:
-   - Added `--initial_balance` argument (default: 1000.0)
-   - Added `--sale_price`, `--purchase_cost`, `--production_cost` arguments
-   - All monetary parameters configurable via command line
-
-4. **Analysis (`analysis_mitb_game.py`)**:
-   - Updated plots to use `ending_balance` instead of deprecated `profit` column
-   - Fixed visualization compatibility with new data structure
-
-#### Command Examples:
-```bash
-# Start with $500 balance, 0 backlog, 100 inventory
-python executeMITBeerGame.py --initial_balance 500.0 --initial_backlog 0 --initial_inventory 100
-
-# Custom pricing scenario
-python executeMITBeerGame.py --sale_price 6.0 --purchase_cost 3.0 --production_cost 2.0 --initial_balance 2000.0
-```
-
-#### Cash Flow Logic:
-1. **Each Round**:
-   - Revenue: `units_sold × sale_price_per_unit` → added to balance
-   - Holding cost: `inventory × holding_cost_per_unit` → deducted from balance  
-   - Backlog cost: `backlog × backlog_cost_per_unit` → deducted from balance
-   - Purchase cost: `order_quantity × purchase_cost_per_unit` → deducted from balance
-
-2. **Bankruptcy Protection**:
-   - If any agent's balance ≤ 0, simulation terminates with "Bankruptcy!" message
-   - Prevents unrealistic negative cash flow scenarios
-
-#### Prompt Updates Needed:
-- [ ] Update LLM prompts to inform agents about cash constraints
-- [ ] Add bankruptcy risk awareness to decision-making prompts
-- [ ] Include balance information in strategy generation prompts
+   - Modified `create_agent()`
 
 ---
 
-## Previous Changes...
-
-### Applied Second Fix to Beer Game Logic (2025-06-28)
-- Fixed double-counting bug in order flow
-- Restored proper order processing: orders placed → upstream backlog → fulfillment
-- LLM decisions now for strategic planning only, not immediate order placement
-- Prevents both inventory explosion and starvation scenarios
-
-### LangSmith Integration (Previous)
-- Comprehensive workflow visualization and tracing
-- Real-time performance monitoring  
-- Agent-level decision tracking
-- Dashboard visualization at smith.langchain.com
-
-### Communication System
-- Multi-round agent communication before decisions
-- Strategy sharing and collaboration proposals
-- Message history tracking and context
-
-### Memory System  
-- Agent memory for past decisions and strategies
-- Configurable retention periods
-- Shared memory pool option for cross-agent learning
-
-### Applied Second Fix to Beer Game Logic (2025-06-28)
-- Fixed double-counting bug in order flow
-- Restored proper order processing: orders placed → upstream backlog → fulfillment
-- LLM decisions now for strategic planning only, not immediate order placement
-- Prevents both inventory explosion and starvation scenarios
-
-### LangSmith Integration (Previous)
-- Comprehensive workflow visualization and tracing
-- Real-time performance monitoring  
-- Agent-level decision tracking
-- Dashboard visualization at smith.langchain.com
-
-### Communication System
-- Multi-round agent communication before decisions
-- Strategy sharing and collaboration proposals
-- Message history tracking and context
-
-### Memory System  
-- Agent memory for past decisions and strategies
-- Configurable retention periods
-- Shared memory pool option for cross-agent learning 
-
-### 2025-06-30 – Optional Anthropic Claude Provider
-
-* Added `AnthropicLLMClient` in `llm_calls_mitb_game.py` (calls Claude via `/v1/messages` endpoint).
-* New CLI flags in `executeMITBeerGame.py`:
-  * `--provider litellm|anthropic` (default `litellm`)
-  * `--anthropic_model <model-name>` (default `claude-3-haiku-20240307`)
-* Requires environment variable `ANTHROPIC_API_KEY`.
-* Usage example:
-
-```bash
-export ANTHROPIC_API_KEY="sk-..."
-python executeMITBeerGame.py --provider anthropic --anthropic_model claude-3-haiku-20240307 --num_rounds 5
-``` 
-
-### 2025-06-30 - Chinese Whisper 2.0 SQL Evaluation Run
-
-**Files Used:** `Games/8_Chinese_Whisper2.0/generate_sql.py`, `Games/8_Chinese_Whisper2.0/evaluate_sql.py`
-
-**Change Description:**
-- Successfully ran SQL evaluation on latest Chinese Whispers simulation (run_2025-06-30_18-32-24)
-- Evaluated 26 SQL queries generated from story transformations across 25 agent steps
-- Measured semantic drift by comparing result set sizes against baseline (step 5: 8 rows)
-- Generated drift visualization plot showing semantic deviation over agent chain
-
-**Key Results:**
-- Several queries failed due to missing 'Olivia Hudson' records (expected for synthetic data)
-- Significant drift observed: ranging from 0 (perfect match) to 56 rows difference
-- Step 13 showed minimal drift (5 rows difference) while steps 11, 12, 17, 24 showed maximum drift (48-56 rows)
-- Generated comprehensive evaluation log, results.json, and diff_vs_agent.png visualization
-
-**Files Generated:**
-- `evaluation.log` - Detailed execution log with query results
-- `results.json` - Structured evaluation results with row counts and drift metrics  
-- `diff_vs_agent.png` - Visualization of semantic drift across agent chain
-
-**Impact:**
-- Demonstrates measurable semantic drift in LLM chains through SQL result set analysis
-- Provides quantitative metrics for evaluating information preservation in multi-agent transformations 
-
-## Latest Changes (January 2025)
-
-### Round Structure Analysis
-**Current Round Types Available:**
-- **Main Game Rounds** (`--num_rounds`): Core simulation rounds where agents make supply chain decisions
-- **Communication Rounds** (`--communication_rounds`): Sub-rounds within each main round for agent message exchange
-- **Memory Rounds** (`--memory_retention_rounds`): Number of past rounds agents retain in memory
-
-**Orchestration Rounds: NOT IMPLEMENTED**
-- No orchestration round option currently exists in the system
-- Orchestration rounds would be special rounds for higher-level strategy coordination
-- Could include supply chain alignment, demand forecasting coordination, risk management planning
-- Feature request noted for potential future implementation
-
-### Orchestrator Feature (NEW)
-- Added LLM-based Orchestrator that provides recommended order quantities to each agent every round.
-- CLI flags:
-  * `--enable_orchestrator` – turn on orchestrator phase.
-  * `--orchestrator_history` – how many past rounds are included in orchestrator prompt.
-  * `--orchestrator_override` – if set, agents are forced to follow orchestrator order.
-- Logging:
-  * `orchestrator_order` column in CSV/JSON.
-  * Recommendations stored in aggregated JSON under `orchestrator_recommendations`.
-- Visuals: Combined plot now includes "Orchestrator Recommended Orders" subplot.
-
-### 2025-07-18 - Progress Summary PDF Generator
-
-**Files Created:** `generate_progress_summary.py`, `docs/Progress_Summary_July2025.pdf`, updated `requirements.txt`
-
-**Change Description:**
-- Added an automated ReportLab-based script that compiles a three-page PDF summarising the entire repository status.
-- Embedded four representative plots (Beer Game, Fishery, Prisoner’s Dilemma) for quick visual inspection.
-- Included new dependency `reportlab>=3.6.0` in `requirements.txt` and generated the first PDF at the indicated location.
-
-### 2025-01-XX - Agent Information Access Investigation
-
-**Investigation Focus:** Determined what information agents have access to during communication rounds
-
-**Key Findings:**
-- ✅ **CONFIRMED**: Agents have **complete access** to their current balance/status information during communication rounds
-- Information includes: current inventory, backlog, total profit/balance, recent orders, last order placed, current strategy, and communication history
-- **Implementation**: Information is passed via `generate_communication_message()` method in `models_mitb_game.py`
-- **Prompt Structure**: Communication prompts include identical state information as decision-making prompts
-- **Code Location**: `prompts_mitb_game.py` lines 200-205 show explicit inclusion of balance (`${profit_accumulated:.2f}`) in communication prompts
-
-**Documentation Added:**
-- Added "Agent Information Access During Communication" section to explain what data is available
-- Updated "Key Simulation Features" to include "Full State Access" feature
-- Confirmed agents can make informed communications based on their actual financial and inventory status
-
-### 2025-01-XX - Enhanced Agent Historical Information Access
-
-**Major Feature Enhancement:** Implemented comprehensive profit and balance history tracking for agents
-
-**Key Changes:**
-- ✅ **NEW: Profit History Tracking** - Agents now maintain `profit_history` list of last 10 rounds
-- ✅ **NEW: Balance History Tracking** - Agents now maintain `balance_history` list of last 10 rounds  
-- ✅ **NEW: Trend Analysis Methods** - Added `get_profit_trend()` and `get_balance_trend()` for strategic analysis
-- ✅ **Enhanced Decision Prompts** - All decision-making phases now include comprehensive historical information
-- ✅ **Enhanced Communication Prompts** - Communication rounds now include profit/balance history for better coordination
-- ✅ **Consistent Information Access** - Historical data passed to ALL phases: decision, communication, strategy updates
-
-**Technical Implementation:**
-- **Files Modified:** `models_mitb_game.py`, `prompts_mitb_game.py`, `langraph_workflow.py`, `MIT_Beer_Game.py`
-- **New Agent Fields:** `profit_history: List[float]`, `balance_history: List[float]`
-- **New Methods:** `update_profit_history()`, `get_profit_trend()`, `get_balance_trend()`
-- **Updated Prompt Functions:** Enhanced all prompt generators with historical parameters
-
-**Agent Information Now Includes:**
-- Current inventory, backlog, balance
-- Last round profit + profit history (last 10 rounds)
-- Balance history (last 10 rounds) with trend analysis
-- Recent demand/orders history
-- Profit trend analysis ("Profitable trend", "Loss trend", "Improving", "Declining")
-- Balance trend analysis ("Growing balance", "Declining balance", "Stable balance")
-
-**Impact:** Agents can now make more informed decisions based on their financial trajectory and performance trends, enabling better strategic planning and risk management
-
 # MIT Beer Game - Running Log
 
-## Latest Changes
+## 2025-01-28: Naming & Schema Cleanup (Point 7)
 
-### 2025-01-27 - Run Settings Display on Combined Plots
-- **Enhancement**: Added run settings display to the combined plots for better experiment tracking
-- **Implementation**: 
-  - Modified `plot_beer_game_results()` function to accept optional `run_settings` parameter
-  - Added settings text box in top-right corner of combined plots showing all command line parameters
-  - Updated both plotting calls in `MIT_Beer_Game.py` to pass run settings
-  - Settings include: num_rounds, holding_cost_per_unit, backlog_cost_per_unit, sale_price_per_unit, purchase_cost_per_unit, production_cost_per_unit, temperature, enable_communication, communication_rounds, enable_memory, memory_retention_rounds, enable_orchestrator, orchestrator_override
-- **Files modified**:
-  - `analysis_mitb_game.py`: Added run_settings parameter and text box display
-  - `MIT_Beer_Game.py`: Updated plotting calls to pass run settings
-- **Benefits**: 
-  - Easy identification of experiment parameters from plots
-  - No need to check command line history or logs to know settings
-  - Better experiment reproducibility and documentation
-  - Settings visible on both real-time plots (after each round) and final plots
+**Feature**: Fixed JSON schema naming inconsistencies by removing leading spaces from keys and ensuring proper naming conventions.
 
-### 2025-01-27 - Dynamic Cost Parameters in Prompts
-- **Enhancement**: Made holding and backlog costs dynamic parameters instead of hardcoded values
-- **Implementation**: 
-  - Updated all prompt methods to accept `holding_cost_per_unit` and `backlog_cost_per_unit` parameters
-  - Modified `AgentContext` dataclass to include cost parameters
-  - Updated `PromptEngine` to pass cost parameters to prompt methods
-  - Modified simulation functions to accept and pass cost parameters through the entire chain
-- **Files modified**:
-  - `prompts_mitb_game.py`: All prompt methods now accept cost parameters
-  - `models_mitb_game.py`: Updated to pass cost parameters to prompts
-  - `MIT_Beer_Game.py`: Updated simulation functions to accept cost parameters
-  - `executeMITBeerGame.py`: Added cost parameters to simulation call
-- **Benefits**: 
-  - Cost parameters can now be set via command line arguments
-  - Prompts dynamically reflect the actual costs being used in simulation
-  - More flexible experimentation with different cost structures
-  - Agents receive accurate cost information in their prompts
+**Problem Identified**:
+- **Malformed JSON Key**: Strategy generation schema contained `" d_demand_next_round"` with leading space
+- **Schema Inconsistency**: Different schemas used different naming patterns for demand forecasting
+- **JSON Validation Issues**: Leading spaces in keys could cause parsing problems
 
-### 2025-01-27 - Fixed LLM Client Initialization Issue
-- **Bug Fix**: Resolved connection error when using `--provider anthropic` flag
-- **Issue**: `lite_client` was initialized at module level as `LiteLLMClient()`, causing connection to ETHZ endpoint even when Anthropic provider was selected
-- **Root Cause**: Module-level initialization happened before script could override the client
-- **Solution**: 
-  - Changed `lite_client` initialization to `None` at module level
-  - Added `get_default_client()` function for lazy initialization
-  - Updated all client usage to handle `None` case with fallback
-  - Modified `executeMITBeerGame.py` to properly initialize client based on provider
-- **Files modified**:
-  - `llm_calls_mitb_game.py`: Changed client initialization pattern
-  - `models_mitb_game.py`: Added client fallback handling
-  - `orchestrator_mitb_game.py`: Added client fallback handling
-  - `MIT_Beer_Game.py`: Added client fallback for session summary
-  - `executeMITBeerGame.py`: Improved client initialization logic
-- **Result**: `--provider anthropic` now correctly uses Anthropic API instead of ETHZ endpoint
+**Key Implementation**:
 
-### 2025-01-27 - Real-Time File Saving and Plotting Implementation
-- **Enhancement**: Modified pipeline to save CSV/JSON files and generate plots after every round
-- **Implementation**: 
-  - CSV file: Now overwrites complete file after each round with all data up to current round
-  - JSON file: Now overwrites complete nested structure after each round
-  - Plots: Now regenerated and overwritten after each round with current data
-- **Files modified**:
-  - `MIT_Beer_Game.py`: Updated CSV/JSON writing logic in `run_beer_game_generation()`
-  - `analysis_mitb_game.py`: Added empty dataframe handling for real-time plotting
-  - `executeMITBeerGame.py`: Removed initial file creation (now handled per-round)
-- **Benefits**: 
-  - Real-time monitoring of simulation progress
-  - Immediate access to current data and visualizations
-  - No need to wait for simulation completion to see results
-  - Files always contain complete data up to current round
+1. **✅ Fixed Leading Space in JSON Key**:
+   - **Before**: `" d_demand_next_round": <integer>,` (with leading space)
+   - **After**: `"expected_demand_next_round": <integer>,` (clean, consistent naming)
+   - **Location**: Strategy generation prompt JSON schema
+   - **Impact**: Prevents JSON parsing issues and maintains naming consistency
 
-### 2025-01-27 - Added Zero-Order Option for High Holding Costs
-- **Enhancement**: Added explicit option for agents to order 0 units when holding costs are too high
-- **Implementation**: Modified all prompt templates in `prompts_mitb_game.py` to include this strategy
-- **Prompt changes**:
-  - Strategy generation prompt: Added "ORDERING OPTIONS" section
-  - Strategy update prompt: Added zero-order option guidance
-  - Decision prompt: Added explicit permission to order 0 units
-  - System prompt: Added ordering options note
-- **Rationale**: Agents can now explicitly choose not to order when they have excess inventory and want to reduce storage costs
-- **Impact**: More realistic supply chain behavior where agents can strategically reduce inventory
+2. **✅ Verified Schema Consistency**:
+   - **Expected Demand Key**: All schemas now use `"expected_demand_next_round"` consistently
+   - **No Leading Spaces**: Comprehensive check confirmed no other keys have leading spaces
+   - **Clean JSON**: All JSON schemas follow proper formatting conventions
+   - **Validation Ready**: Schemas are now properly formatted for JSON validators
 
-### 2025-01-27 - Factory vs Other Agents Analysis
-- **Analysis**: Identified key differences between Factory and other agents in Beer Game simulation
-- **Factory characteristics**: 
-  - Lower purchase_cost (15.0 vs 25.0-27.5 for others)
-  - No incoming shipments (llm_incoming_shipments = "[0]")
-  - Acts as production source rather than intermediary
-- **Other agents**: Purchase from upstream, add markup, resell downstream
-- **Impact**: Standard supply chain design where Factory is original producer with lower costs
+3. **✅ Maintained JSON-Only Response Rule**:
+   - **No Code Fences**: Confirmed no markdown or triple backticks in JSON responses
+   - **Short Responses**: Maintained concise JSON-only output requirement
+   - **Clean Format**: All JSON schemas follow the established clean format rules
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: Fixed leading space in strategy generation JSON schema
+
+**Acceptance Checks**:
+- ✅ **No key with leading space exists**: Comprehensive regex search found 0 keys with leading spaces
+- ✅ **"expected_demand_next_round" present**: Key appears 3 times across different schemas consistently
+- ✅ **JSON-only response maintained**: No markdown formatting or code fences in schemas
+
+**Result**: All JSON schemas now have clean, consistent key naming without formatting issues. The `expected_demand_next_round` key is properly formatted across all prompt schemas.
+
+---
+
+## 2025-01-28: Logging / Analysis Alignment (Point 9)
+
+**Feature**: Implemented logging and analysis alignment by specifying the correct event order in prompt text and ensuring no placeholder logging lines remain.
+
+**Problem Identified**:
+- **Missing Event Order**: Prompts did not specify the sequence of events that occur in each round
+- **Unclear Metrics Source**: No explicit statement that metrics are computed from logged events
+- **Potential Placeholder Text**: Risk of placeholder logging lines appearing in prompts or sample text
+
+**Key Implementation**:
+
+1. **✅ Added Event Order Specification**:
+   - **Exact Sequence**: "orders placed → production → shipments sent/received → sales → costs → ending inventory/backlog"
+   - **Location**: Added to system prompt in the LOGGING & ANALYSIS section
+   - **Clarity**: Provides agents with clear understanding of round event sequence
+   - **Consistency**: Ensures all agents understand the same event ordering
+
+2. **✅ Specified Metrics Computation**:
+   - **Source Clarity**: "All performance metrics are computed from these logged events (no placeholders)"
+   - **No Placeholders**: Explicitly states that metrics come from real logged data
+   - **Analysis Foundation**: Establishes that all analysis is based on actual event logs
+   - **Data Integrity**: Ensures agents understand metrics are not synthetic or placeholder values
+
+3. **✅ Verified No Placeholder Lines**:
+   - **Comprehensive Check**: Searched for "Total LLM calls … tokens 0 cost $0" patterns
+   - **Clean Prompts**: Confirmed no placeholder logging text in any prompt methods
+   - **Real Data Only**: All logging references point to actual computed metrics
+   - **Professional Output**: Maintains clean, production-ready prompt text
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: Added logging & analysis guidance to system prompt
+
+**Specific Addition**:
+```
+**LOGGING & ANALYSIS**: Each round follows this event order: orders placed → production → 
+shipments sent/received → sales → costs → ending inventory/backlog. All performance metrics 
+are computed from these logged events (no placeholders).
+```
+
+**Event Order Details**:
+1. **Orders Placed**: Agents make ordering decisions
+2. **Production**: Factory schedules and executes production
+3. **Shipments Sent/Received**: Goods move through supply chain with lead time
+4. **Sales**: Downstream demand is fulfilled from available inventory
+5. **Costs**: Holding costs and backlog costs are calculated
+6. **Ending Inventory/Backlog**: Final state is recorded for next round
+
+**Acceptance Checks**:
+- ✅ **Exact event order appears**: "orders placed → production → shipments sent/received → sales → costs → ending inventory/backlog" present in system prompt
+- ✅ **No placeholder logging lines**: Comprehensive search found no "Total LLM calls … tokens 0 cost $0" patterns in prompts
+- ✅ **Metrics computed from logs**: Explicit statement that metrics come from logged events, not placeholders
+- ✅ **All prompt methods working**: System, decision, and communication prompts all function correctly with new guidance
+
+**Testing Results**:
+```python
+# ✅ Event order verification
+system_prompt = BeerGamePrompts.get_system_prompt('Retailer')
+assert 'orders placed → production → shipments sent/received → sales → costs → ending inventory/backlog' in system_prompt
+
+# ✅ Metrics computation verification  
+assert 'metrics are computed from these logged events' in system_prompt
+assert 'no placeholders' in system_prompt
+
+# ✅ No placeholder patterns found
+# Verified no "tokens 0 cost $0" or similar placeholder text exists
+```
+
+**Result**: Agents now have clear understanding of the round event sequence and know that all performance metrics are computed from real logged events, not placeholder values. This provides proper foundation for analysis and decision-making based on actual simulation data.
+
+---
+
+## 2025-01-28: Long-Term Mode Toggle Consistency (Point 8)
+
+**Feature**: Enhanced long-term planning mode with clear role viability priority guidance, ensuring agents prioritize survival when backlog is high while maintaining collaborative objectives.
+
+**Problem Identified**:
+- **Unclear Priority Hierarchy**: No explicit guidance on when role-specific objectives should override consensus targets
+- **Survival vs Collaboration**: Agents needed clearer direction on balancing individual viability with chain-wide cooperation
+- **Critical Situation Handling**: Missing guidance for high-backlog or financial crisis situations
+
+**Key Implementation**:
+
+1. **✅ Added Role Viability Priority Clause**:
+   - **New Guidance**: "When your backlog is high or financial situation is critical, role-specific objectives dominate consensus targets - your survival enables future collaboration."
+   - **Clear Hierarchy**: Establishes that individual survival takes priority when necessary
+   - **Justification**: Explains that survival enables future collaboration (not selfish abandonment)
+   - **Context-Sensitive**: Applies specifically when backlog or financial situation is critical
+
+2. **✅ Maintained Collaborative Framework**:
+   - **Existing Structure**: Preserved all existing long-term planning collaborative guidance
+   - **No Deleted Text**: Did not reintroduce any previously removed coaching language
+   - **Balanced Approach**: Maintains focus on chain-wide optimization while adding survival priority
+   - **Strategic Context**: Keeps emphasis on mutual interdependence and information sharing
+
+3. **✅ Enhanced Decision Logic**:
+   - **Situational Awareness**: Agents now understand when to shift from consensus to survival mode
+   - **Backlog Trigger**: High backlog explicitly mentioned as a trigger for priority shift
+   - **Financial Trigger**: Critical financial situation also triggers role-specific focus
+   - **Return Path**: Implies return to collaboration once crisis is resolved
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: Added role viability priority clause to collaborative long-term planning guidance
+
+**Specific Addition**:
+```
+**Role Viability Priority**: When your backlog is high or financial situation is critical, 
+role-specific objectives dominate consensus targets - your survival enables future collaboration.
+```
+
+**Acceptance Checks**:
+- ✅ **Decision prompt includes role-specific dominance one-liner**: Clear statement added about priority hierarchy
+- ✅ **No removed text reintroduced**: Verified no forbidden phrases or deleted coaching language returned
+- ✅ **Backlog consideration present**: High backlog explicitly mentioned as trigger condition
+- ✅ **Collaborative framework maintained**: All existing long-term planning guidance preserved
+
+**Result**: Long-term planning mode now provides clear guidance on when agents should prioritize individual survival over consensus targets, ensuring both collaborative optimization and individual viability in critical situations.
+
+---
+
+## 2025-01-28: Round Index Alignment (Point 6)
+
+**Feature**: Implemented round index alignment to display the correct round number in decision prompts, ensuring agents know which round they are making decisions for.
+
+**Problem Identified**:
+- **Missing Round Context**: Decision prompts did not show which round agents were making decisions for
+- **Generic Opening**: All prompts showed "MIT Beer Game" instead of specific round information
+- **Potential Confusion**: Agents could not distinguish between different rounds in their decision-making context
+
+**Key Implementation**:
+
+1. **✅ Added round_index Parameter to Decision Prompts**:
+   - **`get_decision_prompt()`**: Added `round_index: int = None` parameter
+   - **`get_decision_prompt_with_communication()`**: Added `round_index` parameter and pass-through
+   - **`get_decision_prompt_with_memory()`**: Added `round_index` parameter and pass-through
+   - **Dynamic Display**: Shows "Round {round_index}" when provided, falls back to "MIT Beer Game" when None
+
+2. **✅ Updated Opening Line Logic**:
+   - **Conditional Text**: `round_text = f"Round {round_index}" if round_index is not None else "MIT Beer Game"`
+   - **Clear Context**: Agents now see "You are the Retailer in Round 5" instead of generic text
+   - **Fallback Handling**: Gracefully handles None values for backward compatibility
+
+3. **✅ Enhanced PromptEngine Integration**:
+   - **PromptEngine.build_prompt()**: Already had `round_index` parameter, now passes it to `get_decision_prompt()`
+   - **Real Round Index**: Ensures the actual current round number is passed through the prompt chain
+   - **Phase-Specific**: Only affects decision prompts, communication prompts retain their existing round display
+
+4. **✅ Updated Method Signatures Throughout**:
+   - **`decide_order_quantity()`**: Added `round_index=None` parameter
+   - **`decide_order_quantity_with_communication()`**: Added `round_index=None` parameter
+   - **MIT_Beer_Game.py**: Updated calls to pass current `round_index` variable
+   - **Consistent Flow**: Round index flows from game loop through all decision prompt layers
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`:
+  - Added `round_index` parameter to all decision prompt methods
+  - Updated opening line logic with conditional round text
+  - Updated internal calls to pass `round_index` through
+- `Games/2_MIT_Beer_Game/scripts/models_mitb_game.py`:
+  - Added `round_index` parameter to decision methods
+  - Updated calls to pass `round_index` to prompt methods
+- `Games/2_MIT_Beer_Game/scripts/MIT_Beer_Game.py`:
+  - Updated `decide_order_quantity()` calls to pass current `round_index`
+
+**Specific Changes**:
+
+1. **Opening Line Enhancement**:
+   ```python
+   # Before (generic)
+   return f"""
+   You are the {role_name} in the MIT Beer Game. {role_context}
+   
+   # After (round-specific)
+   round_text = f"Round {round_index}" if round_index is not None else "MIT Beer Game"
+   return f"""
+   You are the {role_name} in the {round_text}. {role_context}
+   ```
+
+2. **Parameter Flow**:
+   ```python
+   # MIT_Beer_Game.py → models_mitb_game.py → prompts_mitb_game.py
+   agent.decide_order_quantity(..., round_index=round_index, ...)
+   → self.prompts.get_decision_prompt(..., round_index=round_index, ...)
+   → "You are the Retailer in Round 5"
+   ```
+
+3. **PromptEngine Integration**:
+   ```python
+   # PromptEngine.build_prompt() now passes round_index
+   base_prompt = BeerGamePrompts.get_decision_prompt(
+       ...,
+       round_index=round_index,  # ← Added this line
+       longtermplanning_boolean=longtermplanning_boolean,
+   )
+   ```
+
+**Acceptance Checks**:
+- ✅ **Decision prompts show correct round number**: "Round 5", "Round 10" appear correctly
+- ✅ **No "Round 0" for later rounds**: Round 10 prompt shows "Round 10", not "Round 0"
+- ✅ **PromptEngine passes real round index**: build_prompt(phase="decision") uses actual round number
+- ✅ **Backward compatibility**: None values gracefully fall back to "MIT Beer Game"
+
+**Testing Results**:
+```python
+# Round 5 test
+prompt = get_decision_prompt(..., round_index=5)
+# ✅ Contains: "You are the Retailer in Round 5"
+# ✅ Does NOT contain: "MIT Beer Game"
+
+# Round 10 test  
+prompt = get_decision_prompt(..., round_index=10)
+# ✅ Contains: "Round 10"
+# ✅ Does NOT contain: "Round 0"
+
+# None test
+prompt = get_decision_prompt(..., round_index=None)
+# ✅ Contains: "MIT Beer Game" (fallback)
+```
+
+**Result**: Decision prompts now clearly display the current round number, providing agents with proper temporal context for their decision-making. Agents know exactly which round they are operating in, improving decision quality and debugging capabilities.
+
+---
+
+## 2025-01-28: Parameter Order & Keyword-Args Safety (Point 5)
+
+**Feature**: Implemented parameter order and keyword-args safety to prevent field misalignment and ensure unit economics are explicitly passed in all prompt method calls.
+
+**Problem Identified**:
+- **Positional Argument Risk**: Helper functions calling `get_decision_prompt()` with positional args could cause field shifting (e.g., `last_order_placed` being treated as `holding_cost_per_unit`)
+- **Missing Unit Economics**: Some calls to prompt methods were missing explicit unit economics parameters (`p`, `c`, `h`, `b`)
+- **Parameter Misalignment**: Long positional argument lists prone to errors when method signatures change
+
+**Key Implementation**:
+
+1. **✅ Converted All Internal Calls to Keyword Arguments**:
+   - **`get_decision_prompt()`**: All internal calls now use explicit keyword arguments
+   - **`get_decision_prompt_with_communication()`**: Converted positional calls to keyword args
+   - **`get_decision_prompt_with_memory()`**: Converted positional calls to keyword args
+   - **`get_communication_prompt()`**: All internal calls use keyword arguments
+   - **`get_communication_prompt_with_memory()`**: Converted positional calls to keyword args
+
+2. **✅ Explicit Unit Economics in All Calls**:
+   - **Required Parameters**: `selling_price_per_unit`, `unit_cost_per_unit`, `holding_cost_per_unit`, `backlog_cost_per_unit`
+   - **All Prompt Methods**: Every call now explicitly passes unit economics parameters
+   - **No Missing Parameters**: Eliminated cases where economics parameters were undefined or missing
+   - **Consistent Parameter Flow**: Unit economics flow from execute script through all prompt layers
+
+3. **✅ Enhanced Method Signatures**:
+   - **`decide_order_quantity_with_communication()`**: Added missing unit economics parameters
+   - **Parameter Defaults**: Proper None defaults for optional economics parameters
+   - **Backward Compatibility**: Maintained `profit_per_unit_sold` parameter for compatibility
+   - **Type Safety**: All parameters properly typed and documented
+
+4. **✅ Safety Improvements**:
+   - **No Positional Lists**: Eliminated long positional argument lists prone to misalignment
+   - **Explicit Naming**: Every parameter explicitly named in method calls
+   - **Field Alignment**: Prevents parameter shifting when method signatures change
+   - **Clear Intent**: Code is more readable and maintainable
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: 
+  - Converted all internal `get_decision_prompt()` calls to keyword arguments
+  - Converted all internal `get_communication_prompt()` calls to keyword arguments
+- `Games/2_MIT_Beer_Game/scripts/models_mitb_game.py`:
+  - Updated `decide_order_quantity_with_communication()` method signature with unit economics parameters
+  - Updated method call to pass unit economics explicitly
+
+**Specific Changes**:
+
+1. **`get_decision_prompt_with_communication()`**:
+   ```python
+   # Before (positional - risky)
+   base_prompt = BeerGamePrompts.get_decision_prompt(
+       role_name, inventory, backlog, recent_demand_or_orders, incoming_shipments,
+       current_strategy, selling_price_per_unit, unit_cost_per_unit, ...
+   )
+   
+   # After (keyword - safe)
+   base_prompt = BeerGamePrompts.get_decision_prompt(
+       role_name=role_name,
+       inventory=inventory,
+       backlog=backlog,
+       recent_demand_or_orders=recent_demand_or_orders,
+       ...
+   )
+   ```
+
+2. **`decide_order_quantity_with_communication()`**:
+   ```python
+   # Before (missing economics)
+   async def decide_order_quantity_with_communication(self, temperature: float = 0.7, 
+                                                    profit_per_unit_sold: float = 2.5,
+                                                    recent_communications: List[Dict] = None)
+   
+   # After (complete economics)
+   async def decide_order_quantity_with_communication(self, temperature: float = 0.7, 
+                                                    selling_price_per_unit: float = None,
+                                                    unit_cost_per_unit: float = None,
+                                                    holding_cost_per_unit: float = None,
+                                                    backlog_cost_per_unit: float = None,
+                                                    ...)
+   ```
+
+**Acceptance Checks**:
+- ✅ **No long positional argument lists**: All prompt method calls use keyword arguments
+- ✅ **Unit economics present in every call**: All calls explicitly pass `p`, `c`, `h`, `b` parameters
+- ✅ **Field alignment safety**: No risk of parameter misalignment due to positional arguments
+- ✅ **Method signature consistency**: All prompt methods have consistent parameter handling
+
+**Methods Updated**:
+```
+✅ get_decision_prompt() - all calls use keywords
+✅ get_decision_prompt_with_communication() - all calls use keywords  
+✅ get_decision_prompt_with_memory() - all calls use keywords
+✅ get_communication_prompt() - all calls use keywords
+✅ get_communication_prompt_with_memory() - all calls use keywords
+```
+
+**Result**: All prompt method calls are now safe from parameter misalignment, with explicit unit economics parameters passed consistently throughout the system. Code is more maintainable and less prone to subtle bugs from parameter shifting.
+
+---
+
+## 2025-01-28: Communication Prompts: Factual, Role-Bounded (Point 4)
+
+**Feature**: Implemented factual, role-bounded communication guidelines to eliminate emotive language, prevent prescriptive directives to other roles, and ensure proper metric labeling.
+
+**Key Implementation**:
+
+1. **✅ Factual Communication Guidelines**:
+   - **Share Only Specific Data**: inventory, backlog, recent mean demand μ, next order plan, γ (backlog-clearance rate), and material risks
+   - **No Prescriptive Quantities**: Agents cannot tell other roles exact quantities to order
+   - **Ranges/Targets Acceptable**: Coordination through ranges and targets is permitted
+   - **Operational Focus**: Share factual information about situation only
+   - **No Emotive Language**: Removed urgent directives, emotional appeals, and charged language
+
+2. **✅ Fixed Mislabeled Metrics**:
+   - **Replaced "Total profit so far"**: Now correctly labeled as "Current balance" when referring to bank balance
+   - **Clear Distinction**: Bank balance vs. cumulative profit are properly differentiated
+   - **Accurate Labeling**: All financial metrics now have precise, non-misleading labels
+   - **Consistent Terminology**: Balance and profit terms used correctly throughout
+
+3. **✅ Shipment Rule Consistency**:
+   - **Standardized Wording**: "You can ship at most min(inventory_available, downstream_order + your_backlog). Shipment is executed by the simulator; you do not decide shipments in your reply."
+   - **Consistent Across Prompts**: Same exact wording in both decision and communication prompts
+   - **Clear Simulator Role**: Explicitly states that simulator handles shipment execution
+
+4. **✅ Communication Restrictions**:
+   - **No Exact Quantity Prescriptions**: Agents cannot tell others "order 15 units" or similar
+   - **No Emotive Language**: Removed words like "critical," "urgent," "collapse," "must"
+   - **No Directives**: Agents cannot command other roles' specific actions
+   - **Factual Information Only**: Focus on operational facts, not emotional appeals
+   - **Role-Bounded**: Each agent shares only their own situation and constraints
+
+**Specific Changes**:
+
+- **Communication Guidelines**: Replaced emotional objectives with factual sharing requirements
+- **Metric Correction**: "Total profit so far" → "Current balance" when referring to bank balance
+- **Language Cleanup**: Removed emotive language and urgent directives
+- **Shipment Rule**: Updated to match decision prompt wording exactly
+- **Restriction Clarity**: Explicit rules about what agents can and cannot communicate
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: Communication prompt updated with factual guidelines and proper metric labeling
+
+**Acceptance Checks**:
+- ✅ **No emotive language or directives**: Removed urgent language and commands to other roles
+- ✅ **No "profit so far" for balance**: Correctly labeled as "Current balance" 
+- ✅ **Shipment rule consistency**: Exact same wording as decision prompts
+- ✅ **Share only specified data**: inventory, backlog, μ, order plan, γ, material risks
+- ✅ **Ranges/targets acceptable**: Coordination allowed through ranges, not exact quantities
+
+**Communication Allowed**:
+```
+📊 INVENTORY STATUS: Current inventory and backlog
+📈 DEMAND PATTERN: Recent mean demand μ observations  
+📋 ORDER PLAN: Next order plan (ranges/targets, not exact quantities for others)
+⚙️ BACKLOG STRATEGY: γ (backlog-clearance rate) approach
+⚠️ MATERIAL RISKS: Specific operational risks observed
+```
+
+**Communication Restrictions**:
+```
+❌ Do NOT prescribe exact quantities to other roles
+❌ Do NOT use emotive language or urgent directives  
+❌ Do NOT command other roles' specific actions
+✅ Share factual information about your situation only
+✅ Ranges and targets acceptable for coordination
+✅ Focus on operational facts, not emotional appeals
+```
+
+**Result**: Communication is now strictly factual, role-bounded, and free from emotive language or prescriptive directives. Agents share operational data without commanding others' actions.
+
+---
+
+## 2025-01-28: Mandatory Controller & Self-Audit System (Point 3)
+
+**Feature**: Implemented mandatory controller and self-audit system in decision prompts to enforce structured decision-making with required calculations and validation checks.
+
+**Key Implementation**:
+
+1. **✅ Mandatory Controller Framework**:
+   - **μ = EWMA of recent demand**: Exponentially weighted moving average for demand forecasting
+   - **IP = on_hand + in_transit − backlog**: Inventory position calculation
+   - **S* = μ*(lead_time+1) + S_s**: Target stock level with safety stock
+   - **BacklogClear = γ * backlog (γ ∈ [0,1])**: Backlog clearing strategy with tunable parameter
+   - **O_raw = max(0, S* − IP + BacklogClear)**: Raw order calculation before adjustments
+   - **Final Order**: Smoothed within ±δ around μ, with solvency cap ensuring (balance − c*O_final) > 0
+
+2. **✅ Self-Audit Boolean Checks**:
+   - **coverage_ok**: Validates that if on_hand=0 then order ≥ expected_demand
+   - **includes_backlog**: Confirms backlog consideration in order calculation  
+   - **solvency_ok**: Ensures order doesn't cause bankruptcy
+
+3. **✅ Extended JSON Schema**:
+   - **Required calc object** with all controller parameters and audit results
+   - **Fields**: mu, S_star, IP, gamma, delta, O_raw, O_final, solvency_ok, coverage_ok, includes_backlog
+   - **Validation**: Forces agents to show their calculation work and self-audit
+
+4. **🎯 Decision Prompts Only**:
+   - **Scope**: Applied only to decision prompts (not communication or strategy prompts)
+   - **Consistency**: All decision prompt variants include the controller requirements
+   - **Integration**: Works with existing economics parameters and rules
+
+**Retailer Special Case**:
+- **Scenario**: With backlog >> expected_demand and on_hand=0
+- **Enforcement**: Instructions clearly force orders to cover expected_demand via coverage_ok
+- **Backlog Handling**: Address backlog proportionally via γ parameter in BacklogClear formula
+- **Safety**: Prevents both stockouts (coverage_ok) and excessive ordering (solvency_ok)
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: Decision prompt updated with controller and calc object requirement
+
+**Acceptance Checks**:
+- ✅ **Decision prompts explicitly require calc object**: `"calc": {` appears in JSON schema
+- ✅ **Self-audit booleans in schema**: coverage_ok, includes_backlog, solvency_ok all appear in decision prompt
+- ✅ **Retailer edge case handled**: With backlog >> expected_demand and on_hand=0, instructions force coverage via γ parameter
+
+**JSON Schema Extension**:
+```json
+{
+  "order_quantity": <integer>,
+  "calc": {
+    "mu": <float>,
+    "S_star": <float>, 
+    "IP": <float>,
+    "gamma": <float>,
+    "delta": <float>,
+    "O_raw": <float>,
+    "O_final": <integer>,
+    "solvency_ok": <boolean>,
+    "coverage_ok": <boolean>,
+    "includes_backlog": <boolean>
+  }
+}
+```
+
+**Result**: All decision-making now follows structured controller logic with mandatory self-audit checks, ensuring consistent and validated ordering decisions across all agents.
+
+---
+
+## 2025-01-28: Shipment & Inventory Rules Standardization (Point 2)
+
+**Feature**: Standardized shipment and inventory rules text across all prompts with clear, consistent language.
+
+**Key Changes**:
+
+1. **✅ New Standardized Shipment Rule**:
+   - **Old**: Various inconsistent descriptions about shipping constraints
+   - **New**: "You can ship at most min(inventory_available, downstream_order + your_backlog). Shipment is executed by the simulator; you do not decide shipments in your reply."
+   - **Clarity**: Makes it clear that shipment is handled by the simulator, not the agent
+
+2. **✅ New Standardized Inventory Policy**:
+   - **Old**: "Never let the inventory go to zero" and similar restrictive language
+   - **New**: "Target a safety stock S_s. It's acceptable to be at zero if demand is met and backlog is low."
+   - **Flexibility**: Allows agents to have zero inventory when appropriate, removing overly restrictive constraints
+
+3. **🔄 Universal Application**:
+   - **Strategy Generation Prompt**: Updated with new rules
+   - **Strategy Update Prompt**: Updated with new rules  
+   - **Decision Prompt**: Updated with new rules
+   - **Communication Prompt**: Updated with new rules
+   - **System Prompt**: Updated with new rules
+
+4. **🚫 Removed Problematic Language**:
+   - ❌ "equal to (their_order + your_backlog)" - completely eliminated
+   - ❌ "Never let the inventory go to zero" - completely eliminated
+   - ❌ Inconsistent shipment constraint descriptions - standardized
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: All prompt methods updated with standardized rules
+
+**Acceptance Checks**:
+- ✅ **No forbidden language**: `grep` confirms no prompts contain "equal to (their_order + your_backlog)"
+- ✅ **No restrictive inventory rules**: `grep` confirms no prompts contain "Never let the inventory go to zero"
+- ✅ **Consistent application**: New shipment and inventory rules appear in all 5 prompt locations
+- ✅ **Clear simulator responsibility**: All rules clarify that shipment is executed by simulator
+
+**Impact**:
+- **Consistent Messaging**: All agents receive identical rule descriptions regardless of prompt type
+- **Realistic Flexibility**: Agents can now make realistic inventory decisions including zero levels when appropriate
+- **Clear Responsibilities**: Distinction between agent decisions (ordering) and simulator actions (shipping) is explicit
+- **Better Understanding**: Agents have clearer understanding of shipment constraints using min() function notation
+
+**Result**: All prompts now use standardized, clear, and realistic shipment and inventory rules that eliminate confusion and overly restrictive constraints.
+
+---
+
+## 2025-01-28: Economics Single Source of Truth (Point 1)
+
+**Feature**: Implemented economics parameters as single source of truth from execute script, removing all hardcoded values from prompt code.
+
+**Key Changes**:
+
+1. **✅ New Economics Parameters System**:
+   - **selling_price_per_unit (p)**: Revenue per unit sold
+   - **unit_cost_per_unit (c)**: Cost per unit ordered/produced (purchase_cost for most agents, production_cost for Factory)
+   - **holding_cost_per_unit (h)**: Cost per unit held in inventory per round
+   - **backlog_cost_per_unit (b)**: Cost per unit of unfulfilled demand per round
+
+2. **📊 Explicit Profit Formula Added**:
+   - **Formula**: `profit_t = p*sales_t - c*orders_t - h*inventory_end_t - b*backlog_end_t`
+   - **Display**: Shows both symbolic and numeric versions in all prompts
+   - **Location**: Appears in system prompt and all decision/communication prompts
+
+3. **🔄 Parameter Flow**:
+   - **Source**: `executeMITBeerGame.py` command-line arguments (`--sale_price`, `--purchase_cost`, `--production_cost`, `--holding_cost_per_unit`, `--backlog_cost_per_unit`)
+   - **Flow**: Execute script → MIT_Beer_Game.py → models_mitb_game.py → prompts_mitb_game.py
+   - **Factory Special**: Uses `production_cost_per_unit` instead of `purchase_cost_per_unit` for unit cost
+
+4. **🚫 Deprecated profit_per_unit_sold**:
+   - **Status**: Kept for backward compatibility but no longer used in calculations or text
+   - **Replacement**: Now calculated dynamically as (selling_price - unit_cost) where needed
+   - **Prompts**: All prompts now use p, c, h, b parameters instead of hardcoded values
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: All prompt methods updated to accept and use p,c,h,b parameters
+- `Games/2_MIT_Beer_Game/scripts/models_mitb_game.py`: Agent methods updated to pass new parameters
+- `Games/2_MIT_Beer_Game/scripts/MIT_Beer_Game.py`: Simulation updated to pass economics parameters from execute script
+
+**Acceptance Checks**:
+- ✅ **No hardcoded values**: `grep` confirms no "holding cost of 0.5", "backlog cost of 1.5", or "profit per unit sold 2.5" remain
+- ✅ **Runtime parameters**: Decision/strategy/communication prompts now include {p, c, h, b} values from execute script
+- ✅ **Profit formula**: Formula string appears in system and decision prompts with both symbolic and numeric values
+
+**Usage Example**:
+```bash
+# Custom economics parameters
+python executeMITBeerGame.py --sale_price 6.0 --purchase_cost 3.0 --holding_cost_per_unit 0.2 --backlog_cost_per_unit 2.0
+```
+
+**Result**: All economics are now single source of truth from execute script, eliminating hardcoded values and enabling flexible economic scenarios.
+
+---
+
+## 2025-01-28: Global Constraints Fixes (Point 0)
+
+**Feature**: Implemented critical prompt fixes to comply with global constraints and remove problematic language.
+
+**Key Fixes Applied**:
+
+1. **❌ Removed "Never let the inventory go to zero"**: 
+   - Eliminated all instances of this forbidden constraint from strategy generation, strategy update, and decision prompts
+   - This rule was overly restrictive and conflicted with realistic supply chain management
+
+2. **🔄 Fixed Shipment Constraint Language**:
+   - **Before**: "You can only ship to downstream partners up to (their_order + your_backlog)"
+   - **After**: "The simulator will ship at most the amount requested by downstream partners plus your current backlog. The simulator handles all shipment calculations automatically."
+   - Clarified that the simulator handles shipment calculations, not the agent
+
+3. **🚫 Removed Emotionally Charged Language**:
+   - Replaced "supply chain collapse" with "supply chain instability" or "supply chain failure"
+   - Removed "PREVENT COLLAPSE" objective, replaced with "RISK AWARENESS"
+   - Changed "Warning signs of potential market collapse" to "Warning signs of potential market instability"
+   - Updated "Emphasize that supply chain collapse hurts EVERYONE's profits" to use "instability"
+
+4. **📢 Fixed Prescriptive Communication Language**:
+   - **Before**: "Propose a concrete order plan (e.g. 'I will order 8')"
+   - **After**: "Share your general ordering approach and reasoning"
+   - Removed specific quantity examples that were too prescriptive
+   - Made communication guidelines more factual and role-bounded
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: All prompt methods updated to comply with constraints
+
+**Impact**: 
+- Prompts are now more realistic and less prescriptive
+- Agents have more flexibility in inventory management decisions
+- Communication remains factual without emotional manipulation
+- Shipment rules are clearer and correctly attribute responsibility to the simulator
+
+**Compliance**: ✅ All global constraints from point 0 now satisfied
+
+---
+
+## 2025-01-28: Implemented Long-Term Planning vs Selfish Mode Parameter
+
+**Feature**: Added `longtermplanning_boolean` parameter to enable sophisticated strategic behavior switching between individual profit maximization and collaborative supply chain optimization.
+
+**Key Implementation**:
+- **Command-Line Parameter**: `--longtermplanning_boolean` flag in `executeMITBeerGame.py` (defaults to False - selfish mode)
+- **Behavioral Modes**:
+  - **Selfish Mode (Default)**: Agents focus on individual profit maximization, competitive advantage, strategic information control, and opportunistic behavior
+  - **Collaborative Mode**: Agents optimize for total supply chain profitability with emphasis on mutual interdependence, information sharing, coordinated buffer management, and risk mitigation
+
+**Sophisticated Prompt Engineering**:
+- **Individual Profit Maximization Mode**: Encourages self-interest priority, competitive advantage seeking, strategic information control, opportunistic behavior, resource optimization focused on individual costs, and short-term gains prioritization
+- **Collaborative Long-Term Optimization Mode**: Promotes collective success strategy, mutual interdependence recognition, transparent information sharing, coordinated buffer management, long-term sustainability focus, and risk mitigation through strategic coordination
+
+**Technical Changes**:
+- Added `_get_objective_guidance()` method in `BeerGamePrompts` class that returns mode-specific strategic guidance
+- Updated both `get_decision_prompt()` and `get_communication_prompt()` methods to include objective guidance
+- Enhanced `PromptEngine.build_prompt()` to pass the parameter through to prompt generation
+- Modified agent methods (`llm_decision`, `decide_order_quantity`, `generate_communication_message`) to accept and forward the parameter
+- Updated simulation functions (`run_beer_game_generation`, `run_beer_game_simulation`) to pass parameter through the entire pipeline
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/executeMITBeerGame.py`: Added command-line argument
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: Added objective guidance system and updated prompt methods
+- `Games/2_MIT_Beer_Game/scripts/models_mitb_game.py`: Updated agent methods to handle parameter
+- `Games/2_MIT_Beer_Game/scripts/MIT_Beer_Game.py`: Updated simulation functions to pass parameter
+
+**Usage Examples**:
+```bash
+# Selfish mode (default)
+python executeMITBeerGame.py --num_rounds 10 --communication_rounds 2
+
+# Collaborative long-term planning mode
+python executeMITBeerGame.py --num_rounds 10 --communication_rounds 2 --longtermplanning_boolean
+```
+
+**Result**: Agents now exhibit fundamentally different strategic behaviors based on the mode, enabling research into cooperative vs competitive supply chain dynamics.
+
+---
+
+## 2025-01-28: Enhanced Parameter Display in Combined Plots
+
+**Enhancement**: Updated combined plots to display all simulation parameters as a subtitle at the bottom instead of in a small text box in the corner.
+
+**Key Improvements**:
+- **Comprehensive Parameter Display**: Now shows all command-line parameters including `initial_inventory`, `initial_balance`, `temperature`, cost parameters, communication settings, orchestrator settings, etc.
+- **Better Visibility**: Parameters displayed as subtitle at bottom of plots instead of small corner text box
+- **Automatic Line Wrapping**: Long parameter lists automatically split into multiple lines for readability
+- **Professional Format**: Parameters formatted as `key=value` pairs separated by `|` for clean presentation
+
+**Technical Changes**:
+- Added missing parameters (`initial_inventory`, `initial_backlog`, `initial_balance`) to `run_beer_game_generation()` function signature
+- Updated `run_settings` dictionary to include all simulation parameters
+- Modified `analysis_mitb_game.py` to display parameters as figure subtitle using `fig.suptitle()`
+- Added automatic text wrapping for long parameter lists
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/MIT_Beer_Game.py`: Enhanced `run_settings` dictionary and function signatures
+- `Games/2_MIT_Beer_Game/scripts/analysis_mitb_game.py`: Updated combined plot layout with bottom subtitle
+
+**Result**: Combined plots now provide complete simulation configuration visibility for easy reproducibility and analysis.
+
+---
+
+## 2025-01-28: Fixed CMU Serif Font Warnings in Plotting
+
+**Issue**: Plotting system was generating numerous font warnings:
+```
+UserWarning: Glyph 8722 (\N{MINUS SIGN}) missing from font(s) CMU Serif.
+```
+
+**Root Cause**: The `analysis_mitb_game.py` file was configured to use CMU Serif font, which doesn't have proper Unicode minus sign glyphs on all systems.
+
+**Solution**: Updated font configuration in `analysis_mitb_game.py`:
+- Changed from serif fonts (CMU Serif) to reliable sans-serif fonts (Arial, DejaVu Sans)
+- Added `"axes.unicode_minus": False` to use ASCII minus instead of Unicode minus
+- Changed mathtext fontset from "cm" to "dejavusans"
+
+**Result**: All plotting now works without font warnings. Combined plots and individual plots generate cleanly after every round.
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/analysis_mitb_game.py`: Updated matplotlib font configuration
+
+---
+
+## 2025-01-22: Real-Time LLM Logging System
+
+**Implemented**: Real-time logging of all LLM calls (decision, communication, initialization) to human-readable log file with immediate writing after each call.
+
+**Key Features**:
+- Structured logging with emojis and separators for readability
+- System prompts, user prompts, and model outputs all logged
+- Round numbers included in headers
+- Immediate file flushing for real-time monitoring
+- Simplified round summaries replacing detailed end-of-round logging
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/models_mitb_game.py`: Added `log_llm_call_immediately()` method and calls after each LLM interaction
+- `Games/2_MIT_Beer_Game/scripts/MIT_Beer_Game.py`: Enhanced phase headers and simplified round summaries
+
+**Bug Fixed**: Resolved Pydantic validation error for `human_log_file` field by changing type annotation from `TextIO` to `Optional[Any]`.
+
+---
+
+## 2025-01-22: Real-Time File Saving and Plotting Implementation
+
+**Implemented**: System now saves CSV/JSON files and generates plots after every round (not just at the end).
+
+**Key Changes**:
+- CSV logs are appended after each round for real-time data access
+- JSON logs are completely rewritten after each round (overwrite mode for clean structure)
+- All plots (inventory, backlog, balance, orders, combined) generated after every round
+- Combined plots include run settings display in top-right corner
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/MIT_Beer_Game.py`: Added per-round file writing and plotting calls
+- `Games/2_MIT_Beer_Game/scripts/analysis_mitb_game.py`: Enhanced `plot_beer_game_results()` to display run settings and handle empty dataframes
+
+**Benefits**: 
+- Real-time monitoring of simulation progress
+- Immediate access to data for analysis during long runs
+- Visual feedback on agent performance as simulation progresses
+
+---
+
+## 2025-01-22: Fixed LLM Client Initialization Issue
+
+**Issue**: Connection errors when using `--provider anthropic` flag due to premature `lite_client` initialization.
+
+**Root Cause**: `lite_client` was being initialized at module import time before `executeMITBeerGame.py` could override it with the correct provider.
+
+**Solution**: 
+- Changed `lite_client` initialization to lazy loading with `get_default_client()` function
+- Updated all LLM call sites to use `client = lite_client or get_default_client()`
+- Fixed model name resolution to use dynamic imports instead of global variables
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/llm_calls_mitb_game.py`: Added lazy client initialization
+- `Games/2_MIT_Beer_Game/scripts/models_mitb_game.py`: Updated to use dynamic model names
+- `Games/2_MIT_Beer_Game/scripts/orchestrator_mitb_game.py`: Updated client usage
+
+**Result**: Anthropic API integration now works correctly with proper model name resolution.
+
+---
+
+## 2025-01-22: Dynamic Cost Parameters in Prompts
+
+**Enhanced**: All prompt functions now accept dynamic cost parameters instead of using hardcoded values.
+
+**Changes Made**:
+- `get_decision_prompt()`: Now accepts `holding_cost_per_unit` and `backlog_cost_per_unit` parameters
+- `get_communication_prompt()`: Now accepts `profit_per_unit_sold`, `holding_cost_per_unit`, `backlog_cost_per_unit`
+- `AgentContext` dataclass: Added cost parameter fields
+- `PromptEngine.build_prompt()`: Updated to pass cost parameters to underlying methods
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: Updated all prompt functions and dataclass
+- `Games/2_MIT_Beer_Game/scripts/MIT_Beer_Game.py`: Updated function calls to pass cost parameters
+
+**Benefit**: Agents now receive accurate, dynamic cost information in their prompts based on simulation configuration.
+
+---
+
+## 2025-01-22: Added Zero-Order Option for High Holding Costs
+
+**Enhancement**: Added guidance in decision prompts allowing agents to order 0 units when holding costs are excessive.
+
+**Rationale**: Agents can now strategically reduce inventory to save money when holding costs outweigh potential sales benefits.
+
+**Implementation**: Added specific language in `get_decision_prompt()` emphasizing that ordering 0 units is a valid strategic option for cost management.
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: Enhanced decision prompt with zero-order guidance
+
+---
+
+## 2025-01-22: Enhanced Agent Financial Awareness
+
+**Added**: Strong warnings about balance management and long-term strategic thinking in agent prompts.
+
+**Key Additions**:
+1. **Balance Survival Warning**: "BALANCE IS YOUR LIFELINE" messaging emphasizing bankruptcy risk
+2. **Long-term Strategy Guidance**: Encouragement to plan inventory for multiple future rounds
+3. **Strategic Planning**: Advice to consider demand trends and maintain adequate buffer inventory
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: Enhanced decision and communication prompts
+
+**Expected Impact**: Agents should make more financially prudent decisions and avoid bankruptcy through better balance management.
+
+---
+
+## 2025-01-22: Factory vs Other Agents Analysis
+
+**Analysis**: Confirmed that Factory agent has distinct cost structure and operational role:
+
+**Factory Differences**:
+- **Lower Production Cost**: $1.50/unit vs $2.50/unit purchase cost for other agents
+- **No Upstream Supplier**: Factory produces goods rather than purchasing from upstream
+- **Production Scheduling**: Factory schedules production with 1-round lead time
+- **Revenue Source**: Generates money through production rather than just markup
+
+**Other Agents (Retailer, Wholesaler, Distributor)**:
+- **Higher Purchase Cost**: $2.50/unit from upstream suppliers
+- **Supply Chain Position**: Intermediaries between suppliers and customers
+- **Markup Model**: Profit from difference between purchase ($2.50) and sale price ($5.00)
+
+**Conclusion**: The cost difference reflects realistic supply chain economics where manufacturers (Factory) have lower unit costs than distributors.
+
+---
+
+## 2025-07-28: Strengthened Inventory Buffer Guidance
+
+**Objective**: Prevent agents from running their inventory to zero and ensure they maintain at least a safety-stock buffer.
+
+**Key Changes**:
+- Replaced permissive language that allowed zero inventory with guidance to keep on-hand inventory **at or above** the safety stock `S_s`.
+- Tightened **ORDERING OPTIONS** language: ordering 0 units is now *only* acceptable when on-hand inventory already exceeds `S_s` and there is a short-term need to shed excess stock.
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: Updated text in **strategy generation**, **strategy update**, **decision**, and **system** prompts.
+
+**Test Plan**:
+1. Run `pytest -q` to ensure no regressions.
+2. Execute a short Beer-Game simulation and verify that agents no longer converge to zero inventory levels.
+
+**Rollback**: Revert the specific prompt text changes in `prompts_mitb_game.py` if unintended agent behaviour emerges.
+
+---
+
+## 2025-07-28: Implemented Hyperparameter System with Proper Economic Names
+
+**Objective**: Define and implement the missing hyperparameters (`safety_stock_Ss`, `gamma_hint`, `delta_hint`) with proper economic parameter names that flow from execution script to prompts.
+
+**Key Changes**:
+1. **Added Command-Line Arguments** in `executeMITBeerGame.py`:
+   - `--safety_stock_target` (default: 10.0 units) - Target safety stock level S_s
+   - `--backlog_clearance_rate` (default: 0.5) - Backlog clearance rate γ ∈ [0,1] 
+   - `--demand_smoothing_factor` (default: 0.3) - Demand smoothing parameter δ
+
+2. **Parameter Flow Implementation**:
+   - Added parameters to `run_beer_game_simulation()` and `run_beer_game_generation()` function signatures
+   - Updated agent method calls (`initialize_strategy`, `llm_decision`, `decide_order_quantity`) to pass hyperparameters
+   - Enhanced `AgentContext` dataclass with properly named hyperparameter fields
+   - Updated `llm_decision` method to map hyperparameters to `AgentContext`
+
+3. **Prompt Function Updates**:
+   - Renamed confusing parameter names across all prompt functions:
+     - `safety_stock_Ss` → `safety_stock_target` 
+     - `gamma_hint` → `backlog_clearance_rate`
+     - `delta_hint` → `demand_smoothing_factor`
+   - Updated all prompt functions: `get_strategy_generation_prompt`, `get_strategy_update_prompt`, `get_decision_prompt`, `get_communication_prompt`, etc.
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/executeMITBeerGame.py`: Added CLI arguments and parameter passing
+- `Games/2_MIT_Beer_Game/scripts/MIT_Beer_Game.py`: Updated function signatures and agent method calls  
+- `Games/2_MIT_Beer_Game/scripts/models_mitb_game.py`: Enhanced `AgentContext` and agent methods
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: Renamed parameters and updated all prompt functions
+
+**Result**: Agents now receive specific hyperparameter guidance in prompts:
+- Safety stock targets to maintain inventory buffers
+- Backlog clearance rates for inventory management
+- Demand smoothing factors for order quantity adjustments
+
+**Test Plan**: Run simulation with custom hyperparameters to verify agents receive and use the guidance correctly.
+
+---
+
+## 2025-07-28: Unified Decision-Making Logic for Consistent Logging
+
+**Issue**: When `communication_rounds=0`, the system used legacy `decide_order_quantity()` method instead of modern `llm_decision("decision", ...)` method, causing different terminal logging formats (missing `🤖[Claude:...]` tracers).
+
+**Root Cause**: The decision logic branched based on `use_comm and recent_messages`. When communication rounds = 0, `recent_messages` was empty, triggering the legacy path with different logging.
+
+**Solution**: 
+- **Unified Logic**: Always use `llm_decision("decision", ...)` method regardless of communication settings
+- **Parameter Handling**: Pass `comm_history=None` when no communication messages exist
+- **Consistent Logging**: All agent decisions now use the same logging format with Anthropic client tracers
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/MIT_Beer_Game.py`: Removed branching logic, always use `llm_decision()` method
+
+**Result**: Terminal logging is now consistent whether communication is enabled or disabled. All agent decisions show the `🤖[Claude:model] Agent → decision_prompt` format and proper response logging.
+
+**Test Plan**: Run simulations with `--communication_rounds 0` and `--communication_rounds 2` to verify identical logging formats.
+
+---
+
+## 2025-07-28: Added 3-Round Inventory Buffer Rule
+
+**Objective**: Ensure agents maintain sufficient inventory resilience by requiring a minimum buffer of 3 rounds of expected demand.
+
+**Key Change**: 
+- Added **MINIMUM BUFFER RULE** to all prompt variants: "Always try to maintain enough on-hand inventory to serve at least 3 rounds of expected demand (3 × μ). This provides resilience against demand spikes and supply disruptions."
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: Updated all 4 prompt functions (strategy generation, strategy update, decision, system)
+
+**Rationale**: 
+- Prevents agents from running dangerously low inventory levels
+- Provides buffer against demand volatility and supply chain disruptions  
+- Encourages more stable, forward-looking inventory management
+- Complements existing safety stock guidance with concrete quantitative target
+
+**Test Plan**: Run simulation and verify agents maintain higher inventory levels, reducing stockout frequency while balancing holding costs.
+
+**Rollback**: Remove the MINIMUM BUFFER RULE lines if agents become too conservative and inventory costs become excessive.
+
+---
+
+## 2025-07-28: Improved Plot Spacing in Combined Visualization  
+
+**Objective**: Enhance readability of the combined plots by increasing vertical spacing between subplots.
+
+**Key Change**: 
+- Increased `hspace` parameter from 0.45 to 0.65 in `analysis_mitb_game.py` for better visual separation between inventory, backlog, balance, orders, and external demand plots.
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/analysis_mitb_game.py`: Updated subplot spacing parameter
+
+**Impact**: 
+- Better visual clarity when analyzing simulation results
+- Reduced overlap between subplot titles and axis labels
+- Improved readability of multi-panel visualization
+
+**Test Plan**: Run simulation and verify the combined plots have better spacing and are easier to read.
+
+---
+
+## 2025-07-28: Added Learning from Mistakes Guidance
+
+**Objective**: Enable agents to learn from their past performance and adapt their strategies based on system feedback about backlog, inventory, and profit levels.
+
+**Key Change**: 
+- Added **📚 LEARN FROM MISTAKES** guidance to all prompt variants: "Analyze your recent performance history. If you experienced high backlog in previous rounds, increase your order quantities and safety stock to prevent stockouts. If you had excessive inventory leading to high holding costs and low profits, reduce order quantities but maintain minimum buffer levels. Adapt your ordering strategy based on what went wrong in past rounds - the system's responses (profit, backlog, inventory levels) are teaching you optimal behavior."
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: Updated all 5 prompt functions (strategy generation, strategy update, decision, communication, system)
+
+**Rationale**: 
+- **Adaptive Learning**: Agents can now recognize patterns in their performance history
+- **Mistake Correction**: Explicit guidance to adjust based on past backlog/inventory issues  
+- **System Feedback Loop**: Encourages agents to treat system responses as learning signals
+- **Strategic Evolution**: Promotes continuous improvement rather than static decision-making
+- **Communication Enhancement**: Agents can share lessons learned with other supply chain partners
+
+**Expected Impact**:
+- Reduced repeated mistakes (e.g., chronic stockouts or excessive inventory)
+- Better convergence to optimal inventory policies over time
+- More sophisticated inter-agent coordination based on shared learning
+- Improved supply chain stability through collective experience
+
+**Test Plan**: Run multi-round simulations and verify agents adjust their strategies when experiencing performance issues (high backlog → higher orders, excessive inventory → lower orders while maintaining buffers).
+
+**Rollback**: Remove the LEARN FROM MISTAKES guidance if agents become overly reactive or unstable in their decision-making.
+
+---
+
+## 2025-07-28: Fixed Directory Creation Issue for CSV/JSON Logging
+
+**Issue**: Simulation was crashing with `FileNotFoundError` when trying to write CSV and JSON log files because the results directory didn't exist yet.
+
+**Root Cause**: 
+- Results directory was created in `run_beer_game_simulation()` 
+- But CSV/JSON file writing happened in `run_beer_game_generation()` 
+- Race condition where file operations occurred before directory was fully established
+
+**Solution**: 
+- Added `os.makedirs(os.path.dirname(csv_log_path), exist_ok=True)` before CSV file writing
+- Added `os.makedirs(os.path.dirname(json_log_path), exist_ok=True)` before JSON file writing
+- These safety checks ensure the directory exists before any file operations
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/MIT_Beer_Game.py`: Added directory creation safety checks for both CSV and JSON logging
+
+**Impact**: 
+- ✅ **Prevents crashes** during simulation execution
+- ✅ **Robust file handling** with automatic directory creation
+- ✅ **No data loss** from failed logging operations
+- ✅ **Better error resilience** for file system operations
+
+**Test Plan**: Run simulation and verify it completes successfully without FileNotFoundError crashes.
+
+**Rollback**: Remove the `os.makedirs()` calls if they cause permission issues (unlikely).
+
+---
+
+## 2025-07-28: Expanded History Tracking from 10 to 20 Rounds
+
+**Issue**: Agents were only tracking the last 3-10 rounds of history instead of the expected 20 rounds, limiting their ability to learn from past mistakes and adapt strategies.
+
+**Root Cause**: 
+- **Profit/Balance History**: Limited to 10 rounds in `update_profit_history()`
+- **Recent Demand/Orders**: Mixed limits - `llm_decision()` used 10 rounds, `decide_order_quantity()` hardcoded 3 rounds
+- **Inconsistent Implementation**: Different methods used different history lengths
+
+**Solution**: 
+- **Increased profit/balance history** from 10 to 20 rounds
+- **Fixed hardcoded `[-3:]` limits** in `decide_order_quantity()` to use `history_limit` parameter  
+- **Increased default `history_limit`** from 10 to 20 rounds across all methods
+- **Unified history tracking** - all methods now consistently use 20-round history
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/models_mitb_game.py`: Updated history limits and fixed hardcoded values
+- `Games/2_MIT_Beer_Game/scripts/MIT_Beer_Game.py`: Updated agent decision calls to use 20-round history
+
+**Impact**: 
+- ✅ **True 20-round history tracking** for all agent decisions
+- ✅ **Better learning from mistakes** with longer performance history
+- ✅ **Consistent behavior** across all decision methods
+- ✅ **Improved strategy adaptation** based on extended past performance
+- ✅ **Enhanced EWMA calculations** with more historical demand data
+
+**Expected Behavior**: 
+- Agents will now see `recent_demand_or_orders` with up to 20 historical values
+- `profit_history` and `balance_history` will show up to 20 rounds
+- Better pattern recognition and trend analysis over longer periods
+
+**Test Plan**: Run simulation and verify agent logs show extended history arrays instead of just 2-3 recent values.
+
+**Rollback**: Change history limits back to 10 if memory usage becomes excessive or performance degrades.
+
+---
+
+## 2025-07-28: Fixed Missing cumulative_profit Attribute Error
+
+**Issue**: Simulation was crashing with `AttributeError: 'AgentContext' object has no attribute 'cumulative_profit'` during communication phase.
+
+**Root Cause**: 
+- The `PromptEngine.build_prompt()` method was trying to access `ctx.cumulative_profit`
+- But the `AgentContext` class was missing the `cumulative_profit` attribute
+- The `ctx_kwargs` dictionary wasn't passing this value when creating the context
+
+**Solution**: 
+- **Added `cumulative_profit` attribute** to `AgentContext` class as `Optional[float] = None`
+- **Added cumulative profit calculation** in `llm_decision()` method: `sum(self.profit_history) if self.profit_history else 0.0`
+- **Updated context creation** to include the calculated cumulative profit
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/prompts_mitb_game.py`: Added `cumulative_profit` attribute to `AgentContext`
+- `Games/2_MIT_Beer_Game/scripts/models_mitb_game.py`: Added cumulative profit calculation to context creation
+
+**Impact**: 
+- ✅ **Prevents crashes** during communication phase
+- ✅ **Enables cumulative profit tracking** for agent decision-making
+- ✅ **Provides agents with total profit context** for better strategic decisions
+- ✅ **Supports communication prompts** that reference cumulative performance
+
+**Expected Behavior**: 
+- Agents can now access their total cumulative profit across all rounds
+- Communication phase will complete without AttributeError crashes
+- Better strategic decision-making with full profit context
+
+**Test Plan**: Run simulation with communication enabled and verify it completes without crashing.
+
+**Rollback**: Remove the cumulative_profit attribute if it causes any unexpected behavior (unlikely).
+
+---
+
+## 2025-07-28: Fixed Orchestrator JSON Parsing Error
+
+**Issue**: Orchestrator was failing with `'str' object has no attribute 'get'` error despite generating valid JSON responses.
+
+**Root Cause**: 
+- The orchestrator LLM returns a JSON array: `[{...}, {...}, {...}]`
+- But the code was using `safe_parse_json()` which is designed for single JSON objects (dict)
+- When `safe_parse_json()` failed to parse the array, the fallback logic expected a list but got a string
+
+**Solution**: 
+- **Replaced `safe_parse_json()`** with direct `json.loads()` for better array handling
+- **Added format detection**: Handles both JSON arrays `[...]` and single objects `{...}`
+- **Added validation**: Ensures each parsed item is a dictionary before calling `.get()`
+- **Improved error logging**: Better debugging information when JSON parsing fails
+
+**Files Modified**:
+- `Games/2_MIT_Beer_Game/scripts/orchestrator_mitb_game.py`: Fixed JSON parsing and added validation
+
+**Impact**: 
+- ✅ **Prevents orchestrator crashes** during recommendation generation
+- ✅ **Handles both array and object formats** from LLM responses
+- ✅ **Better error recovery** with detailed logging
+- ✅ **Robust validation** prevents type errors in downstream processing
+
+**Expected Behavior**: 
+- Orchestrator recommendations will be generated successfully
+- Proper logging of orchestrator advice in both text and JSON files
+- Agents will receive orchestrator guidance without system crashes
+
+**Test Plan**: Run simulation with `--enable_orchestrator` and verify orchestrator recommendations appear in logs without errors.
+
+**Rollback**: Revert to `safe_parse_json()` if the new parsing logic causes issues (unlikely).

@@ -4,6 +4,7 @@ import asyncio
 
 from models_mitb_game import BeerGameAgent, BeerGameLogger
 from llm_calls_mitb_game import lite_client, MODEL_NAME, safe_parse_json, get_default_client
+from prompts_mitb_game import BeerGamePrompts
 
 class BeerGameOrchestrator:
     """LLM-based orchestrator that recommends order quantities for each role each round."""
@@ -19,40 +20,17 @@ class BeerGameOrchestrator:
     # ------------------------------------------------------------------
     def _build_prompt(self, agents: List[BeerGameAgent], external_demand: int,
                       round_index: int, history: List[Dict[str, Any]]) -> str:
-        """Return a user prompt string describing current + historical state."""
-        state_lines = []
-        for ag in agents:
-            state_lines.append(
-                f"- {ag.role_name}: inv={ag.inventory}, backlog={ag.backlog}, "
-                f"balance={ag.balance:.2f}, last_order={ag.last_order_placed}"
-            )
+        state_lines = [
+            f"- {ag.role_name}: inv={ag.inventory}, backlog={ag.backlog}, balance={ag.balance:.2f}, last_order={ag.last_order_placed}"
+            for ag in agents
+        ]
         state_block = "\n".join(state_lines)
-
         # History summary (optional)
-        if history:
-            # Keep it compact
-            hist_str = json.dumps(history[-self.history_window:], indent=2)[:1500]
-        else:
-            hist_str = "No prior history provided."
-
-        return (
-            "You are the ORCHESTRATOR overseeing the entire MIT Beer Game supply chain.\n"
-            "Your goal each round is to recommend order quantities for every role so that:\n"
-            "• Total backlog and holding costs across the chain stay minimal.\n"
-            "• The chain remains profitable as a whole, even if one role must temporarily reduce its own profit.\n"
-            "• Inventories stay within reasonable bounds to avoid the bull-whip effect.\n\n"
-            f"ROUND: {round_index}  |  External customer demand this round: {external_demand}\n"
-            "Current state (inventory, backlog, balance, last_order):\n" + state_block + "\n\n"
-            f"Recent history (last {self.history_window} rounds):\n{hist_str}\n\n"
-            "Return valid JSON ONLY in the following list format (no markdown):\n"
-            "[\n"
-            "  {\"role_name\": \"Retailer\", \"order_quantity\": <int>, \"rationale\": \"<short reason>\"},\n"
-            "  {\"role_name\": \"Wholesaler\", \"order_quantity\": <int>, \"rationale\": \"<short reason>\"},\n"
-            "  {\"role_name\": \"Distributor\", \"order_quantity\": <int>, \"rationale\": \"<short reason>\"},\n"
-            "  {\"role_name\": \"Factory\", \"order_quantity\": <int>, \"rationale\": \"<short reason>\"}\n"
-            "]\n"
-            "IMPORTANT: output ONLY valid JSON – a list of four objects, one per role, nothing else."
+        hist_str = (
+            json.dumps(history[-self.history_window:], indent=2)[:1500]
+            if history else "No prior history provided."
         )
+        return BeerGamePrompts.get_orchestrator_prompt(state_block, external_demand, round_index, hist_str, self.history_window)
 
     async def get_recommendations(self, agents: List[BeerGameAgent], external_demand: int,
                                   round_index: int, history: List[Dict[str, Any]] = None,
@@ -62,6 +40,17 @@ class BeerGameOrchestrator:
             history = []
         prompt = self._build_prompt(agents, external_demand, round_index, history)
         sys_prompt = "You are a top-tier operations research expert coordinating a supply chain."
+
+        # Log system and user prompts
+        if self.logger:
+            self.logger.log("\n🧠 [Orchestrator] SYSTEM PROMPT:\n" + sys_prompt)
+            self.logger.log("👤 [Orchestrator] USER PROMPT:\n" + prompt)
+            if getattr(self.logger, 'file_handle', None):
+                fh = self.logger.file_handle
+                fh.write("\n🧠 ORCHESTRATOR SYSTEM PROMPT\n")
+                fh.write(sys_prompt + "\n")
+                fh.write("👤 ORCHESTRATOR USER PROMPT\n")
+                fh.write(prompt + "\n")
 
         try:
             client = lite_client or get_default_client()
@@ -84,8 +73,22 @@ class BeerGameOrchestrator:
             self.logger.log(f"[Orchestrator] Raw response: {resp}")
 
         try:
-            parsed = safe_parse_json(resp)
-        except Exception:
+            # Try to parse as JSON - could be a list or dict
+            parsed_json = json.loads(resp.strip())
+            
+            # If it's a list, use it directly
+            if isinstance(parsed_json, list):
+                parsed = parsed_json
+            # If it's a dict, wrap it in a list
+            elif isinstance(parsed_json, dict):
+                parsed = [parsed_json]
+            else:
+                # Fallback for unexpected format
+                raise ValueError("Unexpected JSON format")
+                
+        except Exception as e:
+            if self.logger:
+                self.logger.log(f"[Orchestrator] JSON parsing failed: {e}")
             # Fallback – equal split order 10 each
             parsed = [
                 {"role_name": ag.role_name, "order_quantity": 10, "rationale": "default"}
@@ -95,6 +98,12 @@ class BeerGameOrchestrator:
         # Convert list to dict
         recs: Dict[str, Dict[str, Any]] = {}
         for item in parsed:
+            # Ensure item is a dictionary
+            if not isinstance(item, dict):
+                if self.logger:
+                    self.logger.log(f"[Orchestrator] Skipping non-dict item: {item}")
+                continue
+                
             role = item.get("role_name")
             if role:
                 recs[role] = {
