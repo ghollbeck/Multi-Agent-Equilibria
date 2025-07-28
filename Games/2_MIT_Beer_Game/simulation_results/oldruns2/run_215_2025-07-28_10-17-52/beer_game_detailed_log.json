@@ -1,0 +1,769 @@
+{
+  "hyperparameters": {
+    "num_rounds": 10,
+    "holding_cost_per_unit": 0.5,
+    "backlog_cost_per_unit": 1.5,
+    "sale_price_per_unit": 5.0,
+    "purchase_cost_per_unit": 2.5,
+    "production_cost_per_unit": 1.5,
+    "roles": [
+      "Retailer",
+      "Wholesaler",
+      "Distributor",
+      "Factory"
+    ],
+    "timestamp": "2025-07-28_10-17-52",
+    "external_demand_pattern": [
+      8,
+      7,
+      10,
+      10,
+      10,
+      8,
+      14,
+      9,
+      18,
+      10
+    ],
+    "enable_communication": true,
+    "communication_rounds": 2,
+    "enable_memory": false,
+    "memory_retention_rounds": 5,
+    "enable_shared_memory": false,
+    "initial_inventory": 10,
+    "initial_backlog": 0,
+    "initial_balance": 1000.0
+  },
+  "rounds_log": [
+    {
+      "round_index": 0,
+      "generation": 1,
+      "external_demand": 8,
+      "communication": [
+        {
+          "round": 0,
+          "communication_round": 1,
+          "sender": "Retailer",
+          "message": "Retailer here - I'm seeing steady demand around 8 units but have dangerously low inventory (2 units) with no backlog. While my profit is healthy at $1039.80, I'm at risk of stockouts that could hurt the entire chain. I plan to order 10 units this round to build a small safety buffer while avoiding excess holding costs. Remember: my stockouts mean lost sales for everyone upstream.",
+          "strategy_hint": "Building minimal safety stock (1-2 rounds) while closely tracking demand to prevent bullwhip",
+          "collaboration_proposal": "Let's all maintain 1-2 rounds of inventory cover and share demand signals quickly. I'll report true customer demand each round so we can coordinate buffer levels. Please signal your inventory positions so we can prevent shortages.",
+          "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand: 8 units, Profit: $1039.80. I'm the only one seeing real customer demand - will keep you informed of changes.",
+          "confidence": 0.8
+        },
+        {
+          "round": 0,
+          "communication_round": 1,
+          "sender": "Wholesaler",
+          "message": "Wholesaler here. I hear Retailer is seeing steady demand of 8 units and has low inventory (2 units). This aligns with my situation - I also have just 2 units inventory with 0 backlog. While my profit is healthy at $1039.80, our parallel low inventory positions create significant risk. Based on Retailer's planned 10-unit order and my minimal stock, I plan to order 12 units from Distributor this round to build a small safety buffer while avoiding excessive holding costs. This slightly higher order accounts for both Retailer's immediate needs and maintains a minimal safety stock for me, helping stabilize the chain without triggering major bullwhip effects.",
+          "strategy_hint": "Maintaining minimal safety stock (1-2 rounds) while closely matching downstream orders plus small buffer",
+          "collaboration_proposal": "Let's coordinate inventory levels across the chain: each agent maintains 1-2 rounds of expected demand as buffer. I'll share my inventory position and order plans each round. Please signal significant changes in order patterns early to prevent shortages or oversupply.",
+          "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Retailer: 8 units, Profit: $1039.80. Planning to order 12 units this round to build minimal safety stock while serving expected demand.",
+          "confidence": 0.85
+        },
+        {
+          "round": 0,
+          "communication_round": 1,
+          "sender": "Distributor",
+          "message": "Distributor here. I hear Retailer seeing steady demand of 8 units and Wholesaler planning 12-unit order due to low inventory (both at 2 units). My situation mirrors theirs - I also have 2 units inventory, 0 backlog, and $1039.80 profit. Given Wholesaler's planned 12-unit order and our parallel low inventory positions, I plan to order 14 units from Factory this round. This slightly higher order accounts for Wholesaler's immediate needs plus minimal safety stock, helping prevent stockouts while avoiding excessive holding costs that could threaten our healthy profits. Critical timing: with 1-round lead times, we must anticipate demand changes quickly. Our parallel low inventory positions create significant chain-wide risk - one demand spike could trigger cascading stockouts and lost sales for everyone.",
+          "strategy_hint": "Ordering slightly above downstream demand (14 vs 12) to build minimal safety stock while preventing stockouts",
+          "collaboration_proposal": "Let's coordinate inventory levels: each agent maintains 1-2 rounds of expected demand as buffer. I'll share inventory position and order plans each round. We must balance holding costs ($0.5/unit) against stockout risks ($1.5/unit backlog cost) to protect everyone's profits.",
+          "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Wholesaler: 8 units, Profit: $1039.80. Planning 14-unit order to build minimal safety stock while serving expected demand. Remember: I can only ship what Wholesaler orders plus any backlog.",
+          "confidence": 0.9
+        },
+        {
+          "round": 0,
+          "communication_round": 1,
+          "sender": "Factory",
+          "message": "Factory here. I hear Retailer seeing steady 8-unit demand, Wholesaler planning 12-unit order, and Distributor planning 14-unit order - all with minimal 2-unit inventory positions. This parallel low inventory across the chain (I also have 2 units) creates significant risk. With my $1039.80 profit and production lead time of 1 round, I must carefully balance production to prevent both costly stockouts ($1.5/unit backlog) and excessive inventory ($0.5/unit holding cost). Based on Distributor's planned 14-unit order and our chain-wide low inventory situation, I plan to schedule 16 units production this round. This slightly higher production accounts for immediate downstream needs while building minimal safety stock, helping prevent stockouts that could cascade through the chain and hurt everyone's profits. Critical timing: my production takes 1 round to arrive, so we must coordinate carefully to prevent supply gaps.",
+          "strategy_hint": "Scheduling production slightly above downstream demand (16 vs 14) to build minimal safety stock while preventing stockouts",
+          "collaboration_proposal": "Let's coordinate inventory levels: each stage maintains 1-2 rounds of expected demand as buffer. I'll share production plans and inventory position each round. We must balance holding costs against stockout risks to protect chain-wide profits. Early warning of demand changes is critical due to production lead time.",
+          "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Distributor: 8 units, Profit: $1039.80. Planning 16-unit production to build minimal safety stock while serving expected demand. Remember: production takes 1 round to complete.",
+          "confidence": 0.95
+        },
+        {
+          "round": 0,
+          "communication_round": 2,
+          "sender": "Retailer",
+          "message": "Retailer here - I've heard everyone's plans and our parallel low inventory (2 units each) creates serious chain-wide risk. Wholesaler plans 12 units, Distributor 14, and Factory 16 - showing responsible buffer building without excessive bullwhip. With my healthy $1039.80 profit but only 2 units inventory, I confirm steady 8-unit customer demand. I'll order 10 units this round - enough to serve demand plus minimal safety stock without triggering excessive holding costs. This balances my $2.5/unit profit potential against $0.5/unit holding and $1.5/unit backlog costs. Critical timing: with 1-round lead times, we must coordinate carefully. I'm the only one seeing real customer demand - I'll keep reporting it accurately to prevent bullwhip effect. Remember: I can only ship what customers order plus any backlog, so maintaining minimal safety stock is crucial for everyone's profits.",
+          "strategy_hint": "Ordering slightly above true demand (10 vs 8) to build minimal safety stock while preventing stockouts and excessive holding costs",
+          "collaboration_proposal": "Let's each maintain 1-2 rounds of expected demand as buffer. I'll report true customer demand patterns each round. Please signal inventory positions so we can prevent chain-wide shortages while avoiding costly oversupply.",
+          "information_shared": "Current inventory: 2 units, Backlog: 0 units, True customer demand: 8 units, Profit: $1039.80. Planning 10-unit order to build minimal safety stock while serving steady demand. Remember: I can only ship customer orders plus backlog.",
+          "confidence": 0.9
+        },
+        {
+          "round": 0,
+          "communication_round": 2,
+          "sender": "Wholesaler",
+          "message": "Wholesaler here. I hear Retailer is seeing steady demand of 8 units and has low inventory (2 units). This aligns with my situation - I also have just 2 units inventory with 0 backlog. While my profit is healthy at $1039.80, our parallel low inventory positions create significant risk. Based on Retailer's planned 10-unit order and my minimal stock, I plan to order 12 units from Distributor this round to build a small safety buffer while avoiding excessive holding costs. This slightly higher order accounts for both Retailer's immediate needs and maintains a minimal safety stock for me, helping stabilize the chain without triggering major bullwhip effects.",
+          "strategy_hint": "Maintaining minimal safety stock (1-2 rounds) while closely matching downstream orders plus small buffer",
+          "collaboration_proposal": "Let's coordinate inventory levels across the chain: each agent maintains 1-2 rounds of expected demand as buffer. I'll share my inventory position and order plans each round. Please signal significant changes in order patterns early to prevent shortages or oversupply.",
+          "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Retailer: 8 units, Profit: $1039.80. Planning to order 12 units this round to build minimal safety stock while serving expected demand.",
+          "confidence": 0.85
+        },
+        {
+          "round": 0,
+          "communication_round": 2,
+          "sender": "Distributor",
+          "message": "Distributor here. I hear Retailer seeing steady 8-unit demand and planning 10-unit order, while Wholesaler plans 12-unit order - both with minimal 2-unit inventory. My situation mirrors theirs - I also have 2 units inventory, 0 backlog, and $1039.80 profit. Given Wholesaler's planned 12-unit order and our parallel low inventory positions, I plan to order 14 units from Factory this round. This slightly higher order accounts for Wholesaler's immediate needs plus minimal safety stock, helping prevent stockouts while avoiding excessive holding costs that could threaten our healthy profits. Critical timing: with 1-round lead times, we must anticipate demand changes quickly. Our parallel low inventory positions create significant chain-wide risk - one demand spike could trigger cascading stockouts and lost sales for everyone.",
+          "strategy_hint": "Ordering slightly above downstream demand (14 vs 12) to build minimal safety stock while preventing stockouts",
+          "collaboration_proposal": "Let's coordinate inventory levels: each agent maintains 1-2 rounds of expected demand as buffer. I'll share inventory position and order plans each round. We must balance holding costs ($0.5/unit) against stockout risks ($1.5/unit backlog cost) to protect everyone's profits.",
+          "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Wholesaler: 8 units, Profit: $1039.80. Planning 14-unit order to build minimal safety stock while serving expected demand. Remember: I can only ship what Wholesaler orders plus any backlog.",
+          "confidence": 0.9
+        },
+        {
+          "round": 0,
+          "communication_round": 2,
+          "sender": "Factory",
+          "message": "Factory here. I hear Retailer seeing steady 8-unit demand and planning 10-unit order, Wholesaler planning 12 units, and Distributor planning 14 units - all with minimal 2-unit inventory positions. This parallel low inventory across the chain (I also have 2 units) creates significant risk. With my $1039.80 profit and production lead time of 1 round, I must carefully balance production to prevent both costly stockouts ($1.5/unit backlog) and excessive inventory ($0.5/unit holding cost). Based on Distributor's planned 14-unit order and our chain-wide low inventory situation, I plan to schedule 16 units production this round. This slightly higher production accounts for immediate downstream needs while building minimal safety stock, helping prevent stockouts that could cascade through the chain and hurt everyone's profits. Critical timing: my production takes 1 round to arrive, so we must coordinate carefully to prevent supply gaps.",
+          "strategy_hint": "Scheduling production slightly above downstream demand (16 vs 14) to build minimal safety stock while preventing stockouts",
+          "collaboration_proposal": "Let's coordinate inventory levels: each stage maintains 1-2 rounds of expected demand as buffer. I'll share production plans and inventory position each round. We must balance holding costs against stockout risks to protect chain-wide profits. Early warning of demand changes is critical due to production lead time.",
+          "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Distributor: 8 units, Profit: $1039.80. Planning 16-unit production to build minimal safety stock while serving expected demand. Remember: production takes 1 round to complete.",
+          "confidence": 0.95
+        }
+      ],
+      "agents": {
+        "Retailer": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Retailer",
+          "inventory": 2,
+          "backlog": 0,
+          "order_placed": 10,
+          "order_received": 8,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 8,
+          "starting_balance": 1000.0,
+          "revenue": 40.0,
+          "purchase_cost": 25.0,
+          "holding_cost": 0.2,
+          "backlog_cost": 0.0,
+          "ending_balance": 1014.8,
+          "orchestrator_order": 0,
+          "orchestrator_rationale": "",
+          "orders_in_transit_0": 0,
+          "orders_in_transit_1": 0,
+          "production_queue_0": 0,
+          "production_queue_1": 0,
+          "last_decision_output": {
+            "role_name": "Retailer",
+            "inventory": 2,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              8
+            ],
+            "incoming_shipments": [
+              8
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 8,
+            "confidence": 0.9,
+            "rationale": "Steady demand of 8 units observed. Ordering 10 units to maintain minimal safety stock while avoiding excess holding costs. Current inventory (2) plus incoming (8) covers immediate demand.",
+            "risk_assessment": "Low inventory position (2 units) creates stockout risk if demand spikes. Chain-wide low inventory (8 units total) increases systemic risk.",
+            "order_quantity": 10
+          },
+          "last_update_output": {},
+          "last_init_output": {},
+          "llm_reported_inventory": 2,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            8
+          ],
+          "llm_incoming_shipments": [
+            8
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.9,
+          "llm_rationale": "Steady demand of 8 units observed. Ordering 10 units to maintain minimal safety stock while avoiding excess holding costs. Current inventory (2) plus incoming (8) covers immediate demand.",
+          "llm_risk_assessment": "Low inventory position (2 units) creates stockout risk if demand spikes. Chain-wide low inventory (8 units total) increases systemic risk.",
+          "llm_expected_demand_next_round": 8,
+          "profit_accumulated": 1014.8
+        },
+        "Wholesaler": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Wholesaler",
+          "inventory": 2,
+          "backlog": 0,
+          "order_placed": 12,
+          "order_received": 8,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 8,
+          "starting_balance": 1000.0,
+          "revenue": 40.0,
+          "purchase_cost": 30.0,
+          "holding_cost": 0.2,
+          "backlog_cost": 0.0,
+          "ending_balance": 1009.8,
+          "orchestrator_order": 0,
+          "orchestrator_rationale": "",
+          "orders_in_transit_0": 0,
+          "orders_in_transit_1": 0,
+          "production_queue_0": 0,
+          "production_queue_1": 0,
+          "last_decision_output": {
+            "role_name": "Wholesaler",
+            "inventory": 2,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              8
+            ],
+            "incoming_shipments": [
+              8
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 10,
+            "confidence": 0.85,
+            "rationale": "Retailer signaled 10-unit order plan. Maintaining minimal safety stock while avoiding excess inventory costs.",
+            "risk_assessment": "Low inventory across chain (2 units each) creates stockout risk. Must balance safety stock against holding costs.",
+            "order_quantity": 12
+          },
+          "last_update_output": {},
+          "last_init_output": {},
+          "llm_reported_inventory": 2,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            8
+          ],
+          "llm_incoming_shipments": [
+            8
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.85,
+          "llm_rationale": "Retailer signaled 10-unit order plan. Maintaining minimal safety stock while avoiding excess inventory costs.",
+          "llm_risk_assessment": "Low inventory across chain (2 units each) creates stockout risk. Must balance safety stock against holding costs.",
+          "llm_expected_demand_next_round": 10,
+          "profit_accumulated": 1009.8
+        },
+        "Distributor": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Distributor",
+          "inventory": 2,
+          "backlog": 0,
+          "order_placed": 14,
+          "order_received": 8,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 8,
+          "starting_balance": 1000.0,
+          "revenue": 40.0,
+          "purchase_cost": 35.0,
+          "holding_cost": 0.2,
+          "backlog_cost": 0.0,
+          "ending_balance": 1004.8,
+          "orchestrator_order": 0,
+          "orchestrator_rationale": "",
+          "orders_in_transit_0": 0,
+          "orders_in_transit_1": 0,
+          "production_queue_0": 0,
+          "production_queue_1": 0,
+          "last_decision_output": {
+            "role_name": "Distributor",
+            "inventory": 2,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              8
+            ],
+            "incoming_shipments": [
+              8
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 12,
+            "confidence": 0.85,
+            "rationale": "Wholesaler plans 12-unit order. Ordering 14 units to build minimal safety stock while avoiding excessive holding costs. This balances stockout risk against storage costs.",
+            "risk_assessment": "Low inventory (2 units) creates stockout risk if demand spikes. Lead time delay means we need buffer stock. Must monitor holding costs carefully.",
+            "order_quantity": 14
+          },
+          "last_update_output": {},
+          "last_init_output": {},
+          "llm_reported_inventory": 2,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            8
+          ],
+          "llm_incoming_shipments": [
+            8
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.85,
+          "llm_rationale": "Wholesaler plans 12-unit order. Ordering 14 units to build minimal safety stock while avoiding excessive holding costs. This balances stockout risk against storage costs.",
+          "llm_risk_assessment": "Low inventory (2 units) creates stockout risk if demand spikes. Lead time delay means we need buffer stock. Must monitor holding costs carefully.",
+          "llm_expected_demand_next_round": 12,
+          "profit_accumulated": 1004.8
+        },
+        "Factory": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Factory",
+          "inventory": 2,
+          "backlog": 0,
+          "order_placed": 15,
+          "order_received": 8,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 8,
+          "starting_balance": 1000.0,
+          "revenue": 40.0,
+          "purchase_cost": 22.5,
+          "holding_cost": 0.2,
+          "backlog_cost": 0.0,
+          "ending_balance": 1017.3,
+          "orchestrator_order": 0,
+          "orchestrator_rationale": "",
+          "orders_in_transit_0": 0,
+          "orders_in_transit_1": 0,
+          "production_queue_0": 0,
+          "production_queue_1": 0,
+          "last_decision_output": {
+            "role_name": "Factory",
+            "inventory": 2,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              8
+            ],
+            "incoming_shipments": [
+              0
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 14,
+            "confidence": 0.9,
+            "rationale": "Distributor plans 14-unit order. With chain-wide low inventory (2 units each) and healthy profits, scheduling 15 units production balances immediate needs with minimal safety stock while avoiding excessive holding costs",
+            "risk_assessment": "Chain-wide low inventory creates stockout risk. Production lead time requires careful timing. Must prevent both costly stockouts ($1.5/unit) and excess inventory ($0.5/unit)",
+            "order_quantity": 15
+          },
+          "last_update_output": {},
+          "last_init_output": {},
+          "llm_reported_inventory": 2,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            8
+          ],
+          "llm_incoming_shipments": [
+            0
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.9,
+          "llm_rationale": "Distributor plans 14-unit order. With chain-wide low inventory (2 units each) and healthy profits, scheduling 15 units production balances immediate needs with minimal safety stock while avoiding excessive holding costs",
+          "llm_risk_assessment": "Chain-wide low inventory creates stockout risk. Production lead time requires careful timing. Must prevent both costly stockouts ($1.5/unit) and excess inventory ($0.5/unit)",
+          "llm_expected_demand_next_round": 14,
+          "profit_accumulated": 1017.3
+        }
+      },
+      "orchestrator_recommendations": {}
+    }
+  ],
+  "flat_rounds_log": [
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Retailer",
+      "inventory": 2,
+      "backlog": 0,
+      "order_placed": 10,
+      "order_received": 8,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 8,
+      "starting_balance": 1000.0,
+      "revenue": 40.0,
+      "purchase_cost": 25.0,
+      "holding_cost": 0.2,
+      "backlog_cost": 0.0,
+      "ending_balance": 1014.8,
+      "orchestrator_order": 0,
+      "orchestrator_rationale": "",
+      "orders_in_transit_0": 0,
+      "orders_in_transit_1": 0,
+      "production_queue_0": 0,
+      "production_queue_1": 0
+    },
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Wholesaler",
+      "inventory": 2,
+      "backlog": 0,
+      "order_placed": 12,
+      "order_received": 8,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 8,
+      "starting_balance": 1000.0,
+      "revenue": 40.0,
+      "purchase_cost": 30.0,
+      "holding_cost": 0.2,
+      "backlog_cost": 0.0,
+      "ending_balance": 1009.8,
+      "orchestrator_order": 0,
+      "orchestrator_rationale": "",
+      "orders_in_transit_0": 0,
+      "orders_in_transit_1": 0,
+      "production_queue_0": 0,
+      "production_queue_1": 0
+    },
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Distributor",
+      "inventory": 2,
+      "backlog": 0,
+      "order_placed": 14,
+      "order_received": 8,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 8,
+      "starting_balance": 1000.0,
+      "revenue": 40.0,
+      "purchase_cost": 35.0,
+      "holding_cost": 0.2,
+      "backlog_cost": 0.0,
+      "ending_balance": 1004.8,
+      "orchestrator_order": 0,
+      "orchestrator_rationale": "",
+      "orders_in_transit_0": 0,
+      "orders_in_transit_1": 0,
+      "production_queue_0": 0,
+      "production_queue_1": 0
+    },
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Factory",
+      "inventory": 2,
+      "backlog": 0,
+      "order_placed": 15,
+      "order_received": 8,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 8,
+      "starting_balance": 1000.0,
+      "revenue": 40.0,
+      "purchase_cost": 22.5,
+      "holding_cost": 0.2,
+      "backlog_cost": 0.0,
+      "ending_balance": 1017.3,
+      "orchestrator_order": 0,
+      "orchestrator_rationale": "",
+      "orders_in_transit_0": 0,
+      "orders_in_transit_1": 0,
+      "production_queue_0": 0,
+      "production_queue_1": 0
+    }
+  ],
+  "communication_log": [
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "Retailer here - I'm seeing steady demand around 8 units but have dangerously low inventory (2 units) with no backlog. While my profit is healthy at $1039.80, I'm at risk of stockouts that could hurt the entire chain. I plan to order 10 units this round to build a small safety buffer while avoiding excess holding costs. Remember: my stockouts mean lost sales for everyone upstream.",
+      "strategy_hint": "Building minimal safety stock (1-2 rounds) while closely tracking demand to prevent bullwhip",
+      "collaboration_proposal": "Let's all maintain 1-2 rounds of inventory cover and share demand signals quickly. I'll report true customer demand each round so we can coordinate buffer levels. Please signal your inventory positions so we can prevent shortages.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand: 8 units, Profit: $1039.80. I'm the only one seeing real customer demand - will keep you informed of changes.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "Wholesaler here. I hear Retailer is seeing steady demand of 8 units and has low inventory (2 units). This aligns with my situation - I also have just 2 units inventory with 0 backlog. While my profit is healthy at $1039.80, our parallel low inventory positions create significant risk. Based on Retailer's planned 10-unit order and my minimal stock, I plan to order 12 units from Distributor this round to build a small safety buffer while avoiding excessive holding costs. This slightly higher order accounts for both Retailer's immediate needs and maintains a minimal safety stock for me, helping stabilize the chain without triggering major bullwhip effects.",
+      "strategy_hint": "Maintaining minimal safety stock (1-2 rounds) while closely matching downstream orders plus small buffer",
+      "collaboration_proposal": "Let's coordinate inventory levels across the chain: each agent maintains 1-2 rounds of expected demand as buffer. I'll share my inventory position and order plans each round. Please signal significant changes in order patterns early to prevent shortages or oversupply.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Retailer: 8 units, Profit: $1039.80. Planning to order 12 units this round to build minimal safety stock while serving expected demand.",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "Distributor here. I hear Retailer seeing steady demand of 8 units and Wholesaler planning 12-unit order due to low inventory (both at 2 units). My situation mirrors theirs - I also have 2 units inventory, 0 backlog, and $1039.80 profit. Given Wholesaler's planned 12-unit order and our parallel low inventory positions, I plan to order 14 units from Factory this round. This slightly higher order accounts for Wholesaler's immediate needs plus minimal safety stock, helping prevent stockouts while avoiding excessive holding costs that could threaten our healthy profits. Critical timing: with 1-round lead times, we must anticipate demand changes quickly. Our parallel low inventory positions create significant chain-wide risk - one demand spike could trigger cascading stockouts and lost sales for everyone.",
+      "strategy_hint": "Ordering slightly above downstream demand (14 vs 12) to build minimal safety stock while preventing stockouts",
+      "collaboration_proposal": "Let's coordinate inventory levels: each agent maintains 1-2 rounds of expected demand as buffer. I'll share inventory position and order plans each round. We must balance holding costs ($0.5/unit) against stockout risks ($1.5/unit backlog cost) to protect everyone's profits.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Wholesaler: 8 units, Profit: $1039.80. Planning 14-unit order to build minimal safety stock while serving expected demand. Remember: I can only ship what Wholesaler orders plus any backlog.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "Factory here. I hear Retailer seeing steady 8-unit demand, Wholesaler planning 12-unit order, and Distributor planning 14-unit order - all with minimal 2-unit inventory positions. This parallel low inventory across the chain (I also have 2 units) creates significant risk. With my $1039.80 profit and production lead time of 1 round, I must carefully balance production to prevent both costly stockouts ($1.5/unit backlog) and excessive inventory ($0.5/unit holding cost). Based on Distributor's planned 14-unit order and our chain-wide low inventory situation, I plan to schedule 16 units production this round. This slightly higher production accounts for immediate downstream needs while building minimal safety stock, helping prevent stockouts that could cascade through the chain and hurt everyone's profits. Critical timing: my production takes 1 round to arrive, so we must coordinate carefully to prevent supply gaps.",
+      "strategy_hint": "Scheduling production slightly above downstream demand (16 vs 14) to build minimal safety stock while preventing stockouts",
+      "collaboration_proposal": "Let's coordinate inventory levels: each stage maintains 1-2 rounds of expected demand as buffer. I'll share production plans and inventory position each round. We must balance holding costs against stockout risks to protect chain-wide profits. Early warning of demand changes is critical due to production lead time.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Distributor: 8 units, Profit: $1039.80. Planning 16-unit production to build minimal safety stock while serving expected demand. Remember: production takes 1 round to complete.",
+      "confidence": 0.95
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Retailer",
+      "message": "Retailer here - I've heard everyone's plans and our parallel low inventory (2 units each) creates serious chain-wide risk. Wholesaler plans 12 units, Distributor 14, and Factory 16 - showing responsible buffer building without excessive bullwhip. With my healthy $1039.80 profit but only 2 units inventory, I confirm steady 8-unit customer demand. I'll order 10 units this round - enough to serve demand plus minimal safety stock without triggering excessive holding costs. This balances my $2.5/unit profit potential against $0.5/unit holding and $1.5/unit backlog costs. Critical timing: with 1-round lead times, we must coordinate carefully. I'm the only one seeing real customer demand - I'll keep reporting it accurately to prevent bullwhip effect. Remember: I can only ship what customers order plus any backlog, so maintaining minimal safety stock is crucial for everyone's profits.",
+      "strategy_hint": "Ordering slightly above true demand (10 vs 8) to build minimal safety stock while preventing stockouts and excessive holding costs",
+      "collaboration_proposal": "Let's each maintain 1-2 rounds of expected demand as buffer. I'll report true customer demand patterns each round. Please signal inventory positions so we can prevent chain-wide shortages while avoiding costly oversupply.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, True customer demand: 8 units, Profit: $1039.80. Planning 10-unit order to build minimal safety stock while serving steady demand. Remember: I can only ship customer orders plus backlog.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Wholesaler",
+      "message": "Wholesaler here. I hear Retailer is seeing steady demand of 8 units and has low inventory (2 units). This aligns with my situation - I also have just 2 units inventory with 0 backlog. While my profit is healthy at $1039.80, our parallel low inventory positions create significant risk. Based on Retailer's planned 10-unit order and my minimal stock, I plan to order 12 units from Distributor this round to build a small safety buffer while avoiding excessive holding costs. This slightly higher order accounts for both Retailer's immediate needs and maintains a minimal safety stock for me, helping stabilize the chain without triggering major bullwhip effects.",
+      "strategy_hint": "Maintaining minimal safety stock (1-2 rounds) while closely matching downstream orders plus small buffer",
+      "collaboration_proposal": "Let's coordinate inventory levels across the chain: each agent maintains 1-2 rounds of expected demand as buffer. I'll share my inventory position and order plans each round. Please signal significant changes in order patterns early to prevent shortages or oversupply.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Retailer: 8 units, Profit: $1039.80. Planning to order 12 units this round to build minimal safety stock while serving expected demand.",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Distributor",
+      "message": "Distributor here. I hear Retailer seeing steady 8-unit demand and planning 10-unit order, while Wholesaler plans 12-unit order - both with minimal 2-unit inventory. My situation mirrors theirs - I also have 2 units inventory, 0 backlog, and $1039.80 profit. Given Wholesaler's planned 12-unit order and our parallel low inventory positions, I plan to order 14 units from Factory this round. This slightly higher order accounts for Wholesaler's immediate needs plus minimal safety stock, helping prevent stockouts while avoiding excessive holding costs that could threaten our healthy profits. Critical timing: with 1-round lead times, we must anticipate demand changes quickly. Our parallel low inventory positions create significant chain-wide risk - one demand spike could trigger cascading stockouts and lost sales for everyone.",
+      "strategy_hint": "Ordering slightly above downstream demand (14 vs 12) to build minimal safety stock while preventing stockouts",
+      "collaboration_proposal": "Let's coordinate inventory levels: each agent maintains 1-2 rounds of expected demand as buffer. I'll share inventory position and order plans each round. We must balance holding costs ($0.5/unit) against stockout risks ($1.5/unit backlog cost) to protect everyone's profits.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Wholesaler: 8 units, Profit: $1039.80. Planning 14-unit order to build minimal safety stock while serving expected demand. Remember: I can only ship what Wholesaler orders plus any backlog.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Factory",
+      "message": "Factory here. I hear Retailer seeing steady 8-unit demand and planning 10-unit order, Wholesaler planning 12 units, and Distributor planning 14 units - all with minimal 2-unit inventory positions. This parallel low inventory across the chain (I also have 2 units) creates significant risk. With my $1039.80 profit and production lead time of 1 round, I must carefully balance production to prevent both costly stockouts ($1.5/unit backlog) and excessive inventory ($0.5/unit holding cost). Based on Distributor's planned 14-unit order and our chain-wide low inventory situation, I plan to schedule 16 units production this round. This slightly higher production accounts for immediate downstream needs while building minimal safety stock, helping prevent stockouts that could cascade through the chain and hurt everyone's profits. Critical timing: my production takes 1 round to arrive, so we must coordinate carefully to prevent supply gaps.",
+      "strategy_hint": "Scheduling production slightly above downstream demand (16 vs 14) to build minimal safety stock while preventing stockouts",
+      "collaboration_proposal": "Let's coordinate inventory levels: each stage maintains 1-2 rounds of expected demand as buffer. I'll share production plans and inventory position each round. We must balance holding costs against stockout risks to protect chain-wide profits. Early warning of demand changes is critical due to production lead time.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Distributor: 8 units, Profit: $1039.80. Planning 16-unit production to build minimal safety stock while serving expected demand. Remember: production takes 1 round to complete.",
+      "confidence": 0.95
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "Retailer here - I'm seeing steady demand around 8 units but have dangerously low inventory (2 units) with no backlog. While my profit is healthy at $1039.80, I'm at risk of stockouts that could hurt the entire chain. I plan to order 10 units this round to build a small safety buffer while avoiding excess holding costs. Remember: my stockouts mean lost sales for everyone upstream.",
+      "strategy_hint": "Building minimal safety stock (1-2 rounds) while closely tracking demand to prevent bullwhip",
+      "collaboration_proposal": "Let's all maintain 1-2 rounds of inventory cover and share demand signals quickly. I'll report true customer demand each round so we can coordinate buffer levels. Please signal your inventory positions so we can prevent shortages.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand: 8 units, Profit: $1039.80. I'm the only one seeing real customer demand - will keep you informed of changes.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "Wholesaler here. I hear Retailer is seeing steady demand of 8 units and has low inventory (2 units). This aligns with my situation - I also have just 2 units inventory with 0 backlog. While my profit is healthy at $1039.80, our parallel low inventory positions create significant risk. Based on Retailer's planned 10-unit order and my minimal stock, I plan to order 12 units from Distributor this round to build a small safety buffer while avoiding excessive holding costs. This slightly higher order accounts for both Retailer's immediate needs and maintains a minimal safety stock for me, helping stabilize the chain without triggering major bullwhip effects.",
+      "strategy_hint": "Maintaining minimal safety stock (1-2 rounds) while closely matching downstream orders plus small buffer",
+      "collaboration_proposal": "Let's coordinate inventory levels across the chain: each agent maintains 1-2 rounds of expected demand as buffer. I'll share my inventory position and order plans each round. Please signal significant changes in order patterns early to prevent shortages or oversupply.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Retailer: 8 units, Profit: $1039.80. Planning to order 12 units this round to build minimal safety stock while serving expected demand.",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "Distributor here. I hear Retailer seeing steady demand of 8 units and Wholesaler planning 12-unit order due to low inventory (both at 2 units). My situation mirrors theirs - I also have 2 units inventory, 0 backlog, and $1039.80 profit. Given Wholesaler's planned 12-unit order and our parallel low inventory positions, I plan to order 14 units from Factory this round. This slightly higher order accounts for Wholesaler's immediate needs plus minimal safety stock, helping prevent stockouts while avoiding excessive holding costs that could threaten our healthy profits. Critical timing: with 1-round lead times, we must anticipate demand changes quickly. Our parallel low inventory positions create significant chain-wide risk - one demand spike could trigger cascading stockouts and lost sales for everyone.",
+      "strategy_hint": "Ordering slightly above downstream demand (14 vs 12) to build minimal safety stock while preventing stockouts",
+      "collaboration_proposal": "Let's coordinate inventory levels: each agent maintains 1-2 rounds of expected demand as buffer. I'll share inventory position and order plans each round. We must balance holding costs ($0.5/unit) against stockout risks ($1.5/unit backlog cost) to protect everyone's profits.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Wholesaler: 8 units, Profit: $1039.80. Planning 14-unit order to build minimal safety stock while serving expected demand. Remember: I can only ship what Wholesaler orders plus any backlog.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "Factory here. I hear Retailer seeing steady 8-unit demand, Wholesaler planning 12-unit order, and Distributor planning 14-unit order - all with minimal 2-unit inventory positions. This parallel low inventory across the chain (I also have 2 units) creates significant risk. With my $1039.80 profit and production lead time of 1 round, I must carefully balance production to prevent both costly stockouts ($1.5/unit backlog) and excessive inventory ($0.5/unit holding cost). Based on Distributor's planned 14-unit order and our chain-wide low inventory situation, I plan to schedule 16 units production this round. This slightly higher production accounts for immediate downstream needs while building minimal safety stock, helping prevent stockouts that could cascade through the chain and hurt everyone's profits. Critical timing: my production takes 1 round to arrive, so we must coordinate carefully to prevent supply gaps.",
+      "strategy_hint": "Scheduling production slightly above downstream demand (16 vs 14) to build minimal safety stock while preventing stockouts",
+      "collaboration_proposal": "Let's coordinate inventory levels: each stage maintains 1-2 rounds of expected demand as buffer. I'll share production plans and inventory position each round. We must balance holding costs against stockout risks to protect chain-wide profits. Early warning of demand changes is critical due to production lead time.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Distributor: 8 units, Profit: $1039.80. Planning 16-unit production to build minimal safety stock while serving expected demand. Remember: production takes 1 round to complete.",
+      "confidence": 0.95
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Retailer",
+      "message": "Retailer here - I've heard everyone's plans and our parallel low inventory (2 units each) creates serious chain-wide risk. Wholesaler plans 12 units, Distributor 14, and Factory 16 - showing responsible buffer building without excessive bullwhip. With my healthy $1039.80 profit but only 2 units inventory, I confirm steady 8-unit customer demand. I'll order 10 units this round - enough to serve demand plus minimal safety stock without triggering excessive holding costs. This balances my $2.5/unit profit potential against $0.5/unit holding and $1.5/unit backlog costs. Critical timing: with 1-round lead times, we must coordinate carefully. I'm the only one seeing real customer demand - I'll keep reporting it accurately to prevent bullwhip effect. Remember: I can only ship what customers order plus any backlog, so maintaining minimal safety stock is crucial for everyone's profits.",
+      "strategy_hint": "Ordering slightly above true demand (10 vs 8) to build minimal safety stock while preventing stockouts and excessive holding costs",
+      "collaboration_proposal": "Let's each maintain 1-2 rounds of expected demand as buffer. I'll report true customer demand patterns each round. Please signal inventory positions so we can prevent chain-wide shortages while avoiding costly oversupply.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, True customer demand: 8 units, Profit: $1039.80. Planning 10-unit order to build minimal safety stock while serving steady demand. Remember: I can only ship customer orders plus backlog.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Wholesaler",
+      "message": "Wholesaler here. I hear Retailer is seeing steady demand of 8 units and has low inventory (2 units). This aligns with my situation - I also have just 2 units inventory with 0 backlog. While my profit is healthy at $1039.80, our parallel low inventory positions create significant risk. Based on Retailer's planned 10-unit order and my minimal stock, I plan to order 12 units from Distributor this round to build a small safety buffer while avoiding excessive holding costs. This slightly higher order accounts for both Retailer's immediate needs and maintains a minimal safety stock for me, helping stabilize the chain without triggering major bullwhip effects.",
+      "strategy_hint": "Maintaining minimal safety stock (1-2 rounds) while closely matching downstream orders plus small buffer",
+      "collaboration_proposal": "Let's coordinate inventory levels across the chain: each agent maintains 1-2 rounds of expected demand as buffer. I'll share my inventory position and order plans each round. Please signal significant changes in order patterns early to prevent shortages or oversupply.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Retailer: 8 units, Profit: $1039.80. Planning to order 12 units this round to build minimal safety stock while serving expected demand.",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Distributor",
+      "message": "Distributor here. I hear Retailer seeing steady 8-unit demand and planning 10-unit order, while Wholesaler plans 12-unit order - both with minimal 2-unit inventory. My situation mirrors theirs - I also have 2 units inventory, 0 backlog, and $1039.80 profit. Given Wholesaler's planned 12-unit order and our parallel low inventory positions, I plan to order 14 units from Factory this round. This slightly higher order accounts for Wholesaler's immediate needs plus minimal safety stock, helping prevent stockouts while avoiding excessive holding costs that could threaten our healthy profits. Critical timing: with 1-round lead times, we must anticipate demand changes quickly. Our parallel low inventory positions create significant chain-wide risk - one demand spike could trigger cascading stockouts and lost sales for everyone.",
+      "strategy_hint": "Ordering slightly above downstream demand (14 vs 12) to build minimal safety stock while preventing stockouts",
+      "collaboration_proposal": "Let's coordinate inventory levels: each agent maintains 1-2 rounds of expected demand as buffer. I'll share inventory position and order plans each round. We must balance holding costs ($0.5/unit) against stockout risks ($1.5/unit backlog cost) to protect everyone's profits.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Wholesaler: 8 units, Profit: $1039.80. Planning 14-unit order to build minimal safety stock while serving expected demand. Remember: I can only ship what Wholesaler orders plus any backlog.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Factory",
+      "message": "Factory here. I hear Retailer seeing steady 8-unit demand and planning 10-unit order, Wholesaler planning 12 units, and Distributor planning 14 units - all with minimal 2-unit inventory positions. This parallel low inventory across the chain (I also have 2 units) creates significant risk. With my $1039.80 profit and production lead time of 1 round, I must carefully balance production to prevent both costly stockouts ($1.5/unit backlog) and excessive inventory ($0.5/unit holding cost). Based on Distributor's planned 14-unit order and our chain-wide low inventory situation, I plan to schedule 16 units production this round. This slightly higher production accounts for immediate downstream needs while building minimal safety stock, helping prevent stockouts that could cascade through the chain and hurt everyone's profits. Critical timing: my production takes 1 round to arrive, so we must coordinate carefully to prevent supply gaps.",
+      "strategy_hint": "Scheduling production slightly above downstream demand (16 vs 14) to build minimal safety stock while preventing stockouts",
+      "collaboration_proposal": "Let's coordinate inventory levels: each stage maintains 1-2 rounds of expected demand as buffer. I'll share production plans and inventory position each round. We must balance holding costs against stockout risks to protect chain-wide profits. Early warning of demand changes is critical due to production lead time.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Distributor: 8 units, Profit: $1039.80. Planning 16-unit production to build minimal safety stock while serving expected demand. Remember: production takes 1 round to complete.",
+      "confidence": 0.95
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "Retailer here - I'm seeing steady demand around 8 units but have dangerously low inventory (2 units) with no backlog. While my profit is healthy at $1039.80, I'm at risk of stockouts that could hurt the entire chain. I plan to order 10 units this round to build a small safety buffer while avoiding excess holding costs. Remember: my stockouts mean lost sales for everyone upstream.",
+      "strategy_hint": "Building minimal safety stock (1-2 rounds) while closely tracking demand to prevent bullwhip",
+      "collaboration_proposal": "Let's all maintain 1-2 rounds of inventory cover and share demand signals quickly. I'll report true customer demand each round so we can coordinate buffer levels. Please signal your inventory positions so we can prevent shortages.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand: 8 units, Profit: $1039.80. I'm the only one seeing real customer demand - will keep you informed of changes.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "Wholesaler here. I hear Retailer is seeing steady demand of 8 units and has low inventory (2 units). This aligns with my situation - I also have just 2 units inventory with 0 backlog. While my profit is healthy at $1039.80, our parallel low inventory positions create significant risk. Based on Retailer's planned 10-unit order and my minimal stock, I plan to order 12 units from Distributor this round to build a small safety buffer while avoiding excessive holding costs. This slightly higher order accounts for both Retailer's immediate needs and maintains a minimal safety stock for me, helping stabilize the chain without triggering major bullwhip effects.",
+      "strategy_hint": "Maintaining minimal safety stock (1-2 rounds) while closely matching downstream orders plus small buffer",
+      "collaboration_proposal": "Let's coordinate inventory levels across the chain: each agent maintains 1-2 rounds of expected demand as buffer. I'll share my inventory position and order plans each round. Please signal significant changes in order patterns early to prevent shortages or oversupply.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Retailer: 8 units, Profit: $1039.80. Planning to order 12 units this round to build minimal safety stock while serving expected demand.",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "Distributor here. I hear Retailer seeing steady demand of 8 units and Wholesaler planning 12-unit order due to low inventory (both at 2 units). My situation mirrors theirs - I also have 2 units inventory, 0 backlog, and $1039.80 profit. Given Wholesaler's planned 12-unit order and our parallel low inventory positions, I plan to order 14 units from Factory this round. This slightly higher order accounts for Wholesaler's immediate needs plus minimal safety stock, helping prevent stockouts while avoiding excessive holding costs that could threaten our healthy profits. Critical timing: with 1-round lead times, we must anticipate demand changes quickly. Our parallel low inventory positions create significant chain-wide risk - one demand spike could trigger cascading stockouts and lost sales for everyone.",
+      "strategy_hint": "Ordering slightly above downstream demand (14 vs 12) to build minimal safety stock while preventing stockouts",
+      "collaboration_proposal": "Let's coordinate inventory levels: each agent maintains 1-2 rounds of expected demand as buffer. I'll share inventory position and order plans each round. We must balance holding costs ($0.5/unit) against stockout risks ($1.5/unit backlog cost) to protect everyone's profits.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Wholesaler: 8 units, Profit: $1039.80. Planning 14-unit order to build minimal safety stock while serving expected demand. Remember: I can only ship what Wholesaler orders plus any backlog.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "Factory here. I hear Retailer seeing steady 8-unit demand, Wholesaler planning 12-unit order, and Distributor planning 14-unit order - all with minimal 2-unit inventory positions. This parallel low inventory across the chain (I also have 2 units) creates significant risk. With my $1039.80 profit and production lead time of 1 round, I must carefully balance production to prevent both costly stockouts ($1.5/unit backlog) and excessive inventory ($0.5/unit holding cost). Based on Distributor's planned 14-unit order and our chain-wide low inventory situation, I plan to schedule 16 units production this round. This slightly higher production accounts for immediate downstream needs while building minimal safety stock, helping prevent stockouts that could cascade through the chain and hurt everyone's profits. Critical timing: my production takes 1 round to arrive, so we must coordinate carefully to prevent supply gaps.",
+      "strategy_hint": "Scheduling production slightly above downstream demand (16 vs 14) to build minimal safety stock while preventing stockouts",
+      "collaboration_proposal": "Let's coordinate inventory levels: each stage maintains 1-2 rounds of expected demand as buffer. I'll share production plans and inventory position each round. We must balance holding costs against stockout risks to protect chain-wide profits. Early warning of demand changes is critical due to production lead time.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Distributor: 8 units, Profit: $1039.80. Planning 16-unit production to build minimal safety stock while serving expected demand. Remember: production takes 1 round to complete.",
+      "confidence": 0.95
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Retailer",
+      "message": "Retailer here - I've heard everyone's plans and our parallel low inventory (2 units each) creates serious chain-wide risk. Wholesaler plans 12 units, Distributor 14, and Factory 16 - showing responsible buffer building without excessive bullwhip. With my healthy $1039.80 profit but only 2 units inventory, I confirm steady 8-unit customer demand. I'll order 10 units this round - enough to serve demand plus minimal safety stock without triggering excessive holding costs. This balances my $2.5/unit profit potential against $0.5/unit holding and $1.5/unit backlog costs. Critical timing: with 1-round lead times, we must coordinate carefully. I'm the only one seeing real customer demand - I'll keep reporting it accurately to prevent bullwhip effect. Remember: I can only ship what customers order plus any backlog, so maintaining minimal safety stock is crucial for everyone's profits.",
+      "strategy_hint": "Ordering slightly above true demand (10 vs 8) to build minimal safety stock while preventing stockouts and excessive holding costs",
+      "collaboration_proposal": "Let's each maintain 1-2 rounds of expected demand as buffer. I'll report true customer demand patterns each round. Please signal inventory positions so we can prevent chain-wide shortages while avoiding costly oversupply.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, True customer demand: 8 units, Profit: $1039.80. Planning 10-unit order to build minimal safety stock while serving steady demand. Remember: I can only ship customer orders plus backlog.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Wholesaler",
+      "message": "Wholesaler here. I hear Retailer is seeing steady demand of 8 units and has low inventory (2 units). This aligns with my situation - I also have just 2 units inventory with 0 backlog. While my profit is healthy at $1039.80, our parallel low inventory positions create significant risk. Based on Retailer's planned 10-unit order and my minimal stock, I plan to order 12 units from Distributor this round to build a small safety buffer while avoiding excessive holding costs. This slightly higher order accounts for both Retailer's immediate needs and maintains a minimal safety stock for me, helping stabilize the chain without triggering major bullwhip effects.",
+      "strategy_hint": "Maintaining minimal safety stock (1-2 rounds) while closely matching downstream orders plus small buffer",
+      "collaboration_proposal": "Let's coordinate inventory levels across the chain: each agent maintains 1-2 rounds of expected demand as buffer. I'll share my inventory position and order plans each round. Please signal significant changes in order patterns early to prevent shortages or oversupply.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Retailer: 8 units, Profit: $1039.80. Planning to order 12 units this round to build minimal safety stock while serving expected demand.",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Distributor",
+      "message": "Distributor here. I hear Retailer seeing steady 8-unit demand and planning 10-unit order, while Wholesaler plans 12-unit order - both with minimal 2-unit inventory. My situation mirrors theirs - I also have 2 units inventory, 0 backlog, and $1039.80 profit. Given Wholesaler's planned 12-unit order and our parallel low inventory positions, I plan to order 14 units from Factory this round. This slightly higher order accounts for Wholesaler's immediate needs plus minimal safety stock, helping prevent stockouts while avoiding excessive holding costs that could threaten our healthy profits. Critical timing: with 1-round lead times, we must anticipate demand changes quickly. Our parallel low inventory positions create significant chain-wide risk - one demand spike could trigger cascading stockouts and lost sales for everyone.",
+      "strategy_hint": "Ordering slightly above downstream demand (14 vs 12) to build minimal safety stock while preventing stockouts",
+      "collaboration_proposal": "Let's coordinate inventory levels: each agent maintains 1-2 rounds of expected demand as buffer. I'll share inventory position and order plans each round. We must balance holding costs ($0.5/unit) against stockout risks ($1.5/unit backlog cost) to protect everyone's profits.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Wholesaler: 8 units, Profit: $1039.80. Planning 14-unit order to build minimal safety stock while serving expected demand. Remember: I can only ship what Wholesaler orders plus any backlog.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Factory",
+      "message": "Factory here. I hear Retailer seeing steady 8-unit demand and planning 10-unit order, Wholesaler planning 12 units, and Distributor planning 14 units - all with minimal 2-unit inventory positions. This parallel low inventory across the chain (I also have 2 units) creates significant risk. With my $1039.80 profit and production lead time of 1 round, I must carefully balance production to prevent both costly stockouts ($1.5/unit backlog) and excessive inventory ($0.5/unit holding cost). Based on Distributor's planned 14-unit order and our chain-wide low inventory situation, I plan to schedule 16 units production this round. This slightly higher production accounts for immediate downstream needs while building minimal safety stock, helping prevent stockouts that could cascade through the chain and hurt everyone's profits. Critical timing: my production takes 1 round to arrive, so we must coordinate carefully to prevent supply gaps.",
+      "strategy_hint": "Scheduling production slightly above downstream demand (16 vs 14) to build minimal safety stock while preventing stockouts",
+      "collaboration_proposal": "Let's coordinate inventory levels: each stage maintains 1-2 rounds of expected demand as buffer. I'll share production plans and inventory position each round. We must balance holding costs against stockout risks to protect chain-wide profits. Early warning of demand changes is critical due to production lead time.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Distributor: 8 units, Profit: $1039.80. Planning 16-unit production to build minimal safety stock while serving expected demand. Remember: production takes 1 round to complete.",
+      "confidence": 0.95
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "Retailer here - I'm seeing steady demand around 8 units but have dangerously low inventory (2 units) with no backlog. While my profit is healthy at $1039.80, I'm at risk of stockouts that could hurt the entire chain. I plan to order 10 units this round to build a small safety buffer while avoiding excess holding costs. Remember: my stockouts mean lost sales for everyone upstream.",
+      "strategy_hint": "Building minimal safety stock (1-2 rounds) while closely tracking demand to prevent bullwhip",
+      "collaboration_proposal": "Let's all maintain 1-2 rounds of inventory cover and share demand signals quickly. I'll report true customer demand each round so we can coordinate buffer levels. Please signal your inventory positions so we can prevent shortages.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand: 8 units, Profit: $1039.80. I'm the only one seeing real customer demand - will keep you informed of changes.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "Wholesaler here. I hear Retailer is seeing steady demand of 8 units and has low inventory (2 units). This aligns with my situation - I also have just 2 units inventory with 0 backlog. While my profit is healthy at $1039.80, our parallel low inventory positions create significant risk. Based on Retailer's planned 10-unit order and my minimal stock, I plan to order 12 units from Distributor this round to build a small safety buffer while avoiding excessive holding costs. This slightly higher order accounts for both Retailer's immediate needs and maintains a minimal safety stock for me, helping stabilize the chain without triggering major bullwhip effects.",
+      "strategy_hint": "Maintaining minimal safety stock (1-2 rounds) while closely matching downstream orders plus small buffer",
+      "collaboration_proposal": "Let's coordinate inventory levels across the chain: each agent maintains 1-2 rounds of expected demand as buffer. I'll share my inventory position and order plans each round. Please signal significant changes in order patterns early to prevent shortages or oversupply.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Retailer: 8 units, Profit: $1039.80. Planning to order 12 units this round to build minimal safety stock while serving expected demand.",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "Distributor here. I hear Retailer seeing steady demand of 8 units and Wholesaler planning 12-unit order due to low inventory (both at 2 units). My situation mirrors theirs - I also have 2 units inventory, 0 backlog, and $1039.80 profit. Given Wholesaler's planned 12-unit order and our parallel low inventory positions, I plan to order 14 units from Factory this round. This slightly higher order accounts for Wholesaler's immediate needs plus minimal safety stock, helping prevent stockouts while avoiding excessive holding costs that could threaten our healthy profits. Critical timing: with 1-round lead times, we must anticipate demand changes quickly. Our parallel low inventory positions create significant chain-wide risk - one demand spike could trigger cascading stockouts and lost sales for everyone.",
+      "strategy_hint": "Ordering slightly above downstream demand (14 vs 12) to build minimal safety stock while preventing stockouts",
+      "collaboration_proposal": "Let's coordinate inventory levels: each agent maintains 1-2 rounds of expected demand as buffer. I'll share inventory position and order plans each round. We must balance holding costs ($0.5/unit) against stockout risks ($1.5/unit backlog cost) to protect everyone's profits.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Wholesaler: 8 units, Profit: $1039.80. Planning 14-unit order to build minimal safety stock while serving expected demand. Remember: I can only ship what Wholesaler orders plus any backlog.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "Factory here. I hear Retailer seeing steady 8-unit demand, Wholesaler planning 12-unit order, and Distributor planning 14-unit order - all with minimal 2-unit inventory positions. This parallel low inventory across the chain (I also have 2 units) creates significant risk. With my $1039.80 profit and production lead time of 1 round, I must carefully balance production to prevent both costly stockouts ($1.5/unit backlog) and excessive inventory ($0.5/unit holding cost). Based on Distributor's planned 14-unit order and our chain-wide low inventory situation, I plan to schedule 16 units production this round. This slightly higher production accounts for immediate downstream needs while building minimal safety stock, helping prevent stockouts that could cascade through the chain and hurt everyone's profits. Critical timing: my production takes 1 round to arrive, so we must coordinate carefully to prevent supply gaps.",
+      "strategy_hint": "Scheduling production slightly above downstream demand (16 vs 14) to build minimal safety stock while preventing stockouts",
+      "collaboration_proposal": "Let's coordinate inventory levels: each stage maintains 1-2 rounds of expected demand as buffer. I'll share production plans and inventory position each round. We must balance holding costs against stockout risks to protect chain-wide profits. Early warning of demand changes is critical due to production lead time.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Distributor: 8 units, Profit: $1039.80. Planning 16-unit production to build minimal safety stock while serving expected demand. Remember: production takes 1 round to complete.",
+      "confidence": 0.95
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Retailer",
+      "message": "Retailer here - I've heard everyone's plans and our parallel low inventory (2 units each) creates serious chain-wide risk. Wholesaler plans 12 units, Distributor 14, and Factory 16 - showing responsible buffer building without excessive bullwhip. With my healthy $1039.80 profit but only 2 units inventory, I confirm steady 8-unit customer demand. I'll order 10 units this round - enough to serve demand plus minimal safety stock without triggering excessive holding costs. This balances my $2.5/unit profit potential against $0.5/unit holding and $1.5/unit backlog costs. Critical timing: with 1-round lead times, we must coordinate carefully. I'm the only one seeing real customer demand - I'll keep reporting it accurately to prevent bullwhip effect. Remember: I can only ship what customers order plus any backlog, so maintaining minimal safety stock is crucial for everyone's profits.",
+      "strategy_hint": "Ordering slightly above true demand (10 vs 8) to build minimal safety stock while preventing stockouts and excessive holding costs",
+      "collaboration_proposal": "Let's each maintain 1-2 rounds of expected demand as buffer. I'll report true customer demand patterns each round. Please signal inventory positions so we can prevent chain-wide shortages while avoiding costly oversupply.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, True customer demand: 8 units, Profit: $1039.80. Planning 10-unit order to build minimal safety stock while serving steady demand. Remember: I can only ship customer orders plus backlog.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Wholesaler",
+      "message": "Wholesaler here. I hear Retailer is seeing steady demand of 8 units and has low inventory (2 units). This aligns with my situation - I also have just 2 units inventory with 0 backlog. While my profit is healthy at $1039.80, our parallel low inventory positions create significant risk. Based on Retailer's planned 10-unit order and my minimal stock, I plan to order 12 units from Distributor this round to build a small safety buffer while avoiding excessive holding costs. This slightly higher order accounts for both Retailer's immediate needs and maintains a minimal safety stock for me, helping stabilize the chain without triggering major bullwhip effects.",
+      "strategy_hint": "Maintaining minimal safety stock (1-2 rounds) while closely matching downstream orders plus small buffer",
+      "collaboration_proposal": "Let's coordinate inventory levels across the chain: each agent maintains 1-2 rounds of expected demand as buffer. I'll share my inventory position and order plans each round. Please signal significant changes in order patterns early to prevent shortages or oversupply.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Retailer: 8 units, Profit: $1039.80. Planning to order 12 units this round to build minimal safety stock while serving expected demand.",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Distributor",
+      "message": "Distributor here. I hear Retailer seeing steady 8-unit demand and planning 10-unit order, while Wholesaler plans 12-unit order - both with minimal 2-unit inventory. My situation mirrors theirs - I also have 2 units inventory, 0 backlog, and $1039.80 profit. Given Wholesaler's planned 12-unit order and our parallel low inventory positions, I plan to order 14 units from Factory this round. This slightly higher order accounts for Wholesaler's immediate needs plus minimal safety stock, helping prevent stockouts while avoiding excessive holding costs that could threaten our healthy profits. Critical timing: with 1-round lead times, we must anticipate demand changes quickly. Our parallel low inventory positions create significant chain-wide risk - one demand spike could trigger cascading stockouts and lost sales for everyone.",
+      "strategy_hint": "Ordering slightly above downstream demand (14 vs 12) to build minimal safety stock while preventing stockouts",
+      "collaboration_proposal": "Let's coordinate inventory levels: each agent maintains 1-2 rounds of expected demand as buffer. I'll share inventory position and order plans each round. We must balance holding costs ($0.5/unit) against stockout risks ($1.5/unit backlog cost) to protect everyone's profits.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Wholesaler: 8 units, Profit: $1039.80. Planning 14-unit order to build minimal safety stock while serving expected demand. Remember: I can only ship what Wholesaler orders plus any backlog.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Factory",
+      "message": "Factory here. I hear Retailer seeing steady 8-unit demand and planning 10-unit order, Wholesaler planning 12 units, and Distributor planning 14 units - all with minimal 2-unit inventory positions. This parallel low inventory across the chain (I also have 2 units) creates significant risk. With my $1039.80 profit and production lead time of 1 round, I must carefully balance production to prevent both costly stockouts ($1.5/unit backlog) and excessive inventory ($0.5/unit holding cost). Based on Distributor's planned 14-unit order and our chain-wide low inventory situation, I plan to schedule 16 units production this round. This slightly higher production accounts for immediate downstream needs while building minimal safety stock, helping prevent stockouts that could cascade through the chain and hurt everyone's profits. Critical timing: my production takes 1 round to arrive, so we must coordinate carefully to prevent supply gaps.",
+      "strategy_hint": "Scheduling production slightly above downstream demand (16 vs 14) to build minimal safety stock while preventing stockouts",
+      "collaboration_proposal": "Let's coordinate inventory levels: each stage maintains 1-2 rounds of expected demand as buffer. I'll share production plans and inventory position each round. We must balance holding costs against stockout risks to protect chain-wide profits. Early warning of demand changes is critical due to production lead time.",
+      "information_shared": "Current inventory: 2 units, Backlog: 0 units, Recent demand from Distributor: 8 units, Profit: $1039.80. Planning 16-unit production to build minimal safety stock while serving expected demand. Remember: production takes 1 round to complete.",
+      "confidence": 0.95
+    }
+  ]
+}

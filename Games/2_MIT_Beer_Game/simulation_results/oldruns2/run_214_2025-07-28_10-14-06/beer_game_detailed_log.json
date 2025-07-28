@@ -1,0 +1,769 @@
+{
+  "hyperparameters": {
+    "num_rounds": 10,
+    "holding_cost_per_unit": 0.5,
+    "backlog_cost_per_unit": 1.5,
+    "sale_price_per_unit": 5.0,
+    "purchase_cost_per_unit": 2.5,
+    "production_cost_per_unit": 1.5,
+    "roles": [
+      "Retailer",
+      "Wholesaler",
+      "Distributor",
+      "Factory"
+    ],
+    "timestamp": "2025-07-28_10-14-06",
+    "external_demand_pattern": [
+      13,
+      9,
+      13,
+      5,
+      10,
+      11,
+      14,
+      4,
+      11,
+      9
+    ],
+    "enable_communication": true,
+    "communication_rounds": 2,
+    "enable_memory": false,
+    "memory_retention_rounds": 5,
+    "enable_shared_memory": false,
+    "initial_inventory": 10,
+    "initial_backlog": 0,
+    "initial_balance": 1000.0
+  },
+  "rounds_log": [
+    {
+      "round_index": 0,
+      "generation": 1,
+      "external_demand": 13,
+      "communication": [
+        {
+          "round": 0,
+          "communication_round": 1,
+          "sender": "Retailer",
+          "message": "Retailer here - I'm seeing steady demand around 13 units but currently have 0 inventory and 3 units backlog. While my total profit is $1045.50, I'm concerned about backlog costs eating into margins. I propose we all maintain 15-unit buffer stocks to handle demand smoothly. This balances holding costs ($0.5/unit) against stockout risks ($1.5/unit backlog cost). I'll order 18 units this round to cover backlog + expected demand. Let's coordinate to prevent bullwhip effect by sharing real demand data - currently stable at ~13 units/round. Warning: My stockout directly impacts chain stability.",
+          "strategy_hint": "Building 15-unit safety stock while clearing backlog, based on observed demand pattern",
+          "collaboration_proposal": "Let's each maintain 15-unit buffers and share demand/inventory updates every round. Wholesaler should prepare ~18 units for my next order. Let's avoid order amplification.",
+          "information_shared": "Current demand: 13 units, Inventory: 0, Backlog: 3, Profit: $1045.50, Planning to order: 18 units",
+          "confidence": 0.8
+        },
+        {
+          "round": 0,
+          "communication_round": 1,
+          "sender": "Wholesaler",
+          "message": "I hear Retailer reporting stable demand of 13 units with 3 units backlog, planning to order 18. As Wholesaler with $1050 profit and 0 inventory, I must prepare for this increased order while preventing bullwhip amplification. Retailer's proposal for 15-unit buffers is sensible given holding cost ($0.5) vs backlog cost ($1.5). I'll order 20 units to cover Retailer's expected 18-unit order plus small safety stock, avoiding excessive inventory costs. Critical timing: orders take 1 round to arrive, so we must plan ahead. My shipment constraint means I can only send what Retailer orders plus their backlog - no oversupply allowed. Let's maintain transparent communication about order plans to prevent demand amplification. Warning: My zero inventory leaves us vulnerable - one demand spike could trigger costly backlogs across the chain.",
+          "strategy_hint": "Building moderate safety stock (20 units) based on Retailer's declared order plan while avoiding excessive inventory costs",
+          "collaboration_proposal": "Let's coordinate buffer levels around 15-20 units each, share planned orders one round ahead, and maintain steady ordering patterns to prevent bullwhip effect. I propose we all report inventory and planned orders every round.",
+          "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 20 units to cover Retailer's expected 18-unit order",
+          "confidence": 0.85
+        },
+        {
+          "round": 0,
+          "communication_round": 1,
+          "sender": "Distributor",
+          "message": "I hear Retailer reporting 13-unit demand and planning 18-unit order, while Wholesaler plans 20 units to cover this. As Distributor with $1050 profit but 0 inventory, I must prepare for Wholesaler's increased order while preventing further demand amplification. Given our shared holding ($0.5) vs backlog ($1.5) costs, I support the 15-unit buffer proposal but suggest capping at 20 to avoid excessive holding costs. I'll order 22 units to cover Wholesaler's 20-unit order plus minimal safety stock. Critical timing: With 1-round lead time, we must coordinate carefully. My shipment constraint means I can only send what Wholesaler orders plus backlog - no oversupply allowed. Warning: Zero inventory across the chain leaves us dangerously exposed - one demand spike could cascade into costly backlogs. Let's maintain steady ordering patterns and transparent communication to prevent bullwhip effect.",
+          "strategy_hint": "Building moderate safety stock (22 units) based on Wholesaler's declared order while preventing excessive inventory costs",
+          "collaboration_proposal": "Let's coordinate buffer levels between 15-20 units each, share planned orders one round ahead, and maintain steady ordering patterns. I propose weekly inventory and order plan updates from all agents.",
+          "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 22 units to cover Wholesaler's expected 20-unit order",
+          "confidence": 0.85
+        },
+        {
+          "round": 0,
+          "communication_round": 1,
+          "sender": "Factory",
+          "message": "I hear Retailer reporting 13-unit stable demand with 3-unit backlog planning 18-unit order, Wholesaler preparing 20 units, and Distributor planning 22 units. As Factory with $1050 profit but 0 inventory, I must carefully schedule production to support this demand cascade while preventing bullwhip amplification. The proposed 15-20 unit buffer strategy aligns with our cost structure ($0.5 holding vs $1.5 backlog). I'll schedule 24-unit production to cover Distributor's 22-unit order plus minimal safety stock, preventing excessive inventory costs while ensuring chain stability. Critical timing: My production takes 1 round to complete, so we must coordinate carefully. Warning: Zero inventory across the chain is dangerous - one demand spike could trigger costly backlog cascade. Let's maintain steady production patterns and transparent communication to prevent bullwhip effect. I propose we cap inventory buffers at 20 units to balance holding costs against stockout risks.",
+          "strategy_hint": "Scheduling moderate production (24 units) based on Distributor's declared order while preventing excessive inventory costs",
+          "collaboration_proposal": "Let's coordinate buffer levels between 15-20 units each, share planned orders/production one round ahead, and maintain steady patterns. I propose weekly inventory and production plan updates from all agents.",
+          "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning production: 24 units to cover Distributor's expected 22-unit order",
+          "confidence": 0.85
+        },
+        {
+          "round": 0,
+          "communication_round": 2,
+          "sender": "Retailer",
+          "message": "Retailer here - I've heard everyone's input on maintaining 15-20 unit buffers. Wholesaler plans 20 units to cover my 18, Distributor 22 for Wholesaler, and Factory scheduling 24. This measured scaling prevents excessive bullwhip while ensuring coverage. My situation: $1045.50 profit with 0 inventory and 3 units backlog. Current demand stable at 13 units. I confirm my plan to order 18 units (13 demand + 3 backlog + 2 buffer) to avoid amplification while building minimal safety stock. Critical warning: Our chain-wide zero inventory is dangerous. One demand spike could cascade through all stages via backlog costs ($1.5/unit vs $0.5 holding). Let's stick to the proposed 15-20 unit buffers - this balances stockout risk against holding costs. Remember: I can only ship what's ordered plus backlog, and orders take 1 round to arrive. We must coordinate carefully to prevent chain collapse while maximizing total profit.",
+          "strategy_hint": "Ordering 18 units to cover demand plus backlog while building minimal safety stock, avoiding bullwhip effect",
+          "collaboration_proposal": "Let's maintain 15-20 unit buffers, share demand/inventory updates each round, and keep order increases gradual. Wholesaler expect 18 units next round.",
+          "information_shared": "Profit: $1045.50, Inventory: 0, Backlog: 3, Current demand: 13, Planning order: 18",
+          "confidence": 0.9
+        },
+        {
+          "round": 0,
+          "communication_round": 2,
+          "sender": "Wholesaler",
+          "message": "I hear Retailer's latest update confirming 18-unit order plan based on 13 demand + 3 backlog + 2 buffer. As Wholesaler with $1050 profit but 0 inventory, I must prepare carefully. The chain-wide agreement on 15-20 unit buffers makes sense given our costs ($0.5 holding vs $1.5 backlog). I confirm my plan to order 20 units to cover Retailer's 18 plus minimal safety stock, preventing bullwhip while ensuring coverage. Critical warning: Our zero inventory across all stages is extremely dangerous. One demand spike could trigger cascading backlog costs that threaten our profits. The 1-round lead time means we must coordinate carefully - I can only ship what Retailer orders plus their backlog, no oversupply allowed. Let's stick to transparent communication and gradual inventory building to prevent chain collapse while maximizing total profit. Remember: my ability to serve Retailer directly impacts everyone's success.",
+          "strategy_hint": "Building moderate safety stock (20 units) based on Retailer's confirmed 18-unit order while preventing excessive inventory costs",
+          "collaboration_proposal": "Let's maintain 15-20 unit buffers, share inventory and order plans each round, and keep increases gradual. Distributor should prepare ~20 units for my next order.",
+          "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 20 units to cover Retailer's confirmed 18-unit order",
+          "confidence": 0.9
+        },
+        {
+          "round": 0,
+          "communication_round": 2,
+          "sender": "Distributor",
+          "message": "I hear Retailer and Wholesaler's latest updates - Retailer confirming 18-unit order (13 demand + 3 backlog + 2 buffer) and Wholesaler planning 20 units to cover this. As Distributor with $1050 profit but 0 inventory, I must carefully prepare for Wholesaler's increased order while preventing further demand amplification. The chain-wide agreement on 15-20 unit buffers aligns well with our cost structure ($0.5 holding vs $1.5 backlog). I confirm my plan to order 22 units to cover Wholesaler's 20 plus minimal safety stock, preventing bullwhip while ensuring coverage. Critical warning: Our zero inventory across all stages is extremely dangerous. One demand spike could trigger cascading backlog costs that threaten everyone's profits. The 1-round lead time means we must coordinate carefully - I can only ship what Wholesaler orders plus their backlog, no oversupply allowed. Let's maintain transparent communication and gradual inventory building to prevent chain collapse while maximizing total profit. Remember: my ability to serve Wholesaler directly impacts Factory's production planning and the entire chain's stability.",
+          "strategy_hint": "Building moderate safety stock (22 units) based on Wholesaler's confirmed 20-unit order while preventing excessive inventory costs",
+          "collaboration_proposal": "Let's maintain 15-20 unit buffers, share inventory and order plans each round, and keep increases gradual. Factory should prepare ~22 units for my next order.",
+          "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 22 units to cover Wholesaler's confirmed 20-unit order",
+          "confidence": 0.9
+        },
+        {
+          "round": 0,
+          "communication_round": 2,
+          "sender": "Factory",
+          "message": "I hear Retailer's latest update confirming 18-unit order (13 demand + 3 backlog + 2 buffer), Wholesaler planning 20 units, and Distributor planning 22 units. As Factory with $1050 profit but 0 inventory, I must carefully schedule production to support this demand cascade while preventing bullwhip amplification. The chain-wide agreement on 15-20 unit buffers aligns perfectly with our cost structure ($0.5 holding vs $1.5 backlog). I confirm my plan to schedule 24-unit production to cover Distributor's 22 plus minimal safety stock, preventing excessive inventory costs while ensuring chain stability. Critical warning: Our zero inventory across all stages is extremely dangerous. One demand spike could trigger cascading backlog costs that threaten everyone's profits. The 1-round production delay means we must coordinate carefully - I can only produce what's needed, and excess inventory hurts profits through holding costs. Let's maintain transparent communication and gradual inventory building to prevent chain collapse while maximizing total profit. Remember: my production capacity directly impacts the entire chain's stability.",
+          "strategy_hint": "Scheduling moderate production (24 units) based on Distributor's confirmed 22-unit order while preventing excessive inventory costs",
+          "collaboration_proposal": "Let's maintain 15-20 unit buffers, share inventory and production plans each round, and keep increases gradual. Expect 24 units production to support chain stability.",
+          "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning production: 24 units to cover Distributor's confirmed 22-unit order",
+          "confidence": 0.95
+        }
+      ],
+      "agents": {
+        "Retailer": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Retailer",
+          "inventory": 0,
+          "backlog": 3,
+          "order_placed": 16,
+          "order_received": 13,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 10,
+          "starting_balance": 1000.0,
+          "revenue": 50.0,
+          "purchase_cost": 40.0,
+          "holding_cost": 0.0,
+          "backlog_cost": 4.5,
+          "ending_balance": 1005.5,
+          "orchestrator_order": 0,
+          "orchestrator_rationale": "",
+          "orders_in_transit_0": 0,
+          "orders_in_transit_1": 0,
+          "production_queue_0": 0,
+          "production_queue_1": 0,
+          "last_decision_output": {
+            "role_name": "Retailer",
+            "inventory": 0,
+            "backlog": 3,
+            "recent_demand_or_orders": [
+              13
+            ],
+            "incoming_shipments": [
+              10
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 13,
+            "confidence": 0.85,
+            "rationale": "Ordering 16 units to cover expected demand (13) plus small safety buffer (3), while incoming 10 units will clear current backlog",
+            "risk_assessment": "Zero inventory is dangerous, but must balance building safety stock against holding costs. Chain-wide low inventory poses systemic risk",
+            "order_quantity": 16
+          },
+          "last_update_output": {},
+          "last_init_output": {},
+          "llm_reported_inventory": 0,
+          "llm_reported_backlog": 3,
+          "llm_recent_demand_or_orders": [
+            13
+          ],
+          "llm_incoming_shipments": [
+            10
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.85,
+          "llm_rationale": "Ordering 16 units to cover expected demand (13) plus small safety buffer (3), while incoming 10 units will clear current backlog",
+          "llm_risk_assessment": "Zero inventory is dangerous, but must balance building safety stock against holding costs. Chain-wide low inventory poses systemic risk",
+          "llm_expected_demand_next_round": 13,
+          "profit_accumulated": 1005.5
+        },
+        "Wholesaler": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Wholesaler",
+          "inventory": 0,
+          "backlog": 0,
+          "order_placed": 20,
+          "order_received": 10,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 10,
+          "starting_balance": 1000.0,
+          "revenue": 50.0,
+          "purchase_cost": 50.0,
+          "holding_cost": 0.0,
+          "backlog_cost": 0.0,
+          "ending_balance": 1000.0,
+          "orchestrator_order": 0,
+          "orchestrator_rationale": "",
+          "orders_in_transit_0": 0,
+          "orders_in_transit_1": 0,
+          "production_queue_0": 0,
+          "production_queue_1": 0,
+          "last_decision_output": {
+            "role_name": "Wholesaler",
+            "inventory": 0,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              10
+            ],
+            "incoming_shipments": [
+              10
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 18,
+            "confidence": 0.85,
+            "rationale": "Retailer confirmed 18-unit order plan (13 demand + 3 backlog + 2 buffer). Ordering 20 units to cover this plus minimal safety stock while preventing bullwhip effect.",
+            "risk_assessment": "Zero inventory across chain is dangerous. Must build safety stock gradually while avoiding excessive holding costs. One demand spike could trigger costly backlog cascade.",
+            "order_quantity": 20
+          },
+          "last_update_output": {},
+          "last_init_output": {},
+          "llm_reported_inventory": 0,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            10
+          ],
+          "llm_incoming_shipments": [
+            10
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.85,
+          "llm_rationale": "Retailer confirmed 18-unit order plan (13 demand + 3 backlog + 2 buffer). Ordering 20 units to cover this plus minimal safety stock while preventing bullwhip effect.",
+          "llm_risk_assessment": "Zero inventory across chain is dangerous. Must build safety stock gradually while avoiding excessive holding costs. One demand spike could trigger costly backlog cascade.",
+          "llm_expected_demand_next_round": 18,
+          "profit_accumulated": 1000.0
+        },
+        "Distributor": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Distributor",
+          "inventory": 0,
+          "backlog": 0,
+          "order_placed": 22,
+          "order_received": 10,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 10,
+          "starting_balance": 1000.0,
+          "revenue": 50.0,
+          "purchase_cost": 55.0,
+          "holding_cost": 0.0,
+          "backlog_cost": 0.0,
+          "ending_balance": 995.0,
+          "orchestrator_order": 0,
+          "orchestrator_rationale": "",
+          "orders_in_transit_0": 0,
+          "orders_in_transit_1": 0,
+          "production_queue_0": 0,
+          "production_queue_1": 0,
+          "last_decision_output": {
+            "role_name": "Distributor",
+            "inventory": 0,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              10
+            ],
+            "incoming_shipments": [
+              10
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 20,
+            "confidence": 0.85,
+            "rationale": "Wholesaler confirmed 20-unit order plan. Building moderate safety stock while preventing bullwhip effect.",
+            "risk_assessment": "Zero inventory across chain is dangerous. Must build buffer carefully while avoiding excessive holding costs.",
+            "order_quantity": 22
+          },
+          "last_update_output": {},
+          "last_init_output": {},
+          "llm_reported_inventory": 0,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            10
+          ],
+          "llm_incoming_shipments": [
+            10
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.85,
+          "llm_rationale": "Wholesaler confirmed 20-unit order plan. Building moderate safety stock while preventing bullwhip effect.",
+          "llm_risk_assessment": "Zero inventory across chain is dangerous. Must build buffer carefully while avoiding excessive holding costs.",
+          "llm_expected_demand_next_round": 20,
+          "profit_accumulated": 995.0
+        },
+        "Factory": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Factory",
+          "inventory": 0,
+          "backlog": 0,
+          "order_placed": 24,
+          "order_received": 10,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 10,
+          "starting_balance": 1000.0,
+          "revenue": 50.0,
+          "purchase_cost": 36.0,
+          "holding_cost": 0.0,
+          "backlog_cost": 0.0,
+          "ending_balance": 1014.0,
+          "orchestrator_order": 0,
+          "orchestrator_rationale": "",
+          "orders_in_transit_0": 0,
+          "orders_in_transit_1": 0,
+          "production_queue_0": 0,
+          "production_queue_1": 0,
+          "last_decision_output": {
+            "role_name": "Factory",
+            "inventory": 0,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              10
+            ],
+            "incoming_shipments": [
+              0
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 22,
+            "confidence": 0.9,
+            "rationale": "Distributor confirmed 22-unit order. Scheduling 24 units production to cover this plus small safety buffer while preventing bullwhip effect.",
+            "risk_assessment": "Zero inventory across chain is dangerous. Must balance production carefully to avoid excessive holding costs while preventing stockouts.",
+            "order_quantity": 24
+          },
+          "last_update_output": {},
+          "last_init_output": {},
+          "llm_reported_inventory": 0,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            10
+          ],
+          "llm_incoming_shipments": [
+            0
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.9,
+          "llm_rationale": "Distributor confirmed 22-unit order. Scheduling 24 units production to cover this plus small safety buffer while preventing bullwhip effect.",
+          "llm_risk_assessment": "Zero inventory across chain is dangerous. Must balance production carefully to avoid excessive holding costs while preventing stockouts.",
+          "llm_expected_demand_next_round": 22,
+          "profit_accumulated": 1014.0
+        }
+      },
+      "orchestrator_recommendations": {}
+    }
+  ],
+  "flat_rounds_log": [
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Retailer",
+      "inventory": 0,
+      "backlog": 3,
+      "order_placed": 16,
+      "order_received": 13,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 10,
+      "starting_balance": 1000.0,
+      "revenue": 50.0,
+      "purchase_cost": 40.0,
+      "holding_cost": 0.0,
+      "backlog_cost": 4.5,
+      "ending_balance": 1005.5,
+      "orchestrator_order": 0,
+      "orchestrator_rationale": "",
+      "orders_in_transit_0": 0,
+      "orders_in_transit_1": 0,
+      "production_queue_0": 0,
+      "production_queue_1": 0
+    },
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Wholesaler",
+      "inventory": 0,
+      "backlog": 0,
+      "order_placed": 20,
+      "order_received": 10,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 10,
+      "starting_balance": 1000.0,
+      "revenue": 50.0,
+      "purchase_cost": 50.0,
+      "holding_cost": 0.0,
+      "backlog_cost": 0.0,
+      "ending_balance": 1000.0,
+      "orchestrator_order": 0,
+      "orchestrator_rationale": "",
+      "orders_in_transit_0": 0,
+      "orders_in_transit_1": 0,
+      "production_queue_0": 0,
+      "production_queue_1": 0
+    },
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Distributor",
+      "inventory": 0,
+      "backlog": 0,
+      "order_placed": 22,
+      "order_received": 10,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 10,
+      "starting_balance": 1000.0,
+      "revenue": 50.0,
+      "purchase_cost": 55.0,
+      "holding_cost": 0.0,
+      "backlog_cost": 0.0,
+      "ending_balance": 995.0,
+      "orchestrator_order": 0,
+      "orchestrator_rationale": "",
+      "orders_in_transit_0": 0,
+      "orders_in_transit_1": 0,
+      "production_queue_0": 0,
+      "production_queue_1": 0
+    },
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Factory",
+      "inventory": 0,
+      "backlog": 0,
+      "order_placed": 24,
+      "order_received": 10,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 10,
+      "starting_balance": 1000.0,
+      "revenue": 50.0,
+      "purchase_cost": 36.0,
+      "holding_cost": 0.0,
+      "backlog_cost": 0.0,
+      "ending_balance": 1014.0,
+      "orchestrator_order": 0,
+      "orchestrator_rationale": "",
+      "orders_in_transit_0": 0,
+      "orders_in_transit_1": 0,
+      "production_queue_0": 0,
+      "production_queue_1": 0
+    }
+  ],
+  "communication_log": [
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "Retailer here - I'm seeing steady demand around 13 units but currently have 0 inventory and 3 units backlog. While my total profit is $1045.50, I'm concerned about backlog costs eating into margins. I propose we all maintain 15-unit buffer stocks to handle demand smoothly. This balances holding costs ($0.5/unit) against stockout risks ($1.5/unit backlog cost). I'll order 18 units this round to cover backlog + expected demand. Let's coordinate to prevent bullwhip effect by sharing real demand data - currently stable at ~13 units/round. Warning: My stockout directly impacts chain stability.",
+      "strategy_hint": "Building 15-unit safety stock while clearing backlog, based on observed demand pattern",
+      "collaboration_proposal": "Let's each maintain 15-unit buffers and share demand/inventory updates every round. Wholesaler should prepare ~18 units for my next order. Let's avoid order amplification.",
+      "information_shared": "Current demand: 13 units, Inventory: 0, Backlog: 3, Profit: $1045.50, Planning to order: 18 units",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "I hear Retailer reporting stable demand of 13 units with 3 units backlog, planning to order 18. As Wholesaler with $1050 profit and 0 inventory, I must prepare for this increased order while preventing bullwhip amplification. Retailer's proposal for 15-unit buffers is sensible given holding cost ($0.5) vs backlog cost ($1.5). I'll order 20 units to cover Retailer's expected 18-unit order plus small safety stock, avoiding excessive inventory costs. Critical timing: orders take 1 round to arrive, so we must plan ahead. My shipment constraint means I can only send what Retailer orders plus their backlog - no oversupply allowed. Let's maintain transparent communication about order plans to prevent demand amplification. Warning: My zero inventory leaves us vulnerable - one demand spike could trigger costly backlogs across the chain.",
+      "strategy_hint": "Building moderate safety stock (20 units) based on Retailer's declared order plan while avoiding excessive inventory costs",
+      "collaboration_proposal": "Let's coordinate buffer levels around 15-20 units each, share planned orders one round ahead, and maintain steady ordering patterns to prevent bullwhip effect. I propose we all report inventory and planned orders every round.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 20 units to cover Retailer's expected 18-unit order",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear Retailer reporting 13-unit demand and planning 18-unit order, while Wholesaler plans 20 units to cover this. As Distributor with $1050 profit but 0 inventory, I must prepare for Wholesaler's increased order while preventing further demand amplification. Given our shared holding ($0.5) vs backlog ($1.5) costs, I support the 15-unit buffer proposal but suggest capping at 20 to avoid excessive holding costs. I'll order 22 units to cover Wholesaler's 20-unit order plus minimal safety stock. Critical timing: With 1-round lead time, we must coordinate carefully. My shipment constraint means I can only send what Wholesaler orders plus backlog - no oversupply allowed. Warning: Zero inventory across the chain leaves us dangerously exposed - one demand spike could cascade into costly backlogs. Let's maintain steady ordering patterns and transparent communication to prevent bullwhip effect.",
+      "strategy_hint": "Building moderate safety stock (22 units) based on Wholesaler's declared order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's coordinate buffer levels between 15-20 units each, share planned orders one round ahead, and maintain steady ordering patterns. I propose weekly inventory and order plan updates from all agents.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 22 units to cover Wholesaler's expected 20-unit order",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "I hear Retailer reporting 13-unit stable demand with 3-unit backlog planning 18-unit order, Wholesaler preparing 20 units, and Distributor planning 22 units. As Factory with $1050 profit but 0 inventory, I must carefully schedule production to support this demand cascade while preventing bullwhip amplification. The proposed 15-20 unit buffer strategy aligns with our cost structure ($0.5 holding vs $1.5 backlog). I'll schedule 24-unit production to cover Distributor's 22-unit order plus minimal safety stock, preventing excessive inventory costs while ensuring chain stability. Critical timing: My production takes 1 round to complete, so we must coordinate carefully. Warning: Zero inventory across the chain is dangerous - one demand spike could trigger costly backlog cascade. Let's maintain steady production patterns and transparent communication to prevent bullwhip effect. I propose we cap inventory buffers at 20 units to balance holding costs against stockout risks.",
+      "strategy_hint": "Scheduling moderate production (24 units) based on Distributor's declared order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's coordinate buffer levels between 15-20 units each, share planned orders/production one round ahead, and maintain steady patterns. I propose weekly inventory and production plan updates from all agents.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning production: 24 units to cover Distributor's expected 22-unit order",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Retailer",
+      "message": "Retailer here - I've heard everyone's input on maintaining 15-20 unit buffers. Wholesaler plans 20 units to cover my 18, Distributor 22 for Wholesaler, and Factory scheduling 24. This measured scaling prevents excessive bullwhip while ensuring coverage. My situation: $1045.50 profit with 0 inventory and 3 units backlog. Current demand stable at 13 units. I confirm my plan to order 18 units (13 demand + 3 backlog + 2 buffer) to avoid amplification while building minimal safety stock. Critical warning: Our chain-wide zero inventory is dangerous. One demand spike could cascade through all stages via backlog costs ($1.5/unit vs $0.5 holding). Let's stick to the proposed 15-20 unit buffers - this balances stockout risk against holding costs. Remember: I can only ship what's ordered plus backlog, and orders take 1 round to arrive. We must coordinate carefully to prevent chain collapse while maximizing total profit.",
+      "strategy_hint": "Ordering 18 units to cover demand plus backlog while building minimal safety stock, avoiding bullwhip effect",
+      "collaboration_proposal": "Let's maintain 15-20 unit buffers, share demand/inventory updates each round, and keep order increases gradual. Wholesaler expect 18 units next round.",
+      "information_shared": "Profit: $1045.50, Inventory: 0, Backlog: 3, Current demand: 13, Planning order: 18",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Wholesaler",
+      "message": "I hear Retailer's latest update confirming 18-unit order plan based on 13 demand + 3 backlog + 2 buffer. As Wholesaler with $1050 profit but 0 inventory, I must prepare carefully. The chain-wide agreement on 15-20 unit buffers makes sense given our costs ($0.5 holding vs $1.5 backlog). I confirm my plan to order 20 units to cover Retailer's 18 plus minimal safety stock, preventing bullwhip while ensuring coverage. Critical warning: Our zero inventory across all stages is extremely dangerous. One demand spike could trigger cascading backlog costs that threaten our profits. The 1-round lead time means we must coordinate carefully - I can only ship what Retailer orders plus their backlog, no oversupply allowed. Let's stick to transparent communication and gradual inventory building to prevent chain collapse while maximizing total profit. Remember: my ability to serve Retailer directly impacts everyone's success.",
+      "strategy_hint": "Building moderate safety stock (20 units) based on Retailer's confirmed 18-unit order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's maintain 15-20 unit buffers, share inventory and order plans each round, and keep increases gradual. Distributor should prepare ~20 units for my next order.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 20 units to cover Retailer's confirmed 18-unit order",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Distributor",
+      "message": "I hear Retailer and Wholesaler's latest updates - Retailer confirming 18-unit order (13 demand + 3 backlog + 2 buffer) and Wholesaler planning 20 units to cover this. As Distributor with $1050 profit but 0 inventory, I must carefully prepare for Wholesaler's increased order while preventing further demand amplification. The chain-wide agreement on 15-20 unit buffers aligns well with our cost structure ($0.5 holding vs $1.5 backlog). I confirm my plan to order 22 units to cover Wholesaler's 20 plus minimal safety stock, preventing bullwhip while ensuring coverage. Critical warning: Our zero inventory across all stages is extremely dangerous. One demand spike could trigger cascading backlog costs that threaten everyone's profits. The 1-round lead time means we must coordinate carefully - I can only ship what Wholesaler orders plus their backlog, no oversupply allowed. Let's maintain transparent communication and gradual inventory building to prevent chain collapse while maximizing total profit. Remember: my ability to serve Wholesaler directly impacts Factory's production planning and the entire chain's stability.",
+      "strategy_hint": "Building moderate safety stock (22 units) based on Wholesaler's confirmed 20-unit order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's maintain 15-20 unit buffers, share inventory and order plans each round, and keep increases gradual. Factory should prepare ~22 units for my next order.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 22 units to cover Wholesaler's confirmed 20-unit order",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Factory",
+      "message": "I hear Retailer's latest update confirming 18-unit order (13 demand + 3 backlog + 2 buffer), Wholesaler planning 20 units, and Distributor planning 22 units. As Factory with $1050 profit but 0 inventory, I must carefully schedule production to support this demand cascade while preventing bullwhip amplification. The chain-wide agreement on 15-20 unit buffers aligns perfectly with our cost structure ($0.5 holding vs $1.5 backlog). I confirm my plan to schedule 24-unit production to cover Distributor's 22 plus minimal safety stock, preventing excessive inventory costs while ensuring chain stability. Critical warning: Our zero inventory across all stages is extremely dangerous. One demand spike could trigger cascading backlog costs that threaten everyone's profits. The 1-round production delay means we must coordinate carefully - I can only produce what's needed, and excess inventory hurts profits through holding costs. Let's maintain transparent communication and gradual inventory building to prevent chain collapse while maximizing total profit. Remember: my production capacity directly impacts the entire chain's stability.",
+      "strategy_hint": "Scheduling moderate production (24 units) based on Distributor's confirmed 22-unit order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's maintain 15-20 unit buffers, share inventory and production plans each round, and keep increases gradual. Expect 24 units production to support chain stability.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning production: 24 units to cover Distributor's confirmed 22-unit order",
+      "confidence": 0.95
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "Retailer here - I'm seeing steady demand around 13 units but currently have 0 inventory and 3 units backlog. While my total profit is $1045.50, I'm concerned about backlog costs eating into margins. I propose we all maintain 15-unit buffer stocks to handle demand smoothly. This balances holding costs ($0.5/unit) against stockout risks ($1.5/unit backlog cost). I'll order 18 units this round to cover backlog + expected demand. Let's coordinate to prevent bullwhip effect by sharing real demand data - currently stable at ~13 units/round. Warning: My stockout directly impacts chain stability.",
+      "strategy_hint": "Building 15-unit safety stock while clearing backlog, based on observed demand pattern",
+      "collaboration_proposal": "Let's each maintain 15-unit buffers and share demand/inventory updates every round. Wholesaler should prepare ~18 units for my next order. Let's avoid order amplification.",
+      "information_shared": "Current demand: 13 units, Inventory: 0, Backlog: 3, Profit: $1045.50, Planning to order: 18 units",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "I hear Retailer reporting stable demand of 13 units with 3 units backlog, planning to order 18. As Wholesaler with $1050 profit and 0 inventory, I must prepare for this increased order while preventing bullwhip amplification. Retailer's proposal for 15-unit buffers is sensible given holding cost ($0.5) vs backlog cost ($1.5). I'll order 20 units to cover Retailer's expected 18-unit order plus small safety stock, avoiding excessive inventory costs. Critical timing: orders take 1 round to arrive, so we must plan ahead. My shipment constraint means I can only send what Retailer orders plus their backlog - no oversupply allowed. Let's maintain transparent communication about order plans to prevent demand amplification. Warning: My zero inventory leaves us vulnerable - one demand spike could trigger costly backlogs across the chain.",
+      "strategy_hint": "Building moderate safety stock (20 units) based on Retailer's declared order plan while avoiding excessive inventory costs",
+      "collaboration_proposal": "Let's coordinate buffer levels around 15-20 units each, share planned orders one round ahead, and maintain steady ordering patterns to prevent bullwhip effect. I propose we all report inventory and planned orders every round.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 20 units to cover Retailer's expected 18-unit order",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear Retailer reporting 13-unit demand and planning 18-unit order, while Wholesaler plans 20 units to cover this. As Distributor with $1050 profit but 0 inventory, I must prepare for Wholesaler's increased order while preventing further demand amplification. Given our shared holding ($0.5) vs backlog ($1.5) costs, I support the 15-unit buffer proposal but suggest capping at 20 to avoid excessive holding costs. I'll order 22 units to cover Wholesaler's 20-unit order plus minimal safety stock. Critical timing: With 1-round lead time, we must coordinate carefully. My shipment constraint means I can only send what Wholesaler orders plus backlog - no oversupply allowed. Warning: Zero inventory across the chain leaves us dangerously exposed - one demand spike could cascade into costly backlogs. Let's maintain steady ordering patterns and transparent communication to prevent bullwhip effect.",
+      "strategy_hint": "Building moderate safety stock (22 units) based on Wholesaler's declared order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's coordinate buffer levels between 15-20 units each, share planned orders one round ahead, and maintain steady ordering patterns. I propose weekly inventory and order plan updates from all agents.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 22 units to cover Wholesaler's expected 20-unit order",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "I hear Retailer reporting 13-unit stable demand with 3-unit backlog planning 18-unit order, Wholesaler preparing 20 units, and Distributor planning 22 units. As Factory with $1050 profit but 0 inventory, I must carefully schedule production to support this demand cascade while preventing bullwhip amplification. The proposed 15-20 unit buffer strategy aligns with our cost structure ($0.5 holding vs $1.5 backlog). I'll schedule 24-unit production to cover Distributor's 22-unit order plus minimal safety stock, preventing excessive inventory costs while ensuring chain stability. Critical timing: My production takes 1 round to complete, so we must coordinate carefully. Warning: Zero inventory across the chain is dangerous - one demand spike could trigger costly backlog cascade. Let's maintain steady production patterns and transparent communication to prevent bullwhip effect. I propose we cap inventory buffers at 20 units to balance holding costs against stockout risks.",
+      "strategy_hint": "Scheduling moderate production (24 units) based on Distributor's declared order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's coordinate buffer levels between 15-20 units each, share planned orders/production one round ahead, and maintain steady patterns. I propose weekly inventory and production plan updates from all agents.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning production: 24 units to cover Distributor's expected 22-unit order",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Retailer",
+      "message": "Retailer here - I've heard everyone's input on maintaining 15-20 unit buffers. Wholesaler plans 20 units to cover my 18, Distributor 22 for Wholesaler, and Factory scheduling 24. This measured scaling prevents excessive bullwhip while ensuring coverage. My situation: $1045.50 profit with 0 inventory and 3 units backlog. Current demand stable at 13 units. I confirm my plan to order 18 units (13 demand + 3 backlog + 2 buffer) to avoid amplification while building minimal safety stock. Critical warning: Our chain-wide zero inventory is dangerous. One demand spike could cascade through all stages via backlog costs ($1.5/unit vs $0.5 holding). Let's stick to the proposed 15-20 unit buffers - this balances stockout risk against holding costs. Remember: I can only ship what's ordered plus backlog, and orders take 1 round to arrive. We must coordinate carefully to prevent chain collapse while maximizing total profit.",
+      "strategy_hint": "Ordering 18 units to cover demand plus backlog while building minimal safety stock, avoiding bullwhip effect",
+      "collaboration_proposal": "Let's maintain 15-20 unit buffers, share demand/inventory updates each round, and keep order increases gradual. Wholesaler expect 18 units next round.",
+      "information_shared": "Profit: $1045.50, Inventory: 0, Backlog: 3, Current demand: 13, Planning order: 18",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Wholesaler",
+      "message": "I hear Retailer's latest update confirming 18-unit order plan based on 13 demand + 3 backlog + 2 buffer. As Wholesaler with $1050 profit but 0 inventory, I must prepare carefully. The chain-wide agreement on 15-20 unit buffers makes sense given our costs ($0.5 holding vs $1.5 backlog). I confirm my plan to order 20 units to cover Retailer's 18 plus minimal safety stock, preventing bullwhip while ensuring coverage. Critical warning: Our zero inventory across all stages is extremely dangerous. One demand spike could trigger cascading backlog costs that threaten our profits. The 1-round lead time means we must coordinate carefully - I can only ship what Retailer orders plus their backlog, no oversupply allowed. Let's stick to transparent communication and gradual inventory building to prevent chain collapse while maximizing total profit. Remember: my ability to serve Retailer directly impacts everyone's success.",
+      "strategy_hint": "Building moderate safety stock (20 units) based on Retailer's confirmed 18-unit order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's maintain 15-20 unit buffers, share inventory and order plans each round, and keep increases gradual. Distributor should prepare ~20 units for my next order.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 20 units to cover Retailer's confirmed 18-unit order",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Distributor",
+      "message": "I hear Retailer and Wholesaler's latest updates - Retailer confirming 18-unit order (13 demand + 3 backlog + 2 buffer) and Wholesaler planning 20 units to cover this. As Distributor with $1050 profit but 0 inventory, I must carefully prepare for Wholesaler's increased order while preventing further demand amplification. The chain-wide agreement on 15-20 unit buffers aligns well with our cost structure ($0.5 holding vs $1.5 backlog). I confirm my plan to order 22 units to cover Wholesaler's 20 plus minimal safety stock, preventing bullwhip while ensuring coverage. Critical warning: Our zero inventory across all stages is extremely dangerous. One demand spike could trigger cascading backlog costs that threaten everyone's profits. The 1-round lead time means we must coordinate carefully - I can only ship what Wholesaler orders plus their backlog, no oversupply allowed. Let's maintain transparent communication and gradual inventory building to prevent chain collapse while maximizing total profit. Remember: my ability to serve Wholesaler directly impacts Factory's production planning and the entire chain's stability.",
+      "strategy_hint": "Building moderate safety stock (22 units) based on Wholesaler's confirmed 20-unit order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's maintain 15-20 unit buffers, share inventory and order plans each round, and keep increases gradual. Factory should prepare ~22 units for my next order.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 22 units to cover Wholesaler's confirmed 20-unit order",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Factory",
+      "message": "I hear Retailer's latest update confirming 18-unit order (13 demand + 3 backlog + 2 buffer), Wholesaler planning 20 units, and Distributor planning 22 units. As Factory with $1050 profit but 0 inventory, I must carefully schedule production to support this demand cascade while preventing bullwhip amplification. The chain-wide agreement on 15-20 unit buffers aligns perfectly with our cost structure ($0.5 holding vs $1.5 backlog). I confirm my plan to schedule 24-unit production to cover Distributor's 22 plus minimal safety stock, preventing excessive inventory costs while ensuring chain stability. Critical warning: Our zero inventory across all stages is extremely dangerous. One demand spike could trigger cascading backlog costs that threaten everyone's profits. The 1-round production delay means we must coordinate carefully - I can only produce what's needed, and excess inventory hurts profits through holding costs. Let's maintain transparent communication and gradual inventory building to prevent chain collapse while maximizing total profit. Remember: my production capacity directly impacts the entire chain's stability.",
+      "strategy_hint": "Scheduling moderate production (24 units) based on Distributor's confirmed 22-unit order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's maintain 15-20 unit buffers, share inventory and production plans each round, and keep increases gradual. Expect 24 units production to support chain stability.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning production: 24 units to cover Distributor's confirmed 22-unit order",
+      "confidence": 0.95
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "Retailer here - I'm seeing steady demand around 13 units but currently have 0 inventory and 3 units backlog. While my total profit is $1045.50, I'm concerned about backlog costs eating into margins. I propose we all maintain 15-unit buffer stocks to handle demand smoothly. This balances holding costs ($0.5/unit) against stockout risks ($1.5/unit backlog cost). I'll order 18 units this round to cover backlog + expected demand. Let's coordinate to prevent bullwhip effect by sharing real demand data - currently stable at ~13 units/round. Warning: My stockout directly impacts chain stability.",
+      "strategy_hint": "Building 15-unit safety stock while clearing backlog, based on observed demand pattern",
+      "collaboration_proposal": "Let's each maintain 15-unit buffers and share demand/inventory updates every round. Wholesaler should prepare ~18 units for my next order. Let's avoid order amplification.",
+      "information_shared": "Current demand: 13 units, Inventory: 0, Backlog: 3, Profit: $1045.50, Planning to order: 18 units",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "I hear Retailer reporting stable demand of 13 units with 3 units backlog, planning to order 18. As Wholesaler with $1050 profit and 0 inventory, I must prepare for this increased order while preventing bullwhip amplification. Retailer's proposal for 15-unit buffers is sensible given holding cost ($0.5) vs backlog cost ($1.5). I'll order 20 units to cover Retailer's expected 18-unit order plus small safety stock, avoiding excessive inventory costs. Critical timing: orders take 1 round to arrive, so we must plan ahead. My shipment constraint means I can only send what Retailer orders plus their backlog - no oversupply allowed. Let's maintain transparent communication about order plans to prevent demand amplification. Warning: My zero inventory leaves us vulnerable - one demand spike could trigger costly backlogs across the chain.",
+      "strategy_hint": "Building moderate safety stock (20 units) based on Retailer's declared order plan while avoiding excessive inventory costs",
+      "collaboration_proposal": "Let's coordinate buffer levels around 15-20 units each, share planned orders one round ahead, and maintain steady ordering patterns to prevent bullwhip effect. I propose we all report inventory and planned orders every round.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 20 units to cover Retailer's expected 18-unit order",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear Retailer reporting 13-unit demand and planning 18-unit order, while Wholesaler plans 20 units to cover this. As Distributor with $1050 profit but 0 inventory, I must prepare for Wholesaler's increased order while preventing further demand amplification. Given our shared holding ($0.5) vs backlog ($1.5) costs, I support the 15-unit buffer proposal but suggest capping at 20 to avoid excessive holding costs. I'll order 22 units to cover Wholesaler's 20-unit order plus minimal safety stock. Critical timing: With 1-round lead time, we must coordinate carefully. My shipment constraint means I can only send what Wholesaler orders plus backlog - no oversupply allowed. Warning: Zero inventory across the chain leaves us dangerously exposed - one demand spike could cascade into costly backlogs. Let's maintain steady ordering patterns and transparent communication to prevent bullwhip effect.",
+      "strategy_hint": "Building moderate safety stock (22 units) based on Wholesaler's declared order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's coordinate buffer levels between 15-20 units each, share planned orders one round ahead, and maintain steady ordering patterns. I propose weekly inventory and order plan updates from all agents.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 22 units to cover Wholesaler's expected 20-unit order",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "I hear Retailer reporting 13-unit stable demand with 3-unit backlog planning 18-unit order, Wholesaler preparing 20 units, and Distributor planning 22 units. As Factory with $1050 profit but 0 inventory, I must carefully schedule production to support this demand cascade while preventing bullwhip amplification. The proposed 15-20 unit buffer strategy aligns with our cost structure ($0.5 holding vs $1.5 backlog). I'll schedule 24-unit production to cover Distributor's 22-unit order plus minimal safety stock, preventing excessive inventory costs while ensuring chain stability. Critical timing: My production takes 1 round to complete, so we must coordinate carefully. Warning: Zero inventory across the chain is dangerous - one demand spike could trigger costly backlog cascade. Let's maintain steady production patterns and transparent communication to prevent bullwhip effect. I propose we cap inventory buffers at 20 units to balance holding costs against stockout risks.",
+      "strategy_hint": "Scheduling moderate production (24 units) based on Distributor's declared order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's coordinate buffer levels between 15-20 units each, share planned orders/production one round ahead, and maintain steady patterns. I propose weekly inventory and production plan updates from all agents.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning production: 24 units to cover Distributor's expected 22-unit order",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Retailer",
+      "message": "Retailer here - I've heard everyone's input on maintaining 15-20 unit buffers. Wholesaler plans 20 units to cover my 18, Distributor 22 for Wholesaler, and Factory scheduling 24. This measured scaling prevents excessive bullwhip while ensuring coverage. My situation: $1045.50 profit with 0 inventory and 3 units backlog. Current demand stable at 13 units. I confirm my plan to order 18 units (13 demand + 3 backlog + 2 buffer) to avoid amplification while building minimal safety stock. Critical warning: Our chain-wide zero inventory is dangerous. One demand spike could cascade through all stages via backlog costs ($1.5/unit vs $0.5 holding). Let's stick to the proposed 15-20 unit buffers - this balances stockout risk against holding costs. Remember: I can only ship what's ordered plus backlog, and orders take 1 round to arrive. We must coordinate carefully to prevent chain collapse while maximizing total profit.",
+      "strategy_hint": "Ordering 18 units to cover demand plus backlog while building minimal safety stock, avoiding bullwhip effect",
+      "collaboration_proposal": "Let's maintain 15-20 unit buffers, share demand/inventory updates each round, and keep order increases gradual. Wholesaler expect 18 units next round.",
+      "information_shared": "Profit: $1045.50, Inventory: 0, Backlog: 3, Current demand: 13, Planning order: 18",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Wholesaler",
+      "message": "I hear Retailer's latest update confirming 18-unit order plan based on 13 demand + 3 backlog + 2 buffer. As Wholesaler with $1050 profit but 0 inventory, I must prepare carefully. The chain-wide agreement on 15-20 unit buffers makes sense given our costs ($0.5 holding vs $1.5 backlog). I confirm my plan to order 20 units to cover Retailer's 18 plus minimal safety stock, preventing bullwhip while ensuring coverage. Critical warning: Our zero inventory across all stages is extremely dangerous. One demand spike could trigger cascading backlog costs that threaten our profits. The 1-round lead time means we must coordinate carefully - I can only ship what Retailer orders plus their backlog, no oversupply allowed. Let's stick to transparent communication and gradual inventory building to prevent chain collapse while maximizing total profit. Remember: my ability to serve Retailer directly impacts everyone's success.",
+      "strategy_hint": "Building moderate safety stock (20 units) based on Retailer's confirmed 18-unit order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's maintain 15-20 unit buffers, share inventory and order plans each round, and keep increases gradual. Distributor should prepare ~20 units for my next order.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 20 units to cover Retailer's confirmed 18-unit order",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Distributor",
+      "message": "I hear Retailer and Wholesaler's latest updates - Retailer confirming 18-unit order (13 demand + 3 backlog + 2 buffer) and Wholesaler planning 20 units to cover this. As Distributor with $1050 profit but 0 inventory, I must carefully prepare for Wholesaler's increased order while preventing further demand amplification. The chain-wide agreement on 15-20 unit buffers aligns well with our cost structure ($0.5 holding vs $1.5 backlog). I confirm my plan to order 22 units to cover Wholesaler's 20 plus minimal safety stock, preventing bullwhip while ensuring coverage. Critical warning: Our zero inventory across all stages is extremely dangerous. One demand spike could trigger cascading backlog costs that threaten everyone's profits. The 1-round lead time means we must coordinate carefully - I can only ship what Wholesaler orders plus their backlog, no oversupply allowed. Let's maintain transparent communication and gradual inventory building to prevent chain collapse while maximizing total profit. Remember: my ability to serve Wholesaler directly impacts Factory's production planning and the entire chain's stability.",
+      "strategy_hint": "Building moderate safety stock (22 units) based on Wholesaler's confirmed 20-unit order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's maintain 15-20 unit buffers, share inventory and order plans each round, and keep increases gradual. Factory should prepare ~22 units for my next order.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 22 units to cover Wholesaler's confirmed 20-unit order",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Factory",
+      "message": "I hear Retailer's latest update confirming 18-unit order (13 demand + 3 backlog + 2 buffer), Wholesaler planning 20 units, and Distributor planning 22 units. As Factory with $1050 profit but 0 inventory, I must carefully schedule production to support this demand cascade while preventing bullwhip amplification. The chain-wide agreement on 15-20 unit buffers aligns perfectly with our cost structure ($0.5 holding vs $1.5 backlog). I confirm my plan to schedule 24-unit production to cover Distributor's 22 plus minimal safety stock, preventing excessive inventory costs while ensuring chain stability. Critical warning: Our zero inventory across all stages is extremely dangerous. One demand spike could trigger cascading backlog costs that threaten everyone's profits. The 1-round production delay means we must coordinate carefully - I can only produce what's needed, and excess inventory hurts profits through holding costs. Let's maintain transparent communication and gradual inventory building to prevent chain collapse while maximizing total profit. Remember: my production capacity directly impacts the entire chain's stability.",
+      "strategy_hint": "Scheduling moderate production (24 units) based on Distributor's confirmed 22-unit order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's maintain 15-20 unit buffers, share inventory and production plans each round, and keep increases gradual. Expect 24 units production to support chain stability.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning production: 24 units to cover Distributor's confirmed 22-unit order",
+      "confidence": 0.95
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "Retailer here - I'm seeing steady demand around 13 units but currently have 0 inventory and 3 units backlog. While my total profit is $1045.50, I'm concerned about backlog costs eating into margins. I propose we all maintain 15-unit buffer stocks to handle demand smoothly. This balances holding costs ($0.5/unit) against stockout risks ($1.5/unit backlog cost). I'll order 18 units this round to cover backlog + expected demand. Let's coordinate to prevent bullwhip effect by sharing real demand data - currently stable at ~13 units/round. Warning: My stockout directly impacts chain stability.",
+      "strategy_hint": "Building 15-unit safety stock while clearing backlog, based on observed demand pattern",
+      "collaboration_proposal": "Let's each maintain 15-unit buffers and share demand/inventory updates every round. Wholesaler should prepare ~18 units for my next order. Let's avoid order amplification.",
+      "information_shared": "Current demand: 13 units, Inventory: 0, Backlog: 3, Profit: $1045.50, Planning to order: 18 units",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "I hear Retailer reporting stable demand of 13 units with 3 units backlog, planning to order 18. As Wholesaler with $1050 profit and 0 inventory, I must prepare for this increased order while preventing bullwhip amplification. Retailer's proposal for 15-unit buffers is sensible given holding cost ($0.5) vs backlog cost ($1.5). I'll order 20 units to cover Retailer's expected 18-unit order plus small safety stock, avoiding excessive inventory costs. Critical timing: orders take 1 round to arrive, so we must plan ahead. My shipment constraint means I can only send what Retailer orders plus their backlog - no oversupply allowed. Let's maintain transparent communication about order plans to prevent demand amplification. Warning: My zero inventory leaves us vulnerable - one demand spike could trigger costly backlogs across the chain.",
+      "strategy_hint": "Building moderate safety stock (20 units) based on Retailer's declared order plan while avoiding excessive inventory costs",
+      "collaboration_proposal": "Let's coordinate buffer levels around 15-20 units each, share planned orders one round ahead, and maintain steady ordering patterns to prevent bullwhip effect. I propose we all report inventory and planned orders every round.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 20 units to cover Retailer's expected 18-unit order",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear Retailer reporting 13-unit demand and planning 18-unit order, while Wholesaler plans 20 units to cover this. As Distributor with $1050 profit but 0 inventory, I must prepare for Wholesaler's increased order while preventing further demand amplification. Given our shared holding ($0.5) vs backlog ($1.5) costs, I support the 15-unit buffer proposal but suggest capping at 20 to avoid excessive holding costs. I'll order 22 units to cover Wholesaler's 20-unit order plus minimal safety stock. Critical timing: With 1-round lead time, we must coordinate carefully. My shipment constraint means I can only send what Wholesaler orders plus backlog - no oversupply allowed. Warning: Zero inventory across the chain leaves us dangerously exposed - one demand spike could cascade into costly backlogs. Let's maintain steady ordering patterns and transparent communication to prevent bullwhip effect.",
+      "strategy_hint": "Building moderate safety stock (22 units) based on Wholesaler's declared order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's coordinate buffer levels between 15-20 units each, share planned orders one round ahead, and maintain steady ordering patterns. I propose weekly inventory and order plan updates from all agents.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 22 units to cover Wholesaler's expected 20-unit order",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "I hear Retailer reporting 13-unit stable demand with 3-unit backlog planning 18-unit order, Wholesaler preparing 20 units, and Distributor planning 22 units. As Factory with $1050 profit but 0 inventory, I must carefully schedule production to support this demand cascade while preventing bullwhip amplification. The proposed 15-20 unit buffer strategy aligns with our cost structure ($0.5 holding vs $1.5 backlog). I'll schedule 24-unit production to cover Distributor's 22-unit order plus minimal safety stock, preventing excessive inventory costs while ensuring chain stability. Critical timing: My production takes 1 round to complete, so we must coordinate carefully. Warning: Zero inventory across the chain is dangerous - one demand spike could trigger costly backlog cascade. Let's maintain steady production patterns and transparent communication to prevent bullwhip effect. I propose we cap inventory buffers at 20 units to balance holding costs against stockout risks.",
+      "strategy_hint": "Scheduling moderate production (24 units) based on Distributor's declared order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's coordinate buffer levels between 15-20 units each, share planned orders/production one round ahead, and maintain steady patterns. I propose weekly inventory and production plan updates from all agents.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning production: 24 units to cover Distributor's expected 22-unit order",
+      "confidence": 0.85
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Retailer",
+      "message": "Retailer here - I've heard everyone's input on maintaining 15-20 unit buffers. Wholesaler plans 20 units to cover my 18, Distributor 22 for Wholesaler, and Factory scheduling 24. This measured scaling prevents excessive bullwhip while ensuring coverage. My situation: $1045.50 profit with 0 inventory and 3 units backlog. Current demand stable at 13 units. I confirm my plan to order 18 units (13 demand + 3 backlog + 2 buffer) to avoid amplification while building minimal safety stock. Critical warning: Our chain-wide zero inventory is dangerous. One demand spike could cascade through all stages via backlog costs ($1.5/unit vs $0.5 holding). Let's stick to the proposed 15-20 unit buffers - this balances stockout risk against holding costs. Remember: I can only ship what's ordered plus backlog, and orders take 1 round to arrive. We must coordinate carefully to prevent chain collapse while maximizing total profit.",
+      "strategy_hint": "Ordering 18 units to cover demand plus backlog while building minimal safety stock, avoiding bullwhip effect",
+      "collaboration_proposal": "Let's maintain 15-20 unit buffers, share demand/inventory updates each round, and keep order increases gradual. Wholesaler expect 18 units next round.",
+      "information_shared": "Profit: $1045.50, Inventory: 0, Backlog: 3, Current demand: 13, Planning order: 18",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Wholesaler",
+      "message": "I hear Retailer's latest update confirming 18-unit order plan based on 13 demand + 3 backlog + 2 buffer. As Wholesaler with $1050 profit but 0 inventory, I must prepare carefully. The chain-wide agreement on 15-20 unit buffers makes sense given our costs ($0.5 holding vs $1.5 backlog). I confirm my plan to order 20 units to cover Retailer's 18 plus minimal safety stock, preventing bullwhip while ensuring coverage. Critical warning: Our zero inventory across all stages is extremely dangerous. One demand spike could trigger cascading backlog costs that threaten our profits. The 1-round lead time means we must coordinate carefully - I can only ship what Retailer orders plus their backlog, no oversupply allowed. Let's stick to transparent communication and gradual inventory building to prevent chain collapse while maximizing total profit. Remember: my ability to serve Retailer directly impacts everyone's success.",
+      "strategy_hint": "Building moderate safety stock (20 units) based on Retailer's confirmed 18-unit order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's maintain 15-20 unit buffers, share inventory and order plans each round, and keep increases gradual. Distributor should prepare ~20 units for my next order.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 20 units to cover Retailer's confirmed 18-unit order",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Distributor",
+      "message": "I hear Retailer and Wholesaler's latest updates - Retailer confirming 18-unit order (13 demand + 3 backlog + 2 buffer) and Wholesaler planning 20 units to cover this. As Distributor with $1050 profit but 0 inventory, I must carefully prepare for Wholesaler's increased order while preventing further demand amplification. The chain-wide agreement on 15-20 unit buffers aligns well with our cost structure ($0.5 holding vs $1.5 backlog). I confirm my plan to order 22 units to cover Wholesaler's 20 plus minimal safety stock, preventing bullwhip while ensuring coverage. Critical warning: Our zero inventory across all stages is extremely dangerous. One demand spike could trigger cascading backlog costs that threaten everyone's profits. The 1-round lead time means we must coordinate carefully - I can only ship what Wholesaler orders plus their backlog, no oversupply allowed. Let's maintain transparent communication and gradual inventory building to prevent chain collapse while maximizing total profit. Remember: my ability to serve Wholesaler directly impacts Factory's production planning and the entire chain's stability.",
+      "strategy_hint": "Building moderate safety stock (22 units) based on Wholesaler's confirmed 20-unit order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's maintain 15-20 unit buffers, share inventory and order plans each round, and keep increases gradual. Factory should prepare ~22 units for my next order.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning to order: 22 units to cover Wholesaler's confirmed 20-unit order",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 2,
+      "sender": "Factory",
+      "message": "I hear Retailer's latest update confirming 18-unit order (13 demand + 3 backlog + 2 buffer), Wholesaler planning 20 units, and Distributor planning 22 units. As Factory with $1050 profit but 0 inventory, I must carefully schedule production to support this demand cascade while preventing bullwhip amplification. The chain-wide agreement on 15-20 unit buffers aligns perfectly with our cost structure ($0.5 holding vs $1.5 backlog). I confirm my plan to schedule 24-unit production to cover Distributor's 22 plus minimal safety stock, preventing excessive inventory costs while ensuring chain stability. Critical warning: Our zero inventory across all stages is extremely dangerous. One demand spike could trigger cascading backlog costs that threaten everyone's profits. The 1-round production delay means we must coordinate carefully - I can only produce what's needed, and excess inventory hurts profits through holding costs. Let's maintain transparent communication and gradual inventory building to prevent chain collapse while maximizing total profit. Remember: my production capacity directly impacts the entire chain's stability.",
+      "strategy_hint": "Scheduling moderate production (24 units) based on Distributor's confirmed 22-unit order while preventing excessive inventory costs",
+      "collaboration_proposal": "Let's maintain 15-20 unit buffers, share inventory and production plans each round, and keep increases gradual. Expect 24 units production to support chain stability.",
+      "information_shared": "Current profit: $1050, Inventory: 0, Backlog: 0, Planning production: 24 units to cover Distributor's confirmed 22-unit order",
+      "confidence": 0.95
+    }
+  ]
+}

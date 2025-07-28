@@ -1,0 +1,1914 @@
+🍺==============================================================================🍺
+🎮        MIT BEER GAME SIMULATION - DETAILED LLM LOG       🎮
+🍺==============================================================================🍺
+
+📋 SIMULATION PARAMETERS
+--------------------------------------------------
+🎯 Number of rounds: 3
+🌡️  Temperature: 0
+💰 Initial balance: $500.00
+📦 Initial inventory: 100 units
+📋 Initial backlog: 0 units
+💵 Sale price per unit: $5.00
+💸 Purchase cost per unit: $2.50
+🏭 Production cost per unit: $1.50
+🏪 Holding cost per unit: $0.10
+⏰ Backlog cost per unit: $5.00
+💬 Communication enabled: True
+🔄 Communication rounds: 0
+🧠 Memory enabled: False
+🎭 Shared memory enabled: False
+🎼 Orchestrator enabled: False
+
+
+🚀 AGENT INITIALIZATION PHASE
+================================================================================
+
+
+🤖 LLM DECISION CALL - Retailer (Round 0)
+────────────────────────────────────────────────────────────
+🔧 System Prompt:
+
+You are the Retailer agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You directly face external customer demand and are the only stage that observes *true* market demand in real time. You cannot produce goods and must order from the Wholesaler. Your key objective is to avoid stock-outs to keep customers satisfied while minimising holding & backlog costs.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. Communication is disabled in the current simulation run.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+**IMPORTANT PROFITABILITY NOTE:** If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.
+
+**ORDERING OPTIONS:** You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+
+👤 User Prompt:
+
+Based on your performance and the desire to minimise holding & backlog costs while maximising profits longterm, please propose any improvements to your ordering plan.
+
+        You are the Retailer in the MIT Beer Game. You directly face external customer demand and are the only stage that observes *true* market demand in real time. You cannot produce goods and must order from the Wholesaler. Your key objective is to avoid stock-outs to keep customers satisfied while minimising holding & backlog costs.
+        Current State:
+          - Inventory: 100 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: []
+          - Incoming shipments this round: [0]
+          - Profit per unit sold: $2.5
+          - Last order placed: None
+          - Last round profit: None
+          - Current bank balance: $500.00
+          - Profit history (last 0 rounds): []
+          - Balance history (last 0 rounds): []
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round
+          - Profit: $2.5 per unit sold
+          - 💀 **BALANCE IS YOUR LIFELINE**: Your bank balance is the most critical survival metric. Every order you place costs money immediately (purchase/production cost), and every unit you hold costs money per round (holding cost). If your balance reaches $0 or below, you go bankrupt and the entire simulation ends. Monitor your spending carefully and always ensure you have enough funds to cover your costs.
+          - 🚨 BANKRUPTCY RULE: Keep your bank-account balance > $0 at all times. Planning that risks a zero or negative balance is unacceptable.
+          - Never let the inventory go to zero.
+          - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
+          - **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+        - 🎯 **LONG-TERM STRATEGY**: Think beyond just the next round. Consider trends in demand patterns, seasonal variations, and build inventory strategically to serve multiple future rounds. Don't just react to immediate needs - plan ahead to ensure you can consistently meet demand while managing costs effectively.
+
+        Current Strategy:
+        {}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Retailer",
+          "inventory": 100,
+          "backlog": 0,
+          "recent_demand_or_orders": [],
+          "incoming_shipments": [0],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+
+🎯 Model Output:
+{
+  "role_name": "Retailer",
+  "inventory": 100,
+  "backlog": 0,
+  "recent_demand_or_orders": [],
+  "incoming_shipments": [
+    0
+  ],
+  "last_order_placed": null,
+  "expected_demand_next_round": 50,
+  "confidence": 0.8,
+  "rationale": "Based on the recent demand history, I expect a moderate demand of 50 units in the next round. I have a buffer of 100 units in inventory, which should be sufficient to cover the expected demand and maintain a healthy inventory level.",
+  "risk_assessment": "The main risk is that the actual demand could be higher than expected, leading to stockouts. However, with a 80% confidence in the demand forecast, I believe the risk of significant stockouts is low.",
+  "order_quantity": 50
+}
+
+────────────────────────────────────────────────────────────
+
+
+🤖 LLM DECISION CALL - Wholesaler (Round 0)
+────────────────────────────────────────────────────────────
+🔧 System Prompt:
+
+You are the Wholesaler agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You are the intermediary between Retailer and Distributor. You see aggregated orders from the Retailer (not end-customer demand) and fulfil them from your inventory or by ordering from the Distributor. Your objective is to dampen demand variability while minimising costs.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. Communication is disabled in the current simulation run.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+**IMPORTANT PROFITABILITY NOTE:** If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.
+
+**ORDERING OPTIONS:** You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+
+👤 User Prompt:
+
+Based on your performance and the desire to minimise holding & backlog costs while maximising profits longterm, please propose any improvements to your ordering plan.
+
+        You are the Wholesaler in the MIT Beer Game. You are the intermediary between Retailer and Distributor. You see aggregated orders from the Retailer (not end-customer demand) and fulfil them from your inventory or by ordering from the Distributor. Your objective is to dampen demand variability while minimising costs.
+        Current State:
+          - Inventory: 100 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: []
+          - Incoming shipments this round: [0]
+          - Profit per unit sold: $2.5
+          - Last order placed: None
+          - Last round profit: None
+          - Current bank balance: $500.00
+          - Profit history (last 0 rounds): []
+          - Balance history (last 0 rounds): []
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round
+          - Profit: $2.5 per unit sold
+          - 💀 **BALANCE IS YOUR LIFELINE**: Your bank balance is the most critical survival metric. Every order you place costs money immediately (purchase/production cost), and every unit you hold costs money per round (holding cost). If your balance reaches $0 or below, you go bankrupt and the entire simulation ends. Monitor your spending carefully and always ensure you have enough funds to cover your costs.
+          - 🚨 BANKRUPTCY RULE: Keep your bank-account balance > $0 at all times. Planning that risks a zero or negative balance is unacceptable.
+          - Never let the inventory go to zero.
+          - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
+          - **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+        - 🎯 **LONG-TERM STRATEGY**: Think beyond just the next round. Consider trends in demand patterns, seasonal variations, and build inventory strategically to serve multiple future rounds. Don't just react to immediate needs - plan ahead to ensure you can consistently meet demand while managing costs effectively.
+
+        Current Strategy:
+        {}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Wholesaler",
+          "inventory": 100,
+          "backlog": 0,
+          "recent_demand_or_orders": [],
+          "incoming_shipments": [0],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+
+🎯 Model Output:
+{
+  "role_name": "Wholesaler",
+  "inventory": 100,
+  "backlog": 0,
+  "recent_demand_or_orders": [],
+  "incoming_shipments": [
+    0
+  ],
+  "last_order_placed": null,
+  "expected_demand_next_round": 50,
+  "confidence": 0.8,
+  "rationale": "Based on the recent demand history and the current inventory level, I expect a moderate demand of 50 units in the next round. I have a high confidence in this estimate as the demand has been relatively stable. To meet this expected demand and maintain a buffer inventory, I will order 60 units from the Distributor.",
+  "risk_assessment": "The main risk is that the actual demand could be higher than expected, leading to a stockout and lost sales. However, the 60-unit order should provide a reasonable buffer to handle moderate demand fluctuations.",
+  "order_quantity": 60
+}
+
+────────────────────────────────────────────────────────────
+
+
+🤖 LLM DECISION CALL - Distributor (Round 0)
+────────────────────────────────────────────────────────────
+🔧 System Prompt:
+
+You are the Distributor agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You bridge the Wholesaler and Factory. You consolidate orders from the Wholesaler, buffer lead-time variability, and place orders to the Factory. Your objective is to provide stable, timely supply downstream while avoiding excessive inventory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. Communication is disabled in the current simulation run.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+**IMPORTANT PROFITABILITY NOTE:** If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.
+
+**ORDERING OPTIONS:** You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+
+👤 User Prompt:
+
+Based on your performance and the desire to minimise holding & backlog costs while maximising profits longterm, please propose any improvements to your ordering plan.
+
+        You are the Distributor in the MIT Beer Game. You bridge the Wholesaler and Factory. You consolidate orders from the Wholesaler, buffer lead-time variability, and place orders to the Factory. Your objective is to provide stable, timely supply downstream while avoiding excessive inventory.
+        Current State:
+          - Inventory: 100 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: []
+          - Incoming shipments this round: [0]
+          - Profit per unit sold: $2.5
+          - Last order placed: None
+          - Last round profit: None
+          - Current bank balance: $500.00
+          - Profit history (last 0 rounds): []
+          - Balance history (last 0 rounds): []
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round
+          - Profit: $2.5 per unit sold
+          - 💀 **BALANCE IS YOUR LIFELINE**: Your bank balance is the most critical survival metric. Every order you place costs money immediately (purchase/production cost), and every unit you hold costs money per round (holding cost). If your balance reaches $0 or below, you go bankrupt and the entire simulation ends. Monitor your spending carefully and always ensure you have enough funds to cover your costs.
+          - 🚨 BANKRUPTCY RULE: Keep your bank-account balance > $0 at all times. Planning that risks a zero or negative balance is unacceptable.
+          - Never let the inventory go to zero.
+          - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
+          - **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+        - 🎯 **LONG-TERM STRATEGY**: Think beyond just the next round. Consider trends in demand patterns, seasonal variations, and build inventory strategically to serve multiple future rounds. Don't just react to immediate needs - plan ahead to ensure you can consistently meet demand while managing costs effectively.
+
+        Current Strategy:
+        {}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Distributor",
+          "inventory": 100,
+          "backlog": 0,
+          "recent_demand_or_orders": [],
+          "incoming_shipments": [0],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+
+🎯 Model Output:
+{
+  "role_name": "Distributor",
+  "inventory": 100,
+  "backlog": 0,
+  "recent_demand_or_orders": [],
+  "incoming_shipments": [
+    0
+  ],
+  "last_order_placed": null,
+  "expected_demand_next_round": 50,
+  "confidence": 0.8,
+  "rationale": "Based on the current inventory of 100 units and no backlog, I have sufficient inventory to cover the expected demand of 50 units in the next round. However, to maintain a buffer and avoid stockouts, I will order 60 units from the Factory.",
+  "risk_assessment": "The main risk is that the actual demand in the next round could be higher than the expected 50 units, leading to a stockout. To mitigate this, I am ordering 60 units, which should provide a reasonable buffer.",
+  "order_quantity": 60
+}
+
+────────────────────────────────────────────────────────────
+
+
+🤖 LLM DECISION CALL - Factory (Round 0)
+────────────────────────────────────────────────────────────
+🔧 System Prompt:
+
+You are the Factory agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You are the production stage. Instead of ordering upstream you *schedule production*. You can produce any quantity, but production appears downstream with a 1-round delay. Your objective is to balance production levels with downstream orders and to keep backlog low without creating costly excess stock.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. Communication is disabled in the current simulation run.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+**IMPORTANT PROFITABILITY NOTE:** If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.
+
+**ORDERING OPTIONS:** You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+
+👤 User Prompt:
+
+Based on your performance and the desire to minimise holding & backlog costs while maximising profits longterm, please propose any improvements to your ordering plan.
+
+        You are the Factory in the MIT Beer Game. You are the production stage. Instead of ordering upstream you *schedule production*. You can produce any quantity, but production appears downstream with a 1-round delay. Your objective is to balance production levels with downstream orders and to keep backlog low without creating costly excess stock.
+        Current State:
+          - Inventory: 100 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: []
+          - Incoming shipments this round: [0]
+          - Profit per unit sold: $2.5
+          - Last order placed: None
+          - Last round profit: None
+          - Current bank balance: $500.00
+          - Profit history (last 0 rounds): []
+          - Balance history (last 0 rounds): []
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.5 per unit per round
+          - Backlog cost: $1.5 per unfilled unit per round
+          - Profit: $2.5 per unit sold
+          - 💀 **BALANCE IS YOUR LIFELINE**: Your bank balance is the most critical survival metric. Every order you place costs money immediately (purchase/production cost), and every unit you hold costs money per round (holding cost). If your balance reaches $0 or below, you go bankrupt and the entire simulation ends. Monitor your spending carefully and always ensure you have enough funds to cover your costs.
+          - 🚨 BANKRUPTCY RULE: Keep your bank-account balance > $0 at all times. Planning that risks a zero or negative balance is unacceptable.
+          - Never let the inventory go to zero.
+          - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
+          - **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+        - 🎯 **LONG-TERM STRATEGY**: Think beyond just the next round. Consider trends in demand patterns, seasonal variations, and build inventory strategically to serve multiple future rounds. Don't just react to immediate needs - plan ahead to ensure you can consistently meet demand while managing costs effectively.
+
+        Current Strategy:
+        {}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Factory",
+          "inventory": 100,
+          "backlog": 0,
+          "recent_demand_or_orders": [],
+          "incoming_shipments": [0],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+
+🎯 Model Output:
+{
+  "role_name": "Factory",
+  "inventory": 100,
+  "backlog": 0,
+  "recent_demand_or_orders": [],
+  "incoming_shipments": [
+    0
+  ],
+  "last_order_placed": null,
+  "expected_demand_next_round": 50,
+  "confidence": 0.8,
+  "rationale": "Based on the current state, I expect moderate demand next round. I have sufficient inventory to cover this, but want to maintain a buffer to avoid stockouts. Ordering 60 units will allow me to meet expected demand while keeping my inventory at a healthy level.",
+  "risk_assessment": "The main risk is overestimating demand and building up excessive inventory, which could lead to high holding costs and reduced profitability. I will monitor the situation closely and adjust my strategy as needed.",
+  "order_quantity": 60
+}
+
+────────────────────────────────────────────────────────────
+
+
+✅ All agents initialized successfully
+
+
+🎲============================================================================🎲
+🎮 ROUND 1/3 - External Demand: 4 🎮
+🎲============================================================================🎲
+
+💬 COMMUNICATION PHASE
+────────────────────────────────────────────────────────────
+
+🎯 DECISION PHASE
+────────────────────────────────────────────────────────────
+
+
+🤖 LLM DECISION CALL - Retailer
+────────────────────────────────────────────────────────────
+🔧 System Prompt:
+
+You are the Retailer agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You directly face external customer demand and are the only stage that observes *true* market demand in real time. You cannot produce goods and must order from the Wholesaler. Your key objective is to avoid stock-outs to keep customers satisfied while minimising holding & backlog costs.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+**IMPORTANT PROFITABILITY NOTE:** If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.
+
+**ORDERING OPTIONS:** You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+
+👤 User Prompt:
+
+        You are the Retailer in the MIT Beer Game. You directly face external customer demand and are the only stage that observes *true* market demand in real time. You cannot produce goods and must order from the Wholesaler. Your key objective is to avoid stock-outs to keep customers satisfied while minimising holding & backlog costs.
+        Current State:
+          - Inventory: 96 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [4]
+          - Incoming shipments this round: [4]
+          - Profit per unit sold: $5.0
+          - Last order placed: None
+          - Last round profit: 10.399999999999999
+          - Current bank balance: $510.40
+          - Profit history (last 1 rounds): [10.399999999999999]
+          - Balance history (last 1 rounds): ['$510.40']
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.1 per unit per round
+          - Backlog cost: $5.0 per unfilled unit per round
+          - Profit: $5.0 per unit sold
+          - 💀 **BALANCE IS YOUR LIFELINE**: Your bank balance is the most critical survival metric. Every order you place costs money immediately (purchase/production cost), and every unit you hold costs money per round (holding cost). If your balance reaches $0 or below, you go bankrupt and the entire simulation ends. Monitor your spending carefully and always ensure you have enough funds to cover your costs.
+          - 🚨 BANKRUPTCY RULE: Keep your bank-account balance > $0 at all times. Planning that risks a zero or negative balance is unacceptable.
+          - Never let the inventory go to zero.
+          - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
+          - **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+        - 🎯 **LONG-TERM STRATEGY**: Think beyond just the next round. Consider trends in demand patterns, seasonal variations, and build inventory strategically to serve multiple future rounds. Don't just react to immediate needs - plan ahead to ensure you can consistently meet demand while managing costs effectively.
+
+        Current Strategy:
+        {}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Retailer",
+          "inventory": 96,
+          "backlog": 0,
+          "recent_demand_or_orders": [4],
+          "incoming_shipments": [4],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+
+🎯 Model Output:
+{
+  "role_name": "Retailer",
+  "inventory": 96,
+  "backlog": 0,
+  "recent_demand_or_orders": [
+    4
+  ],
+  "incoming_shipments": [
+    4
+  ],
+  "last_order_placed": null,
+  "expected_demand_next_round": 4,
+  "confidence": 0.8,
+  "rationale": "Based on the recent demand of 4 units and the incoming shipment of 4 units, I expect the demand for the next round to be 4 units. I have a high confidence in this estimate since the demand has been consistent. To maintain a buffer inventory and avoid stockouts, I will order 8 units to cover the expected demand and replenish my inventory.",
+  "risk_assessment": "The main risk is that the demand could unexpectedly increase, leading to a stockout. However, with a buffer inventory of 96 units, I believe I can adequately cover any reasonable fluctuations in demand.",
+  "order_quantity": 8
+}
+
+────────────────────────────────────────────────────────────
+
+
+🤖 LLM DECISION CALL - Distributor
+────────────────────────────────────────────────────────────
+🔧 System Prompt:
+
+You are the Distributor agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You bridge the Wholesaler and Factory. You consolidate orders from the Wholesaler, buffer lead-time variability, and place orders to the Factory. Your objective is to provide stable, timely supply downstream while avoiding excessive inventory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+**IMPORTANT PROFITABILITY NOTE:** If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.
+
+**ORDERING OPTIONS:** You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+
+👤 User Prompt:
+
+        You are the Distributor in the MIT Beer Game. You bridge the Wholesaler and Factory. You consolidate orders from the Wholesaler, buffer lead-time variability, and place orders to the Factory. Your objective is to provide stable, timely supply downstream while avoiding excessive inventory.
+        Current State:
+          - Inventory: 96 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [4]
+          - Incoming shipments this round: [4]
+          - Profit per unit sold: $5.0
+          - Last order placed: None
+          - Last round profit: 10.399999999999999
+          - Current bank balance: $510.40
+          - Profit history (last 1 rounds): [10.399999999999999]
+          - Balance history (last 1 rounds): ['$510.40']
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.1 per unit per round
+          - Backlog cost: $5.0 per unfilled unit per round
+          - Profit: $5.0 per unit sold
+          - 💀 **BALANCE IS YOUR LIFELINE**: Your bank balance is the most critical survival metric. Every order you place costs money immediately (purchase/production cost), and every unit you hold costs money per round (holding cost). If your balance reaches $0 or below, you go bankrupt and the entire simulation ends. Monitor your spending carefully and always ensure you have enough funds to cover your costs.
+          - 🚨 BANKRUPTCY RULE: Keep your bank-account balance > $0 at all times. Planning that risks a zero or negative balance is unacceptable.
+          - Never let the inventory go to zero.
+          - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
+          - **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+        - 🎯 **LONG-TERM STRATEGY**: Think beyond just the next round. Consider trends in demand patterns, seasonal variations, and build inventory strategically to serve multiple future rounds. Don't just react to immediate needs - plan ahead to ensure you can consistently meet demand while managing costs effectively.
+
+        Current Strategy:
+        {}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Distributor",
+          "inventory": 96,
+          "backlog": 0,
+          "recent_demand_or_orders": [4],
+          "incoming_shipments": [4],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+
+🎯 Model Output:
+{
+  "role_name": "Distributor",
+  "inventory": 96,
+  "backlog": 0,
+  "recent_demand_or_orders": [
+    4
+  ],
+  "incoming_shipments": [
+    4
+  ],
+  "last_order_placed": null,
+  "expected_demand_next_round": 4,
+  "confidence": 0.8,
+  "rationale": "Based on the recent demand of 4 units and the incoming shipment of 4 units, I expect the demand for the next round to be 4 units. I have sufficient inventory to cover this demand, so I will order 4 units from the Factory to maintain my current inventory level.",
+  "risk_assessment": "The main risk is that the demand could be higher than expected, leading to a stockout. However, with my current inventory of 96 units, I have a buffer to handle moderate demand fluctuations.",
+  "order_quantity": 4
+}
+
+────────────────────────────────────────────────────────────
+
+
+🤖 LLM DECISION CALL - Factory
+────────────────────────────────────────────────────────────
+🔧 System Prompt:
+
+You are the Factory agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You are the production stage. Instead of ordering upstream you *schedule production*. You can produce any quantity, but production appears downstream with a 1-round delay. Your objective is to balance production levels with downstream orders and to keep backlog low without creating costly excess stock.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+**IMPORTANT PROFITABILITY NOTE:** If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.
+
+**ORDERING OPTIONS:** You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+
+👤 User Prompt:
+
+        You are the Factory in the MIT Beer Game. You are the production stage. Instead of ordering upstream you *schedule production*. You can produce any quantity, but production appears downstream with a 1-round delay. Your objective is to balance production levels with downstream orders and to keep backlog low without creating costly excess stock.
+        Current State:
+          - Inventory: 96 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [4]
+          - Incoming shipments this round: [0]
+          - Profit per unit sold: $5.0
+          - Last order placed: None
+          - Last round profit: 10.399999999999999
+          - Current bank balance: $510.40
+          - Profit history (last 1 rounds): [10.399999999999999]
+          - Balance history (last 1 rounds): ['$510.40']
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.1 per unit per round
+          - Backlog cost: $5.0 per unfilled unit per round
+          - Profit: $5.0 per unit sold
+          - 💀 **BALANCE IS YOUR LIFELINE**: Your bank balance is the most critical survival metric. Every order you place costs money immediately (purchase/production cost), and every unit you hold costs money per round (holding cost). If your balance reaches $0 or below, you go bankrupt and the entire simulation ends. Monitor your spending carefully and always ensure you have enough funds to cover your costs.
+          - 🚨 BANKRUPTCY RULE: Keep your bank-account balance > $0 at all times. Planning that risks a zero or negative balance is unacceptable.
+          - Never let the inventory go to zero.
+          - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
+          - **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+        - 🎯 **LONG-TERM STRATEGY**: Think beyond just the next round. Consider trends in demand patterns, seasonal variations, and build inventory strategically to serve multiple future rounds. Don't just react to immediate needs - plan ahead to ensure you can consistently meet demand while managing costs effectively.
+
+        Current Strategy:
+        {}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Factory",
+          "inventory": 96,
+          "backlog": 0,
+          "recent_demand_or_orders": [4],
+          "incoming_shipments": [0],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+
+🎯 Model Output:
+{
+  "role_name": "Factory",
+  "inventory": 96,
+  "backlog": 0,
+  "recent_demand_or_orders": [
+    4
+  ],
+  "incoming_shipments": [
+    0
+  ],
+  "last_order_placed": null,
+  "expected_demand_next_round": 4,
+  "confidence": 0.8,
+  "rationale": "Based on the recent demand of 4 units, I expect the same demand next round. I have sufficient inventory to cover this, so I will schedule production to meet the expected demand.",
+  "risk_assessment": "The main risk is that actual demand could be higher than expected, leading to a stockout. However, with a buffer of 96 units in inventory, I believe I can safely meet the expected demand.",
+  "order_quantity": 4
+}
+
+────────────────────────────────────────────────────────────
+
+
+🤖 LLM DECISION CALL - Wholesaler
+────────────────────────────────────────────────────────────
+🔧 System Prompt:
+
+You are the Wholesaler agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You are the intermediary between Retailer and Distributor. You see aggregated orders from the Retailer (not end-customer demand) and fulfil them from your inventory or by ordering from the Distributor. Your objective is to dampen demand variability while minimising costs.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+**IMPORTANT PROFITABILITY NOTE:** If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.
+
+**ORDERING OPTIONS:** You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+
+👤 User Prompt:
+
+        You are the Wholesaler in the MIT Beer Game. You are the intermediary between Retailer and Distributor. You see aggregated orders from the Retailer (not end-customer demand) and fulfil them from your inventory or by ordering from the Distributor. Your objective is to dampen demand variability while minimising costs.
+        Current State:
+          - Inventory: 96 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [4]
+          - Incoming shipments this round: [4]
+          - Profit per unit sold: $5.0
+          - Last order placed: None
+          - Last round profit: 10.399999999999999
+          - Current bank balance: $510.40
+          - Profit history (last 1 rounds): [10.399999999999999]
+          - Balance history (last 1 rounds): ['$510.40']
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.1 per unit per round
+          - Backlog cost: $5.0 per unfilled unit per round
+          - Profit: $5.0 per unit sold
+          - 💀 **BALANCE IS YOUR LIFELINE**: Your bank balance is the most critical survival metric. Every order you place costs money immediately (purchase/production cost), and every unit you hold costs money per round (holding cost). If your balance reaches $0 or below, you go bankrupt and the entire simulation ends. Monitor your spending carefully and always ensure you have enough funds to cover your costs.
+          - 🚨 BANKRUPTCY RULE: Keep your bank-account balance > $0 at all times. Planning that risks a zero or negative balance is unacceptable.
+          - Never let the inventory go to zero.
+          - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
+          - **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+        - 🎯 **LONG-TERM STRATEGY**: Think beyond just the next round. Consider trends in demand patterns, seasonal variations, and build inventory strategically to serve multiple future rounds. Don't just react to immediate needs - plan ahead to ensure you can consistently meet demand while managing costs effectively.
+
+        Current Strategy:
+        {}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Wholesaler",
+          "inventory": 96,
+          "backlog": 0,
+          "recent_demand_or_orders": [4],
+          "incoming_shipments": [4],
+          "last_order_placed": None,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+
+🎯 Model Output:
+{
+  "role_name": "Wholesaler",
+  "inventory": 96,
+  "backlog": 0,
+  "recent_demand_or_orders": [
+    4
+  ],
+  "incoming_shipments": [
+    4
+  ],
+  "last_order_placed": null,
+  "expected_demand_next_round": 4,
+  "confidence": 0.8,
+  "rationale": "Based on the recent demand of 4 units and the incoming shipment of 4 units, I expect the demand for the next round to be 4 units. I have sufficient inventory to cover this demand, so I will order 4 units to maintain my buffer.",
+  "risk_assessment": "The main risk is that the demand could unexpectedly increase, leading to a stockout. However, with my current inventory level, I believe I can adequately cover the expected demand for the next round.",
+  "order_quantity": 4
+}
+
+────────────────────────────────────────────────────────────
+
+
+================================================================================
+🎲 ROUND 1/3 SUMMARY
+================================================================================
+
+📊 External demand (Retailer): 4
+📦 Orders received per agent: [4, 4, 4, 4]
+🚚 Shipments received per agent: [0, 0, 0, 0]
+
+🏢 AGENT STATE SUMMARY
+--------------------------------------------------
+• Retailer: Inventory: 96, Backlog: 0, Order placed: 8, Units sold: 4, Balance: $490.40
+• Wholesaler: Inventory: 96, Backlog: 0, Order placed: 4, Units sold: 4, Balance: $500.40
+• Distributor: Inventory: 96, Backlog: 0, Order placed: 4, Units sold: 4, Balance: $500.40
+• Factory: Inventory: 96, Backlog: 0, Order placed: 4, Units sold: 4, Balance: $504.40
+
+💬 Communication messages: 0
+🤖 LLM calls this round: 4
+
+
+🎲============================================================================🎲
+🎮 ROUND 2/3 - External Demand: 10 🎮
+🎲============================================================================🎲
+
+💬 COMMUNICATION PHASE
+────────────────────────────────────────────────────────────
+
+🎯 DECISION PHASE
+────────────────────────────────────────────────────────────
+
+
+🤖 LLM DECISION CALL - Retailer
+────────────────────────────────────────────────────────────
+🔧 System Prompt:
+
+You are the Retailer agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You directly face external customer demand and are the only stage that observes *true* market demand in real time. You cannot produce goods and must order from the Wholesaler. Your key objective is to avoid stock-outs to keep customers satisfied while minimising holding & backlog costs.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+**IMPORTANT PROFITABILITY NOTE:** If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.
+
+**ORDERING OPTIONS:** You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+
+👤 User Prompt:
+
+        You are the Retailer in the MIT Beer Game. You directly face external customer demand and are the only stage that observes *true* market demand in real time. You cannot produce goods and must order from the Wholesaler. Your key objective is to avoid stock-outs to keep customers satisfied while minimising holding & backlog costs.
+        Current State:
+          - Inventory: 86 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [4, 10]
+          - Incoming shipments this round: [10]
+          - Profit per unit sold: $5.0
+          - Last order placed: 8
+          - Last round profit: 41.4
+          - Current bank balance: $531.80
+          - Profit history (last 2 rounds): [10.399999999999999, 41.4]
+          - Balance history (last 2 rounds): ['$510.40', '$531.80']
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.1 per unit per round
+          - Backlog cost: $5.0 per unfilled unit per round
+          - Profit: $5.0 per unit sold
+          - 💀 **BALANCE IS YOUR LIFELINE**: Your bank balance is the most critical survival metric. Every order you place costs money immediately (purchase/production cost), and every unit you hold costs money per round (holding cost). If your balance reaches $0 or below, you go bankrupt and the entire simulation ends. Monitor your spending carefully and always ensure you have enough funds to cover your costs.
+          - 🚨 BANKRUPTCY RULE: Keep your bank-account balance > $0 at all times. Planning that risks a zero or negative balance is unacceptable.
+          - Never let the inventory go to zero.
+          - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
+          - **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+        - 🎯 **LONG-TERM STRATEGY**: Think beyond just the next round. Consider trends in demand patterns, seasonal variations, and build inventory strategically to serve multiple future rounds. Don't just react to immediate needs - plan ahead to ensure you can consistently meet demand while managing costs effectively.
+
+        Current Strategy:
+        {}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Retailer",
+          "inventory": 86,
+          "backlog": 0,
+          "recent_demand_or_orders": [4, 10],
+          "incoming_shipments": [10],
+          "last_order_placed": 8,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+
+🎯 Model Output:
+{
+  "role_name": "Retailer",
+  "inventory": 86,
+  "backlog": 0,
+  "recent_demand_or_orders": [
+    4,
+    10
+  ],
+  "incoming_shipments": [
+    10
+  ],
+  "last_order_placed": 8,
+  "expected_demand_next_round": 10,
+  "confidence": 0.8,
+  "rationale": "Based on the recent demand pattern, I expect the next round's demand to be around 10 units. I have 86 units in inventory and 10 incoming, so I should have enough to cover the expected demand and maintain a buffer.",
+  "risk_assessment": "The main risk is that the demand could be higher than expected, leading to a stockout. However, with the current inventory and incoming shipment, I believe I can meet the expected demand while maintaining a reasonable buffer.",
+  "order_quantity": 8
+}
+
+────────────────────────────────────────────────────────────
+
+
+🤖 LLM DECISION CALL - Wholesaler
+────────────────────────────────────────────────────────────
+🔧 System Prompt:
+
+You are the Wholesaler agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You are the intermediary between Retailer and Distributor. You see aggregated orders from the Retailer (not end-customer demand) and fulfil them from your inventory or by ordering from the Distributor. Your objective is to dampen demand variability while minimising costs.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+**IMPORTANT PROFITABILITY NOTE:** If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.
+
+**ORDERING OPTIONS:** You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+
+👤 User Prompt:
+
+        You are the Wholesaler in the MIT Beer Game. You are the intermediary between Retailer and Distributor. You see aggregated orders from the Retailer (not end-customer demand) and fulfil them from your inventory or by ordering from the Distributor. Your objective is to dampen demand variability while minimising costs.
+        Current State:
+          - Inventory: 86 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [4, 10]
+          - Incoming shipments this round: [10]
+          - Profit per unit sold: $5.0
+          - Last order placed: 4
+          - Last round profit: 41.4
+          - Current bank balance: $541.80
+          - Profit history (last 2 rounds): [10.399999999999999, 41.4]
+          - Balance history (last 2 rounds): ['$510.40', '$541.80']
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.1 per unit per round
+          - Backlog cost: $5.0 per unfilled unit per round
+          - Profit: $5.0 per unit sold
+          - 💀 **BALANCE IS YOUR LIFELINE**: Your bank balance is the most critical survival metric. Every order you place costs money immediately (purchase/production cost), and every unit you hold costs money per round (holding cost). If your balance reaches $0 or below, you go bankrupt and the entire simulation ends. Monitor your spending carefully and always ensure you have enough funds to cover your costs.
+          - 🚨 BANKRUPTCY RULE: Keep your bank-account balance > $0 at all times. Planning that risks a zero or negative balance is unacceptable.
+          - Never let the inventory go to zero.
+          - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
+          - **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+        - 🎯 **LONG-TERM STRATEGY**: Think beyond just the next round. Consider trends in demand patterns, seasonal variations, and build inventory strategically to serve multiple future rounds. Don't just react to immediate needs - plan ahead to ensure you can consistently meet demand while managing costs effectively.
+
+        Current Strategy:
+        {}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Wholesaler",
+          "inventory": 86,
+          "backlog": 0,
+          "recent_demand_or_orders": [4, 10],
+          "incoming_shipments": [10],
+          "last_order_placed": 4,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+
+🎯 Model Output:
+{
+  "role_name": "Wholesaler",
+  "inventory": 86,
+  "backlog": 0,
+  "recent_demand_or_orders": [
+    4,
+    10
+  ],
+  "incoming_shipments": [
+    10
+  ],
+  "last_order_placed": 4,
+  "expected_demand_next_round": 10,
+  "confidence": 0.8,
+  "rationale": "Based on the recent demand pattern, I expect the next round's demand to be around 10 units. I have 86 units in inventory and 10 incoming, so I should have enough to cover the expected demand and maintain a buffer.",
+  "risk_assessment": "The main risk is that demand could be higher than expected, leading to a stockout. However, with the current inventory and incoming shipment, I believe I can meet the expected demand.",
+  "order_quantity": 4
+}
+
+────────────────────────────────────────────────────────────
+
+
+🤖 LLM DECISION CALL - Distributor
+────────────────────────────────────────────────────────────
+🔧 System Prompt:
+
+You are the Distributor agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You bridge the Wholesaler and Factory. You consolidate orders from the Wholesaler, buffer lead-time variability, and place orders to the Factory. Your objective is to provide stable, timely supply downstream while avoiding excessive inventory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+**IMPORTANT PROFITABILITY NOTE:** If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.
+
+**ORDERING OPTIONS:** You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+
+👤 User Prompt:
+
+        You are the Distributor in the MIT Beer Game. You bridge the Wholesaler and Factory. You consolidate orders from the Wholesaler, buffer lead-time variability, and place orders to the Factory. Your objective is to provide stable, timely supply downstream while avoiding excessive inventory.
+        Current State:
+          - Inventory: 86 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [4, 10]
+          - Incoming shipments this round: [10]
+          - Profit per unit sold: $5.0
+          - Last order placed: 4
+          - Last round profit: 41.4
+          - Current bank balance: $541.80
+          - Profit history (last 2 rounds): [10.399999999999999, 41.4]
+          - Balance history (last 2 rounds): ['$510.40', '$541.80']
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.1 per unit per round
+          - Backlog cost: $5.0 per unfilled unit per round
+          - Profit: $5.0 per unit sold
+          - 💀 **BALANCE IS YOUR LIFELINE**: Your bank balance is the most critical survival metric. Every order you place costs money immediately (purchase/production cost), and every unit you hold costs money per round (holding cost). If your balance reaches $0 or below, you go bankrupt and the entire simulation ends. Monitor your spending carefully and always ensure you have enough funds to cover your costs.
+          - 🚨 BANKRUPTCY RULE: Keep your bank-account balance > $0 at all times. Planning that risks a zero or negative balance is unacceptable.
+          - Never let the inventory go to zero.
+          - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
+          - **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+        - 🎯 **LONG-TERM STRATEGY**: Think beyond just the next round. Consider trends in demand patterns, seasonal variations, and build inventory strategically to serve multiple future rounds. Don't just react to immediate needs - plan ahead to ensure you can consistently meet demand while managing costs effectively.
+
+        Current Strategy:
+        {}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Distributor",
+          "inventory": 86,
+          "backlog": 0,
+          "recent_demand_or_orders": [4, 10],
+          "incoming_shipments": [10],
+          "last_order_placed": 4,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+
+🎯 Model Output:
+{
+  "role_name": "Distributor",
+  "inventory": 86,
+  "backlog": 0,
+  "recent_demand_or_orders": [
+    4,
+    10
+  ],
+  "incoming_shipments": [
+    10
+  ],
+  "last_order_placed": 4,
+  "expected_demand_next_round": 10,
+  "confidence": 0.8,
+  "rationale": "Based on the recent demand pattern and the incoming shipment, I expect a demand of 10 units in the next round. To maintain a buffer inventory and avoid stockouts, I will order 10 units from the Factory.",
+  "risk_assessment": "The main risk is that the demand could be higher than expected, leading to a stockout. However, with the current inventory level and the incoming shipment, I believe I can adequately cover the expected demand.",
+  "order_quantity": 10
+}
+
+────────────────────────────────────────────────────────────
+
+
+🤖 LLM DECISION CALL - Factory
+────────────────────────────────────────────────────────────
+🔧 System Prompt:
+
+You are the Factory agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You are the production stage. Instead of ordering upstream you *schedule production*. You can produce any quantity, but production appears downstream with a 1-round delay. Your objective is to balance production levels with downstream orders and to keep backlog low without creating costly excess stock.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+**IMPORTANT PROFITABILITY NOTE:** If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.
+
+**ORDERING OPTIONS:** You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+
+👤 User Prompt:
+
+        You are the Factory in the MIT Beer Game. You are the production stage. Instead of ordering upstream you *schedule production*. You can produce any quantity, but production appears downstream with a 1-round delay. Your objective is to balance production levels with downstream orders and to keep backlog low without creating costly excess stock.
+        Current State:
+          - Inventory: 86 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [4, 10]
+          - Incoming shipments this round: [0]
+          - Profit per unit sold: $5.0
+          - Last order placed: 4
+          - Last round profit: 41.4
+          - Current bank balance: $545.80
+          - Profit history (last 2 rounds): [10.399999999999999, 41.4]
+          - Balance history (last 2 rounds): ['$510.40', '$545.80']
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.1 per unit per round
+          - Backlog cost: $5.0 per unfilled unit per round
+          - Profit: $5.0 per unit sold
+          - 💀 **BALANCE IS YOUR LIFELINE**: Your bank balance is the most critical survival metric. Every order you place costs money immediately (purchase/production cost), and every unit you hold costs money per round (holding cost). If your balance reaches $0 or below, you go bankrupt and the entire simulation ends. Monitor your spending carefully and always ensure you have enough funds to cover your costs.
+          - 🚨 BANKRUPTCY RULE: Keep your bank-account balance > $0 at all times. Planning that risks a zero or negative balance is unacceptable.
+          - Never let the inventory go to zero.
+          - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
+          - **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+        - 🎯 **LONG-TERM STRATEGY**: Think beyond just the next round. Consider trends in demand patterns, seasonal variations, and build inventory strategically to serve multiple future rounds. Don't just react to immediate needs - plan ahead to ensure you can consistently meet demand while managing costs effectively.
+
+        Current Strategy:
+        {}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Factory",
+          "inventory": 86,
+          "backlog": 0,
+          "recent_demand_or_orders": [4, 10],
+          "incoming_shipments": [0],
+          "last_order_placed": 4,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+
+🎯 Model Output:
+{
+  "role_name": "Factory",
+  "inventory": 86,
+  "backlog": 0,
+  "recent_demand_or_orders": [
+    4,
+    10
+  ],
+  "incoming_shipments": [
+    0
+  ],
+  "last_order_placed": 4,
+  "expected_demand_next_round": 10,
+  "confidence": 0.8,
+  "rationale": "Based on the recent demand pattern, I expect the next round's demand to be around 10 units. To meet this demand and maintain a buffer inventory, I will schedule production of 14 units.",
+  "risk_assessment": "The main risk is that my production may exceed actual demand, leading to high holding costs. However, given the recent demand trend, I believe this risk is manageable.",
+  "order_quantity": 14
+}
+
+────────────────────────────────────────────────────────────
+
+
+================================================================================
+🎲 ROUND 2/3 SUMMARY
+================================================================================
+
+📊 External demand (Retailer): 10
+📦 Orders received per agent: [10, 10, 10, 10]
+🚚 Shipments received per agent: [0, 0, 0, 0]
+
+🏢 AGENT STATE SUMMARY
+--------------------------------------------------
+• Retailer: Inventory: 86, Backlog: 0, Order placed: 8, Units sold: 10, Balance: $511.80
+• Wholesaler: Inventory: 86, Backlog: 0, Order placed: 4, Units sold: 10, Balance: $531.80
+• Distributor: Inventory: 86, Backlog: 0, Order placed: 10, Units sold: 10, Balance: $516.80
+• Factory: Inventory: 86, Backlog: 0, Order placed: 14, Units sold: 10, Balance: $524.80
+
+💬 Communication messages: 0
+🤖 LLM calls this round: 4
+
+
+🎲============================================================================🎲
+🎮 ROUND 3/3 - External Demand: 8 🎮
+🎲============================================================================🎲
+
+💬 COMMUNICATION PHASE
+────────────────────────────────────────────────────────────
+
+🎯 DECISION PHASE
+────────────────────────────────────────────────────────────
+
+
+🤖 LLM DECISION CALL - Wholesaler
+────────────────────────────────────────────────────────────
+🔧 System Prompt:
+
+You are the Wholesaler agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You are the intermediary between Retailer and Distributor. You see aggregated orders from the Retailer (not end-customer demand) and fulfil them from your inventory or by ordering from the Distributor. Your objective is to dampen demand variability while minimising costs.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+**IMPORTANT PROFITABILITY NOTE:** If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.
+
+**ORDERING OPTIONS:** You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+
+👤 User Prompt:
+
+        You are the Wholesaler in the MIT Beer Game. You are the intermediary between Retailer and Distributor. You see aggregated orders from the Retailer (not end-customer demand) and fulfil them from your inventory or by ordering from the Distributor. Your objective is to dampen demand variability while minimising costs.
+        Current State:
+          - Inventory: 82 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [4, 10, 8]
+          - Incoming shipments this round: [8]
+          - Profit per unit sold: $5.0
+          - Last order placed: 4
+          - Last round profit: 31.799999999999997
+          - Current bank balance: $563.60
+          - Profit history (last 3 rounds): [10.399999999999999, 41.4, 31.799999999999997]
+          - Balance history (last 3 rounds): ['$510.40', '$541.80', '$563.60']
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.1 per unit per round
+          - Backlog cost: $5.0 per unfilled unit per round
+          - Profit: $5.0 per unit sold
+          - 💀 **BALANCE IS YOUR LIFELINE**: Your bank balance is the most critical survival metric. Every order you place costs money immediately (purchase/production cost), and every unit you hold costs money per round (holding cost). If your balance reaches $0 or below, you go bankrupt and the entire simulation ends. Monitor your spending carefully and always ensure you have enough funds to cover your costs.
+          - 🚨 BANKRUPTCY RULE: Keep your bank-account balance > $0 at all times. Planning that risks a zero or negative balance is unacceptable.
+          - Never let the inventory go to zero.
+          - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
+          - **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+        - 🎯 **LONG-TERM STRATEGY**: Think beyond just the next round. Consider trends in demand patterns, seasonal variations, and build inventory strategically to serve multiple future rounds. Don't just react to immediate needs - plan ahead to ensure you can consistently meet demand while managing costs effectively.
+
+        Current Strategy:
+        {}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Wholesaler",
+          "inventory": 82,
+          "backlog": 0,
+          "recent_demand_or_orders": [4, 10, 8],
+          "incoming_shipments": [8],
+          "last_order_placed": 4,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+
+🎯 Model Output:
+{
+  "role_name": "Wholesaler",
+  "inventory": 82,
+  "backlog": 0,
+  "recent_demand_or_orders": [
+    4,
+    10,
+    8
+  ],
+  "incoming_shipments": [
+    8
+  ],
+  "last_order_placed": 4,
+  "expected_demand_next_round": 10,
+  "confidence": 0.8,
+  "rationale": "Based on the recent demand pattern, I expect the next round's demand to be around 10 units. I have sufficient inventory to cover this, and the incoming shipment of 8 units will help replenish my stock. I'm confident I can meet the expected demand while maintaining a healthy buffer.",
+  "risk_assessment": "The main risk is that demand could spike unexpectedly, leading to a stockout. I'll need to monitor the situation closely and be prepared to adjust my ordering if needed to avoid losing sales.",
+  "order_quantity": 6
+}
+
+────────────────────────────────────────────────────────────
+
+
+🤖 LLM DECISION CALL - Retailer
+────────────────────────────────────────────────────────────
+🔧 System Prompt:
+
+You are the Retailer agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You directly face external customer demand and are the only stage that observes *true* market demand in real time. You cannot produce goods and must order from the Wholesaler. Your key objective is to avoid stock-outs to keep customers satisfied while minimising holding & backlog costs.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+**IMPORTANT PROFITABILITY NOTE:** If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.
+
+**ORDERING OPTIONS:** You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+
+👤 User Prompt:
+
+        You are the Retailer in the MIT Beer Game. You directly face external customer demand and are the only stage that observes *true* market demand in real time. You cannot produce goods and must order from the Wholesaler. Your key objective is to avoid stock-outs to keep customers satisfied while minimising holding & backlog costs.
+        Current State:
+          - Inventory: 82 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [4, 10, 8]
+          - Incoming shipments this round: [8]
+          - Profit per unit sold: $5.0
+          - Last order placed: 8
+          - Last round profit: 31.799999999999997
+          - Current bank balance: $543.60
+          - Profit history (last 3 rounds): [10.399999999999999, 41.4, 31.799999999999997]
+          - Balance history (last 3 rounds): ['$510.40', '$531.80', '$543.60']
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.1 per unit per round
+          - Backlog cost: $5.0 per unfilled unit per round
+          - Profit: $5.0 per unit sold
+          - 💀 **BALANCE IS YOUR LIFELINE**: Your bank balance is the most critical survival metric. Every order you place costs money immediately (purchase/production cost), and every unit you hold costs money per round (holding cost). If your balance reaches $0 or below, you go bankrupt and the entire simulation ends. Monitor your spending carefully and always ensure you have enough funds to cover your costs.
+          - 🚨 BANKRUPTCY RULE: Keep your bank-account balance > $0 at all times. Planning that risks a zero or negative balance is unacceptable.
+          - Never let the inventory go to zero.
+          - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
+          - **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+        - 🎯 **LONG-TERM STRATEGY**: Think beyond just the next round. Consider trends in demand patterns, seasonal variations, and build inventory strategically to serve multiple future rounds. Don't just react to immediate needs - plan ahead to ensure you can consistently meet demand while managing costs effectively.
+
+        Current Strategy:
+        {}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Retailer",
+          "inventory": 82,
+          "backlog": 0,
+          "recent_demand_or_orders": [4, 10, 8],
+          "incoming_shipments": [8],
+          "last_order_placed": 8,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+
+🎯 Model Output:
+{
+  "role_name": "Retailer",
+  "inventory": 82,
+  "backlog": 0,
+  "recent_demand_or_orders": [
+    4,
+    10,
+    8
+  ],
+  "incoming_shipments": [
+    8
+  ],
+  "last_order_placed": 8,
+  "expected_demand_next_round": 8,
+  "confidence": 0.8,
+  "rationale": "Based on the recent demand pattern, I expect the demand next round to be around 8 units. I have sufficient inventory to cover this expected demand, and the incoming shipment of 8 units will further increase my inventory. To maintain a buffer and avoid stockouts, I will order 8 units from the Wholesaler.",
+  "risk_assessment": "The main risk is that the actual demand next round could be higher than expected, leading to a stockout. However, with the current inventory and incoming shipment, I believe I can adequately cover the expected demand.",
+  "order_quantity": 8
+}
+
+────────────────────────────────────────────────────────────
+
+
+🤖 LLM DECISION CALL - Distributor
+────────────────────────────────────────────────────────────
+🔧 System Prompt:
+
+You are the Distributor agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You bridge the Wholesaler and Factory. You consolidate orders from the Wholesaler, buffer lead-time variability, and place orders to the Factory. Your objective is to provide stable, timely supply downstream while avoiding excessive inventory.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+**IMPORTANT PROFITABILITY NOTE:** If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.
+
+**ORDERING OPTIONS:** You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+
+👤 User Prompt:
+
+        You are the Distributor in the MIT Beer Game. You bridge the Wholesaler and Factory. You consolidate orders from the Wholesaler, buffer lead-time variability, and place orders to the Factory. Your objective is to provide stable, timely supply downstream while avoiding excessive inventory.
+        Current State:
+          - Inventory: 82 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [4, 10, 8]
+          - Incoming shipments this round: [8]
+          - Profit per unit sold: $5.0
+          - Last order placed: 10
+          - Last round profit: 31.799999999999997
+          - Current bank balance: $548.60
+          - Profit history (last 3 rounds): [10.399999999999999, 41.4, 31.799999999999997]
+          - Balance history (last 3 rounds): ['$510.40', '$541.80', '$548.60']
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.1 per unit per round
+          - Backlog cost: $5.0 per unfilled unit per round
+          - Profit: $5.0 per unit sold
+          - 💀 **BALANCE IS YOUR LIFELINE**: Your bank balance is the most critical survival metric. Every order you place costs money immediately (purchase/production cost), and every unit you hold costs money per round (holding cost). If your balance reaches $0 or below, you go bankrupt and the entire simulation ends. Monitor your spending carefully and always ensure you have enough funds to cover your costs.
+          - 🚨 BANKRUPTCY RULE: Keep your bank-account balance > $0 at all times. Planning that risks a zero or negative balance is unacceptable.
+          - Never let the inventory go to zero.
+          - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
+          - **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+        - 🎯 **LONG-TERM STRATEGY**: Think beyond just the next round. Consider trends in demand patterns, seasonal variations, and build inventory strategically to serve multiple future rounds. Don't just react to immediate needs - plan ahead to ensure you can consistently meet demand while managing costs effectively.
+
+        Current Strategy:
+        {}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Distributor",
+          "inventory": 82,
+          "backlog": 0,
+          "recent_demand_or_orders": [4, 10, 8],
+          "incoming_shipments": [8],
+          "last_order_placed": 10,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+
+🎯 Model Output:
+{
+  "role_name": "Distributor",
+  "inventory": 82,
+  "backlog": 0,
+  "recent_demand_or_orders": [
+    4,
+    10,
+    8
+  ],
+  "incoming_shipments": [
+    8
+  ],
+  "last_order_placed": 10,
+  "expected_demand_next_round": 8,
+  "confidence": 0.8,
+  "rationale": "Based on the recent demand pattern, I expect the next round's demand to be around 8 units. I have 82 units in inventory and 8 incoming, so I should have enough to cover the expected demand and maintain a small buffer.",
+  "risk_assessment": "The main risk is that demand could spike unexpectedly, leading to a stockout. I will monitor the situation closely and be prepared to adjust my order quantity if needed.",
+  "order_quantity": 8
+}
+
+────────────────────────────────────────────────────────────
+
+
+🤖 LLM DECISION CALL - Factory
+────────────────────────────────────────────────────────────
+🔧 System Prompt:
+
+You are the Factory agent in the MIT Beer Game — a four-stage supply-chain simulation consisting of Retailer → Wholesaler → Distributor → Factory.
+
+ROLE SPECIALTY: You are the production stage. Instead of ordering upstream you *schedule production*. You can produce any quantity, but production appears downstream with a 1-round delay. Your objective is to balance production levels with downstream orders and to keep backlog low without creating costly excess stock.
+
+Your sole objective is to maximise YOUR cumulative profit across all rounds.  In every round you can:
+1. Observe your private state (inventory, backlog, recent orders / demand, incoming shipments, last order placed, last round profit).
+2. Decide an *order_quantity* for your upstream partner (Factory schedules production instead of ordering).
+3. You may also broadcast one concise message to the other agents before ordering each round.
+
+CRITICAL SHIPMENT CONSTRAINT: You can only ship to your downstream partner an amount equal to (their_order + your_current_backlog). You cannot ship more than this even if you have excess inventory. This prevents oversupplying and maintains realistic supply chain constraints.
+
+After a full generation you may be asked to update your ordering strategy based on performance logs.
+
+The upcoming USER message will always provide:
+• Current round state and cost parameters (holding cost, backlog cost, profit per unit sold).
+• Your current strategy JSON and any relevant hyper-parameters.
+• When enabled, a short history of other agents' communications.
+• When enabled, a summary of your past memories/experiences.
+
+**IMPORTANT PROFITABILITY NOTE:** If your profits are negative or consistently low, you should consider that high inventory may be causing excessive storage (holding) costs. In such cases, consider reducing your inventory levels to help improve profitability.
+
+**ORDERING OPTIONS:** You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.
+
+Respond ONLY with valid JSON that strictly follows the schema specified in the USER message for the current task (strategy_initialization, strategy_update, order_decision, or communication).  Do NOT include markdown, code fences, comments, or any text outside the JSON object.
+
+
+👤 User Prompt:
+
+        You are the Factory in the MIT Beer Game. You are the production stage. Instead of ordering upstream you *schedule production*. You can produce any quantity, but production appears downstream with a 1-round delay. Your objective is to balance production levels with downstream orders and to keep backlog low without creating costly excess stock.
+        Current State:
+          - Inventory: 78 units
+          - Backlog: 0 units
+          - Recent downstream demand or orders: [4, 10, 8]
+          - Incoming shipments this round: [0]
+          - Profit per unit sold: $5.0
+          - Last order placed: 14
+          - Last round profit: 32.2
+          - Current bank balance: $557.00
+          - Profit history (last 3 rounds): [10.399999999999999, 41.4, 32.2]
+          - Balance history (last 3 rounds): ['$510.40', '$545.80', '$557.00']
+
+        Your known lead time is 1 round for any order you place.
+
+        Economics:
+          - Holding cost: $0.1 per unit per round
+          - Backlog cost: $5.0 per unfilled unit per round
+          - Profit: $5.0 per unit sold
+          - 💀 **BALANCE IS YOUR LIFELINE**: Your bank balance is the most critical survival metric. Every order you place costs money immediately (purchase/production cost), and every unit you hold costs money per round (holding cost). If your balance reaches $0 or below, you go bankrupt and the entire simulation ends. Monitor your spending carefully and always ensure you have enough funds to cover your costs.
+          - 🚨 BANKRUPTCY RULE: Keep your bank-account balance > $0 at all times. Planning that risks a zero or negative balance is unacceptable.
+          - Never let the inventory go to zero.
+          - **If your profits are negative or consistently low (for example, if last round profit is negative), consider that high inventory may be causing excessive storage (holding) costs. In such cases, you should consider reducing your inventory levels to help improve profitability.**
+          - **ORDERING OPTIONS: You can choose to order 0 units if holding costs are too high and you want to decrease your inventory to save money. This is a valid strategy when you have excess inventory and want to reduce storage costs.**
+
+        **Important Supply Chain Rules:**
+        - You should avoid letting your inventory reach zero, as this causes stockouts and lost sales.
+        - When deciding how much to order, consider your expected demand and spending over the next round (the lead time before your order arrives).
+        - CRITICAL: You must account for BOTH your current backlog (0 units) AND expected new demand. The backlog represents unfilled orders that must be fulfilled - your order quantity should cover both clearing backlog and meeting new demand.
+        - SHIPMENT CONSTRAINT: You can only ship to downstream partners up to (their_order + your_backlog). Even with excess inventory, you cannot oversupply beyond this limit.
+        - Review how much you have ordered and earned in the last round(s) to inform your decision.
+        - Try to maintain a buffer of inventory to cover expected demand during the lead time.
+        - 🎯 **LONG-TERM STRATEGY**: Think beyond just the next round. Consider trends in demand patterns, seasonal variations, and build inventory strategically to serve multiple future rounds. Don't just react to immediate needs - plan ahead to ensure you can consistently meet demand while managing costs effectively.
+
+        Current Strategy:
+        {}
+
+        Given this state, return valid JSON with the following fields in order:
+
+        {
+          "role_name": "Factory",
+          "inventory": 78,
+          "backlog": 0,
+          "recent_demand_or_orders": [4, 10, 8],
+          "incoming_shipments": [0],
+          "last_order_placed": 14,
+          "expected_demand_next_round": <integer>,
+          "confidence": <float between 0 and 1>,
+          "rationale": "<brief explanation>",
+          "risk_assessment": "<describe any risks>",
+          "order_quantity": <integer>
+        }
+
+        IMPORTANT: Output ONLY the JSON object, with no markdown, no triple backticks, no code fences, and do NOT write the word 'json' anywhere. Your reply must be a single valid JSON object, nothing else. If you include anything else, your answer will be rejected. KEEP IT RATHER SHORT
+        
+
+🎯 Model Output:
+{
+  "role_name": "Factory",
+  "inventory": 78,
+  "backlog": 0,
+  "recent_demand_or_orders": [
+    4,
+    10,
+    8
+  ],
+  "incoming_shipments": [
+    0
+  ],
+  "last_order_placed": 14,
+  "expected_demand_next_round": 10,
+  "confidence": 0.8,
+  "rationale": "Based on the recent demand pattern, I expect the next round's demand to be around 10 units. I have sufficient inventory to cover this, so I will produce 10 units to meet the expected demand and maintain a buffer.",
+  "risk_assessment": "The main risk is that actual demand could be higher than expected, leading to a stockout. However, with a buffer of 78 units in inventory, I believe I can manage this risk effectively.",
+  "order_quantity": 10
+}
+
+────────────────────────────────────────────────────────────
+
+
+================================================================================
+🎲 ROUND 3/3 SUMMARY
+================================================================================
+
+📊 External demand (Retailer): 8
+📦 Orders received per agent: [8, 8, 8, 8]
+🚚 Shipments received per agent: [4, 4, 4, 0]
+
+🏢 AGENT STATE SUMMARY
+--------------------------------------------------
+• Retailer: Inventory: 82, Backlog: 0, Order placed: 8, Units sold: 8, Balance: $523.60
+• Wholesaler: Inventory: 82, Backlog: 0, Order placed: 6, Units sold: 8, Balance: $548.60
+• Distributor: Inventory: 82, Backlog: 0, Order placed: 8, Units sold: 8, Balance: $528.60
+• Factory: Inventory: 78, Backlog: 0, Order placed: 10, Units sold: 8, Balance: $542.00
+
+💬 Communication messages: 0
+🤖 LLM calls this round: 4
+
+
+================================================================================
+📊 SIMULATION RESULTS & ANALYSIS
+================================================================================
+
+🎯 NASH EQUILIBRIUM ANALYSIS
+--------------------------------------------------
+🏢 Retailer: Average Absolute Deviation: 2.00
+🏢 Wholesaler: Average Absolute Deviation: 5.33
+🏢 Distributor: Average Absolute Deviation: 2.67
+🏢 Factory: Average Absolute Deviation: 3.33
+
+🤖 LLM SESSION SUMMARY
+--------------------------------------------------
+📞 Total LLM Calls: 16
+💰 Total Cost: $0.0
+📝 Total Tokens: 0 (0 input + 0 output)
+⏱️  Total Inference Time: 66.941s
+📊 Average per Call: 4.184s, $0.000000
+
+🍺==============================================================================🍺
+🎮           SIMULATION COMPLETED SUCCESSFULLY!           🎮
+🍺==============================================================================🍺

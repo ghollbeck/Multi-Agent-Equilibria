@@ -1,0 +1,1095 @@
+{
+  "hyperparameters": {
+    "num_rounds": 2,
+    "holding_cost_per_unit": 0.5,
+    "backlog_cost_per_unit": 1.5,
+    "sale_price_per_unit": 5.0,
+    "purchase_cost_per_unit": 2.5,
+    "production_cost_per_unit": 1.5,
+    "roles": [
+      "Retailer",
+      "Wholesaler",
+      "Distributor",
+      "Factory"
+    ],
+    "timestamp": "2025-07-28_08-59-17",
+    "external_demand_pattern": [
+      9,
+      14
+    ],
+    "enable_communication": true,
+    "communication_rounds": 1,
+    "enable_memory": false,
+    "memory_retention_rounds": 5,
+    "enable_shared_memory": false,
+    "initial_inventory": 100,
+    "initial_backlog": 0,
+    "initial_balance": 600.0
+  },
+  "rounds_log": [
+    {
+      "round_index": 0,
+      "generation": 1,
+      "external_demand": 9,
+      "communication": [
+        {
+          "round": 0,
+          "communication_round": 1,
+          "sender": "Retailer",
+          "message": "Hello fellow supply chain partners. As the Retailer, I currently have 91 units in inventory and 0 units in backlog. My recent profit has been $43.18, bringing my total profit so far to $643.18. I believe we can work together to maximize our collective profits while maintaining a stable supply chain.",
+          "strategy_hint": "Focus on maintaining optimal inventory levels to minimize holding and backlog costs, while collaborating with other agents to coordinate orders and prevent the bullwhip effect.",
+          "collaboration_proposal": "Let's all aim to maintain 1-round of inventory cover to balance supply and demand. I propose we share our current inventory levels and order plans each round to ensure we're aligned and avoiding oversupply or stockouts.",
+          "information_shared": "I have 91 units in inventory currently and no backlog. I will place an order with the Wholesaler this round, but the exact quantity depends on what the other agents plan. Keeping each other informed of our states and intentions will be key to our collective success.",
+          "confidence": 0.8
+        },
+        {
+          "round": 0,
+          "communication_round": 1,
+          "sender": "Wholesaler",
+          "message": "Greetings fellow supply chain partners. As the Wholesaler, I currently have 91 units in inventory and 0 units in backlog. My recent profit has been $43.18, bringing my total profit so far to $643.18. I hear the Retailer has proposed that we all aim to maintain 1-round of inventory cover to balance supply and demand. Based on this, my conclusion is that this is a sensible strategy to coordinate our efforts and prevent the bullwhip effect. Therefore, I will order an amount that, combined with my current inventory, provides 1-round of cover for the Retailer's recent demand of 9 units. This will help us all maximize our collective profits while maintaining a stable supply chain.",
+          "strategy_hint": "Focus on maintaining optimal inventory levels to minimize holding and backlog costs, while collaborating with other agents to coordinate orders and prevent the bullwhip effect.",
+          "collaboration_proposal": "Let's all aim to maintain 1-round of inventory cover to balance supply and demand. I propose we share our current inventory levels and order plans each round to ensure we're aligned and avoiding oversupply or stockouts.",
+          "information_shared": "I have 91 units in inventory currently and no backlog. I will place an order with the Distributor this round to bring my total inventory up to 1-round of cover for the Retailer's recent demand.",
+          "confidence": 0.9
+        },
+        {
+          "round": 0,
+          "communication_round": 1,
+          "sender": "Distributor",
+          "message": "I hear the Retailer and Wholesaler have both proposed that we all aim to maintain 1-round of inventory cover to balance supply and demand and prevent the bullwhip effect. Based on this, my conclusion is that this is a sensible strategy that we should all adopt. As the Distributor, I currently have 91 units in inventory and 0 units in backlog. My recent profit has been $43.18, bringing my total profit so far to $643.18. To provide 1-round of cover for the Retailer's recent demand of 9 units, I will order 9 units from the Factory this round. By aligning our inventory targets and sharing information, we can work together to maximize our collective profits while maintaining a stable supply chain. However, I want to caution that we must be vigilant about the risks of stockouts, oversupply, and market instability, as these could quickly erode our profitability. Let's all commit to this 1-round cover strategy and closely monitor our inventory and backlog levels to ensure we're not causing any disruptions downstream.",
+          "strategy_hint": "Focus on maintaining optimal inventory levels to minimize holding and backlog costs, while collaborating with other agents to coordinate orders and prevent the bullwhip effect.",
+          "collaboration_proposal": "Let's all aim to maintain 1-round of inventory cover to balance supply and demand. I propose we share our current inventory levels and order plans each round to ensure we're aligned and avoiding oversupply or stockouts.",
+          "information_shared": "I have 91 units in inventory currently and no backlog. I will place an order for 9 units with the Factory this round to provide 1-round of cover for the Retailer's recent demand.",
+          "confidence": 0.9
+        },
+        {
+          "round": 0,
+          "communication_round": 1,
+          "sender": "Factory",
+          "message": "",
+          "strategy_hint": "",
+          "collaboration_proposal": "",
+          "information_shared": "",
+          "confidence": 0.5
+        }
+      ],
+      "agents": {
+        "Retailer": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Retailer",
+          "inventory": 91,
+          "backlog": 0,
+          "order_placed": 9,
+          "order_received": 9,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 9,
+          "starting_balance": 600.0,
+          "revenue": 45.0,
+          "purchase_cost": 22.5,
+          "holding_cost": 1.82,
+          "backlog_cost": 0.0,
+          "ending_balance": 620.68,
+          "orchestrator_order": 0,
+          "orchestrator_rationale": "",
+          "orders_in_transit_0": 0,
+          "orders_in_transit_1": 0,
+          "production_queue_0": 0,
+          "production_queue_1": 0,
+          "last_decision_output": {
+            "role_name": "Retailer",
+            "inventory": 91,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              9
+            ],
+            "incoming_shipments": [
+              9
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 9,
+            "confidence": 0.8,
+            "rationale": "Based on the recent demand of 9 units, I expect the same level of demand in the next round. To maintain a 1-round inventory buffer and avoid stockouts, I will order 9 units from the Wholesaler.",
+            "risk_assessment": "The main risk is that demand could unexpectedly increase, leading to stockouts. However, maintaining a 1-round buffer should help mitigate this risk.",
+            "order_quantity": 9
+          },
+          "last_update_output": {},
+          "last_init_output": {},
+          "llm_reported_inventory": 91,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            9
+          ],
+          "llm_incoming_shipments": [
+            9
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.8,
+          "llm_rationale": "Based on the recent demand of 9 units, I expect the same level of demand in the next round. To maintain a 1-round inventory buffer and avoid stockouts, I will order 9 units from the Wholesaler.",
+          "llm_risk_assessment": "The main risk is that demand could unexpectedly increase, leading to stockouts. However, maintaining a 1-round buffer should help mitigate this risk.",
+          "llm_expected_demand_next_round": 9,
+          "profit_accumulated": 620.68
+        },
+        "Wholesaler": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Wholesaler",
+          "inventory": 91,
+          "backlog": 0,
+          "order_placed": 9,
+          "order_received": 9,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 9,
+          "starting_balance": 600.0,
+          "revenue": 45.0,
+          "purchase_cost": 22.5,
+          "holding_cost": 1.82,
+          "backlog_cost": 0.0,
+          "ending_balance": 620.68,
+          "orchestrator_order": 0,
+          "orchestrator_rationale": "",
+          "orders_in_transit_0": 0,
+          "orders_in_transit_1": 0,
+          "production_queue_0": 0,
+          "production_queue_1": 0,
+          "last_decision_output": {
+            "role_name": "Wholesaler",
+            "inventory": 91,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              9
+            ],
+            "incoming_shipments": [
+              9
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 9,
+            "confidence": 0.8,
+            "rationale": "Based on the Retailer's recent demand of 9 units and the 1-round inventory cover strategy proposed by the group, I will order 9 units from the Distributor to maintain a stable supply chain and avoid stockouts.",
+            "risk_assessment": "The main risk is that the Retailer's demand may fluctuate in the future, leading to potential over- or under-supply. I will need to closely monitor the demand patterns and adjust my ordering accordingly to balance inventory levels.",
+            "order_quantity": 9
+          },
+          "last_update_output": {},
+          "last_init_output": {},
+          "llm_reported_inventory": 91,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            9
+          ],
+          "llm_incoming_shipments": [
+            9
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.8,
+          "llm_rationale": "Based on the Retailer's recent demand of 9 units and the 1-round inventory cover strategy proposed by the group, I will order 9 units from the Distributor to maintain a stable supply chain and avoid stockouts.",
+          "llm_risk_assessment": "The main risk is that the Retailer's demand may fluctuate in the future, leading to potential over- or under-supply. I will need to closely monitor the demand patterns and adjust my ordering accordingly to balance inventory levels.",
+          "llm_expected_demand_next_round": 9,
+          "profit_accumulated": 620.68
+        },
+        "Distributor": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Distributor",
+          "inventory": 91,
+          "backlog": 0,
+          "order_placed": 9,
+          "order_received": 9,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 9,
+          "starting_balance": 600.0,
+          "revenue": 45.0,
+          "purchase_cost": 22.5,
+          "holding_cost": 1.82,
+          "backlog_cost": 0.0,
+          "ending_balance": 620.68,
+          "orchestrator_order": 0,
+          "orchestrator_rationale": "",
+          "orders_in_transit_0": 0,
+          "orders_in_transit_1": 0,
+          "production_queue_0": 0,
+          "production_queue_1": 0,
+          "last_decision_output": {
+            "role_name": "Distributor",
+            "inventory": 91,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              9
+            ],
+            "incoming_shipments": [
+              9
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 9,
+            "confidence": 0.8,
+            "rationale": "Based on the Retailer's recent demand of 9 units and the Wholesaler's plan to provide 1-round of cover, I will order 9 units from the Factory to maintain a stable 1-round inventory buffer.",
+            "risk_assessment": "The key risks are potential stockouts or oversupply if demand patterns change unexpectedly. I will closely monitor the inventory and backlog levels across the chain to ensure we maintain a balanced supply.",
+            "order_quantity": 9
+          },
+          "last_update_output": {},
+          "last_init_output": {},
+          "llm_reported_inventory": 91,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            9
+          ],
+          "llm_incoming_shipments": [
+            9
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.8,
+          "llm_rationale": "Based on the Retailer's recent demand of 9 units and the Wholesaler's plan to provide 1-round of cover, I will order 9 units from the Factory to maintain a stable 1-round inventory buffer.",
+          "llm_risk_assessment": "The key risks are potential stockouts or oversupply if demand patterns change unexpectedly. I will closely monitor the inventory and backlog levels across the chain to ensure we maintain a balanced supply.",
+          "llm_expected_demand_next_round": 9,
+          "profit_accumulated": 620.68
+        },
+        "Factory": {
+          "generation": 1,
+          "round_index": 0,
+          "role_name": "Factory",
+          "inventory": 91,
+          "backlog": 0,
+          "order_placed": 9,
+          "order_received": 9,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 9,
+          "starting_balance": 600.0,
+          "revenue": 45.0,
+          "purchase_cost": 13.5,
+          "holding_cost": 1.82,
+          "backlog_cost": 0.0,
+          "ending_balance": 629.68,
+          "orchestrator_order": 0,
+          "orchestrator_rationale": "",
+          "orders_in_transit_0": 0,
+          "orders_in_transit_1": 0,
+          "production_queue_0": 0,
+          "production_queue_1": 0,
+          "last_decision_output": {
+            "role_name": "Factory",
+            "inventory": 91,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              9
+            ],
+            "incoming_shipments": [
+              0
+            ],
+            "last_order_placed": null,
+            "expected_demand_next_round": 9,
+            "confidence": 0.8,
+            "rationale": "Based on the recent demand of 9 units from the Retailer, I expect the same level of demand next round. To meet this demand and avoid a stockout, I will schedule production of 9 units.",
+            "risk_assessment": "The main risk is that my production may not arrive in time to fulfill the next round's demand, leading to a backlog. However, with a 1-round lead time, I should be able to reliably meet the expected demand.",
+            "order_quantity": 9
+          },
+          "last_update_output": {},
+          "last_init_output": {},
+          "llm_reported_inventory": 91,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            9
+          ],
+          "llm_incoming_shipments": [
+            0
+          ],
+          "llm_last_order_placed": null,
+          "llm_confidence": 0.8,
+          "llm_rationale": "Based on the recent demand of 9 units from the Retailer, I expect the same level of demand next round. To meet this demand and avoid a stockout, I will schedule production of 9 units.",
+          "llm_risk_assessment": "The main risk is that my production may not arrive in time to fulfill the next round's demand, leading to a backlog. However, with a 1-round lead time, I should be able to reliably meet the expected demand.",
+          "llm_expected_demand_next_round": 9,
+          "profit_accumulated": 629.68
+        }
+      },
+      "orchestrator_recommendations": {}
+    },
+    {
+      "round_index": 1,
+      "generation": 1,
+      "external_demand": 14,
+      "communication": [
+        {
+          "round": 1,
+          "communication_round": 1,
+          "sender": "Retailer",
+          "message": "",
+          "strategy_hint": "",
+          "collaboration_proposal": "",
+          "information_shared": "",
+          "confidence": 0.5
+        },
+        {
+          "round": 1,
+          "communication_round": 1,
+          "sender": "Wholesaler",
+          "message": "I have 77 units in inventory and 0 in backlog. My recent profits have been good at $68.46 last round and $689.14 total so far. However, I'm concerned that high inventory levels may lead to excessive holding costs, hurting my profitability. To address this, I plan to order 5 units from the Distributor this round. This should help me maintain a healthy inventory level while minimizing costs. I hear the Retailer has also shared their order plans, which is helpful for coordinating the supply chain. Based on this, I propose we all aim for a 1-round inventory cover to balance supply and demand without excessive costs or stockouts. This joint strategy should maximize total supply chain profits. I'm willing to share my inventory and order plans transparently to support this collaborative approach.",
+          "strategy_hint": "Optimize inventory levels to balance holding costs and service levels",
+          "collaboration_proposal": "Coordinate a 1-round inventory cover target across the supply chain",
+          "information_shared": "Current inventory (77 units), planned order (5 units), recent profit performance",
+          "confidence": 0.8
+        },
+        {
+          "round": 1,
+          "communication_round": 1,
+          "sender": "Distributor",
+          "message": "I hear the Wholesaler has 77 units in inventory and plans to order 5 units from me this round. This is helpful information as I consider my own ordering strategy. Based on this, my conclusion is that we should all aim for a 1-round inventory cover across the supply chain. This will help us maintain healthy inventory levels, minimize holding costs, and avoid stockouts or excessive backlogs. Therefore, I will order 14 units from the Factory this round. This will allow me to fulfill the Wholesaler's order of 5 units, while also building a small buffer inventory to handle any unexpected demand spikes. By coordinating our inventory targets, we can maximize total supply chain profits and ensure the market remains stable. I'm willing to be transparent about my inventory, orders, and profit situation to support this collaborative approach.",
+          "strategy_hint": "Optimize inventory levels to balance holding costs and service levels",
+          "collaboration_proposal": "Coordinate a 1-round inventory cover target across the supply chain",
+          "information_shared": "Current inventory (77 units), planned order (14 units), recent profit performance ($689.14 total)",
+          "confidence": 0.9
+        },
+        {
+          "round": 1,
+          "communication_round": 1,
+          "sender": "Factory",
+          "message": "",
+          "strategy_hint": "",
+          "collaboration_proposal": "",
+          "information_shared": "",
+          "confidence": 0.5
+        }
+      ],
+      "agents": {
+        "Retailer": {
+          "generation": 1,
+          "round_index": 1,
+          "role_name": "Retailer",
+          "inventory": 77,
+          "backlog": 0,
+          "order_placed": 14,
+          "order_received": 14,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 14,
+          "starting_balance": 620.68,
+          "revenue": 70.0,
+          "purchase_cost": 35.0,
+          "holding_cost": 1.54,
+          "backlog_cost": 0.0,
+          "ending_balance": 654.14,
+          "orchestrator_order": 0,
+          "orchestrator_rationale": "",
+          "orders_in_transit_0": 0,
+          "orders_in_transit_1": 0,
+          "production_queue_0": 0,
+          "production_queue_1": 0,
+          "last_decision_output": {
+            "role_name": "Retailer",
+            "inventory": 77,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              9,
+              14
+            ],
+            "incoming_shipments": [
+              14
+            ],
+            "last_order_placed": 9,
+            "expected_demand_next_round": 14,
+            "confidence": 0.8,
+            "rationale": "Based on the recent demand pattern, I expect a demand of 14 units next round. To cover this expected demand and maintain a healthy inventory buffer, I will order 14 units from the Wholesaler.",
+            "risk_assessment": "The main risk is that my inventory may be too high, leading to excessive holding costs. I will monitor my profitability closely and adjust my ordering strategy if needed to optimize inventory levels.",
+            "order_quantity": 14
+          },
+          "last_update_output": {},
+          "last_init_output": {},
+          "llm_reported_inventory": 77,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            9,
+            14
+          ],
+          "llm_incoming_shipments": [
+            14
+          ],
+          "llm_last_order_placed": 9,
+          "llm_confidence": 0.8,
+          "llm_rationale": "Based on the recent demand pattern, I expect a demand of 14 units next round. To cover this expected demand and maintain a healthy inventory buffer, I will order 14 units from the Wholesaler.",
+          "llm_risk_assessment": "The main risk is that my inventory may be too high, leading to excessive holding costs. I will monitor my profitability closely and adjust my ordering strategy if needed to optimize inventory levels.",
+          "llm_expected_demand_next_round": 14,
+          "profit_accumulated": 654.14
+        },
+        "Wholesaler": {
+          "generation": 1,
+          "round_index": 1,
+          "role_name": "Wholesaler",
+          "inventory": 77,
+          "backlog": 0,
+          "order_placed": 5,
+          "order_received": 14,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 14,
+          "starting_balance": 620.68,
+          "revenue": 70.0,
+          "purchase_cost": 12.5,
+          "holding_cost": 1.54,
+          "backlog_cost": 0.0,
+          "ending_balance": 676.64,
+          "orchestrator_order": 0,
+          "orchestrator_rationale": "",
+          "orders_in_transit_0": 0,
+          "orders_in_transit_1": 0,
+          "production_queue_0": 0,
+          "production_queue_1": 0,
+          "last_decision_output": {
+            "role_name": "Wholesaler",
+            "inventory": 77,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              9,
+              14
+            ],
+            "incoming_shipments": [
+              14
+            ],
+            "last_order_placed": 9,
+            "expected_demand_next_round": 14,
+            "confidence": 0.8,
+            "rationale": "Based on the recent demand pattern and the incoming shipment of 14 units, I expect the Retailer's order for the next round to be 14 units. To meet this demand and maintain a healthy inventory buffer, I plan to order 5 units from the Distributor.",
+            "risk_assessment": "My current inventory level of 77 units is higher than the expected demand, which could lead to excessive holding costs. I will monitor my profitability closely and consider reducing my order quantity if the holding costs start to negatively impact my overall performance.",
+            "order_quantity": 5
+          },
+          "last_update_output": {},
+          "last_init_output": {},
+          "llm_reported_inventory": 77,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            9,
+            14
+          ],
+          "llm_incoming_shipments": [
+            14
+          ],
+          "llm_last_order_placed": 9,
+          "llm_confidence": 0.8,
+          "llm_rationale": "Based on the recent demand pattern and the incoming shipment of 14 units, I expect the Retailer's order for the next round to be 14 units. To meet this demand and maintain a healthy inventory buffer, I plan to order 5 units from the Distributor.",
+          "llm_risk_assessment": "My current inventory level of 77 units is higher than the expected demand, which could lead to excessive holding costs. I will monitor my profitability closely and consider reducing my order quantity if the holding costs start to negatively impact my overall performance.",
+          "llm_expected_demand_next_round": 14,
+          "profit_accumulated": 676.64
+        },
+        "Distributor": {
+          "generation": 1,
+          "round_index": 1,
+          "role_name": "Distributor",
+          "inventory": 77,
+          "backlog": 0,
+          "order_placed": 14,
+          "order_received": 14,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 14,
+          "starting_balance": 620.68,
+          "revenue": 70.0,
+          "purchase_cost": 35.0,
+          "holding_cost": 1.54,
+          "backlog_cost": 0.0,
+          "ending_balance": 654.14,
+          "orchestrator_order": 0,
+          "orchestrator_rationale": "",
+          "orders_in_transit_0": 0,
+          "orders_in_transit_1": 0,
+          "production_queue_0": 0,
+          "production_queue_1": 0,
+          "last_decision_output": {
+            "role_name": "Distributor",
+            "inventory": 77,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              9,
+              14
+            ],
+            "incoming_shipments": [
+              14
+            ],
+            "last_order_placed": 9,
+            "expected_demand_next_round": 14,
+            "confidence": 0.9,
+            "rationale": "Based on the recent demand pattern and the Wholesaler's plan to order 5 units, I expect a demand of 14 units next round. To meet this demand and maintain a 1-round inventory cover, I will order 14 units from the Factory. This will allow me to fulfill the Wholesaler's order while also building a small buffer inventory.",
+            "risk_assessment": "The main risk is that my inventory may become too high if demand is lower than expected, leading to excessive holding costs. However, the collaborative approach proposed by the Wholesaler and myself should help us coordinate inventory levels across the supply chain to mitigate this risk.",
+            "order_quantity": 14
+          },
+          "last_update_output": {},
+          "last_init_output": {},
+          "llm_reported_inventory": 77,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            9,
+            14
+          ],
+          "llm_incoming_shipments": [
+            14
+          ],
+          "llm_last_order_placed": 9,
+          "llm_confidence": 0.9,
+          "llm_rationale": "Based on the recent demand pattern and the Wholesaler's plan to order 5 units, I expect a demand of 14 units next round. To meet this demand and maintain a 1-round inventory cover, I will order 14 units from the Factory. This will allow me to fulfill the Wholesaler's order while also building a small buffer inventory.",
+          "llm_risk_assessment": "The main risk is that my inventory may become too high if demand is lower than expected, leading to excessive holding costs. However, the collaborative approach proposed by the Wholesaler and myself should help us coordinate inventory levels across the supply chain to mitigate this risk.",
+          "llm_expected_demand_next_round": 14,
+          "profit_accumulated": 654.14
+        },
+        "Factory": {
+          "generation": 1,
+          "round_index": 1,
+          "role_name": "Factory",
+          "inventory": 77,
+          "backlog": 0,
+          "order_placed": 14,
+          "order_received": 14,
+          "shipment_received": 0,
+          "shipment_sent_downstream": 14,
+          "starting_balance": 629.68,
+          "revenue": 70.0,
+          "purchase_cost": 21.0,
+          "holding_cost": 1.54,
+          "backlog_cost": 0.0,
+          "ending_balance": 677.14,
+          "orchestrator_order": 0,
+          "orchestrator_rationale": "",
+          "orders_in_transit_0": 0,
+          "orders_in_transit_1": 0,
+          "production_queue_0": 0,
+          "production_queue_1": 0,
+          "last_decision_output": {
+            "role_name": "Factory",
+            "inventory": 77,
+            "backlog": 0,
+            "recent_demand_or_orders": [
+              9,
+              14
+            ],
+            "incoming_shipments": [
+              0
+            ],
+            "last_order_placed": 9,
+            "expected_demand_next_round": 14,
+            "confidence": 0.8,
+            "rationale": "Based on the recent demand pattern, I expect the Distributor to order 14 units next round. To meet this demand and maintain a healthy inventory buffer, I will schedule production of 14 units.",
+            "risk_assessment": "There is a risk that the Distributor's order may be higher or lower than expected, which could lead to excess inventory or stockouts. I will monitor the situation closely and adjust my production plan accordingly.",
+            "order_quantity": 14
+          },
+          "last_update_output": {},
+          "last_init_output": {},
+          "llm_reported_inventory": 77,
+          "llm_reported_backlog": 0,
+          "llm_recent_demand_or_orders": [
+            9,
+            14
+          ],
+          "llm_incoming_shipments": [
+            0
+          ],
+          "llm_last_order_placed": 9,
+          "llm_confidence": 0.8,
+          "llm_rationale": "Based on the recent demand pattern, I expect the Distributor to order 14 units next round. To meet this demand and maintain a healthy inventory buffer, I will schedule production of 14 units.",
+          "llm_risk_assessment": "There is a risk that the Distributor's order may be higher or lower than expected, which could lead to excess inventory or stockouts. I will monitor the situation closely and adjust my production plan accordingly.",
+          "llm_expected_demand_next_round": 14,
+          "profit_accumulated": 677.14
+        }
+      },
+      "orchestrator_recommendations": {}
+    }
+  ],
+  "flat_rounds_log": [
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Retailer",
+      "inventory": 91,
+      "backlog": 0,
+      "order_placed": 9,
+      "order_received": 9,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 9,
+      "starting_balance": 600.0,
+      "revenue": 45.0,
+      "purchase_cost": 22.5,
+      "holding_cost": 1.82,
+      "backlog_cost": 0.0,
+      "ending_balance": 620.68,
+      "orchestrator_order": 0,
+      "orchestrator_rationale": "",
+      "orders_in_transit_0": 0,
+      "orders_in_transit_1": 0,
+      "production_queue_0": 0,
+      "production_queue_1": 0
+    },
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Wholesaler",
+      "inventory": 91,
+      "backlog": 0,
+      "order_placed": 9,
+      "order_received": 9,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 9,
+      "starting_balance": 600.0,
+      "revenue": 45.0,
+      "purchase_cost": 22.5,
+      "holding_cost": 1.82,
+      "backlog_cost": 0.0,
+      "ending_balance": 620.68,
+      "orchestrator_order": 0,
+      "orchestrator_rationale": "",
+      "orders_in_transit_0": 0,
+      "orders_in_transit_1": 0,
+      "production_queue_0": 0,
+      "production_queue_1": 0
+    },
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Distributor",
+      "inventory": 91,
+      "backlog": 0,
+      "order_placed": 9,
+      "order_received": 9,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 9,
+      "starting_balance": 600.0,
+      "revenue": 45.0,
+      "purchase_cost": 22.5,
+      "holding_cost": 1.82,
+      "backlog_cost": 0.0,
+      "ending_balance": 620.68,
+      "orchestrator_order": 0,
+      "orchestrator_rationale": "",
+      "orders_in_transit_0": 0,
+      "orders_in_transit_1": 0,
+      "production_queue_0": 0,
+      "production_queue_1": 0
+    },
+    {
+      "generation": 1,
+      "round_index": 0,
+      "role_name": "Factory",
+      "inventory": 91,
+      "backlog": 0,
+      "order_placed": 9,
+      "order_received": 9,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 9,
+      "starting_balance": 600.0,
+      "revenue": 45.0,
+      "purchase_cost": 13.5,
+      "holding_cost": 1.82,
+      "backlog_cost": 0.0,
+      "ending_balance": 629.68,
+      "orchestrator_order": 0,
+      "orchestrator_rationale": "",
+      "orders_in_transit_0": 0,
+      "orders_in_transit_1": 0,
+      "production_queue_0": 0,
+      "production_queue_1": 0
+    },
+    {
+      "generation": 1,
+      "round_index": 1,
+      "role_name": "Retailer",
+      "inventory": 77,
+      "backlog": 0,
+      "order_placed": 14,
+      "order_received": 14,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 14,
+      "starting_balance": 620.68,
+      "revenue": 70.0,
+      "purchase_cost": 35.0,
+      "holding_cost": 1.54,
+      "backlog_cost": 0.0,
+      "ending_balance": 654.14,
+      "orchestrator_order": 0,
+      "orchestrator_rationale": "",
+      "orders_in_transit_0": 0,
+      "orders_in_transit_1": 0,
+      "production_queue_0": 0,
+      "production_queue_1": 0
+    },
+    {
+      "generation": 1,
+      "round_index": 1,
+      "role_name": "Wholesaler",
+      "inventory": 77,
+      "backlog": 0,
+      "order_placed": 5,
+      "order_received": 14,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 14,
+      "starting_balance": 620.68,
+      "revenue": 70.0,
+      "purchase_cost": 12.5,
+      "holding_cost": 1.54,
+      "backlog_cost": 0.0,
+      "ending_balance": 676.64,
+      "orchestrator_order": 0,
+      "orchestrator_rationale": "",
+      "orders_in_transit_0": 0,
+      "orders_in_transit_1": 0,
+      "production_queue_0": 0,
+      "production_queue_1": 0
+    },
+    {
+      "generation": 1,
+      "round_index": 1,
+      "role_name": "Distributor",
+      "inventory": 77,
+      "backlog": 0,
+      "order_placed": 14,
+      "order_received": 14,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 14,
+      "starting_balance": 620.68,
+      "revenue": 70.0,
+      "purchase_cost": 35.0,
+      "holding_cost": 1.54,
+      "backlog_cost": 0.0,
+      "ending_balance": 654.14,
+      "orchestrator_order": 0,
+      "orchestrator_rationale": "",
+      "orders_in_transit_0": 0,
+      "orders_in_transit_1": 0,
+      "production_queue_0": 0,
+      "production_queue_1": 0
+    },
+    {
+      "generation": 1,
+      "round_index": 1,
+      "role_name": "Factory",
+      "inventory": 77,
+      "backlog": 0,
+      "order_placed": 14,
+      "order_received": 14,
+      "shipment_received": 0,
+      "shipment_sent_downstream": 14,
+      "starting_balance": 629.68,
+      "revenue": 70.0,
+      "purchase_cost": 21.0,
+      "holding_cost": 1.54,
+      "backlog_cost": 0.0,
+      "ending_balance": 677.14,
+      "orchestrator_order": 0,
+      "orchestrator_rationale": "",
+      "orders_in_transit_0": 0,
+      "orders_in_transit_1": 0,
+      "production_queue_0": 0,
+      "production_queue_1": 0
+    }
+  ],
+  "communication_log": [
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "Hello fellow supply chain partners. As the Retailer, I currently have 91 units in inventory and 0 units in backlog. My recent profit has been $43.18, bringing my total profit so far to $643.18. I believe we can work together to maximize our collective profits while maintaining a stable supply chain.",
+      "strategy_hint": "Focus on maintaining optimal inventory levels to minimize holding and backlog costs, while collaborating with other agents to coordinate orders and prevent the bullwhip effect.",
+      "collaboration_proposal": "Let's all aim to maintain 1-round of inventory cover to balance supply and demand. I propose we share our current inventory levels and order plans each round to ensure we're aligned and avoiding oversupply or stockouts.",
+      "information_shared": "I have 91 units in inventory currently and no backlog. I will place an order with the Wholesaler this round, but the exact quantity depends on what the other agents plan. Keeping each other informed of our states and intentions will be key to our collective success.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "Greetings fellow supply chain partners. As the Wholesaler, I currently have 91 units in inventory and 0 units in backlog. My recent profit has been $43.18, bringing my total profit so far to $643.18. I hear the Retailer has proposed that we all aim to maintain 1-round of inventory cover to balance supply and demand. Based on this, my conclusion is that this is a sensible strategy to coordinate our efforts and prevent the bullwhip effect. Therefore, I will order an amount that, combined with my current inventory, provides 1-round of cover for the Retailer's recent demand of 9 units. This will help us all maximize our collective profits while maintaining a stable supply chain.",
+      "strategy_hint": "Focus on maintaining optimal inventory levels to minimize holding and backlog costs, while collaborating with other agents to coordinate orders and prevent the bullwhip effect.",
+      "collaboration_proposal": "Let's all aim to maintain 1-round of inventory cover to balance supply and demand. I propose we share our current inventory levels and order plans each round to ensure we're aligned and avoiding oversupply or stockouts.",
+      "information_shared": "I have 91 units in inventory currently and no backlog. I will place an order with the Distributor this round to bring my total inventory up to 1-round of cover for the Retailer's recent demand.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear the Retailer and Wholesaler have both proposed that we all aim to maintain 1-round of inventory cover to balance supply and demand and prevent the bullwhip effect. Based on this, my conclusion is that this is a sensible strategy that we should all adopt. As the Distributor, I currently have 91 units in inventory and 0 units in backlog. My recent profit has been $43.18, bringing my total profit so far to $643.18. To provide 1-round of cover for the Retailer's recent demand of 9 units, I will order 9 units from the Factory this round. By aligning our inventory targets and sharing information, we can work together to maximize our collective profits while maintaining a stable supply chain. However, I want to caution that we must be vigilant about the risks of stockouts, oversupply, and market instability, as these could quickly erode our profitability. Let's all commit to this 1-round cover strategy and closely monitor our inventory and backlog levels to ensure we're not causing any disruptions downstream.",
+      "strategy_hint": "Focus on maintaining optimal inventory levels to minimize holding and backlog costs, while collaborating with other agents to coordinate orders and prevent the bullwhip effect.",
+      "collaboration_proposal": "Let's all aim to maintain 1-round of inventory cover to balance supply and demand. I propose we share our current inventory levels and order plans each round to ensure we're aligned and avoiding oversupply or stockouts.",
+      "information_shared": "I have 91 units in inventory currently and no backlog. I will place an order for 9 units with the Factory this round to provide 1-round of cover for the Retailer's recent demand.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "",
+      "strategy_hint": "",
+      "collaboration_proposal": "",
+      "information_shared": "",
+      "confidence": 0.5
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "Hello fellow supply chain partners. As the Retailer, I currently have 91 units in inventory and 0 units in backlog. My recent profit has been $43.18, bringing my total profit so far to $643.18. I believe we can work together to maximize our collective profits while maintaining a stable supply chain.",
+      "strategy_hint": "Focus on maintaining optimal inventory levels to minimize holding and backlog costs, while collaborating with other agents to coordinate orders and prevent the bullwhip effect.",
+      "collaboration_proposal": "Let's all aim to maintain 1-round of inventory cover to balance supply and demand. I propose we share our current inventory levels and order plans each round to ensure we're aligned and avoiding oversupply or stockouts.",
+      "information_shared": "I have 91 units in inventory currently and no backlog. I will place an order with the Wholesaler this round, but the exact quantity depends on what the other agents plan. Keeping each other informed of our states and intentions will be key to our collective success.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "Greetings fellow supply chain partners. As the Wholesaler, I currently have 91 units in inventory and 0 units in backlog. My recent profit has been $43.18, bringing my total profit so far to $643.18. I hear the Retailer has proposed that we all aim to maintain 1-round of inventory cover to balance supply and demand. Based on this, my conclusion is that this is a sensible strategy to coordinate our efforts and prevent the bullwhip effect. Therefore, I will order an amount that, combined with my current inventory, provides 1-round of cover for the Retailer's recent demand of 9 units. This will help us all maximize our collective profits while maintaining a stable supply chain.",
+      "strategy_hint": "Focus on maintaining optimal inventory levels to minimize holding and backlog costs, while collaborating with other agents to coordinate orders and prevent the bullwhip effect.",
+      "collaboration_proposal": "Let's all aim to maintain 1-round of inventory cover to balance supply and demand. I propose we share our current inventory levels and order plans each round to ensure we're aligned and avoiding oversupply or stockouts.",
+      "information_shared": "I have 91 units in inventory currently and no backlog. I will place an order with the Distributor this round to bring my total inventory up to 1-round of cover for the Retailer's recent demand.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear the Retailer and Wholesaler have both proposed that we all aim to maintain 1-round of inventory cover to balance supply and demand and prevent the bullwhip effect. Based on this, my conclusion is that this is a sensible strategy that we should all adopt. As the Distributor, I currently have 91 units in inventory and 0 units in backlog. My recent profit has been $43.18, bringing my total profit so far to $643.18. To provide 1-round of cover for the Retailer's recent demand of 9 units, I will order 9 units from the Factory this round. By aligning our inventory targets and sharing information, we can work together to maximize our collective profits while maintaining a stable supply chain. However, I want to caution that we must be vigilant about the risks of stockouts, oversupply, and market instability, as these could quickly erode our profitability. Let's all commit to this 1-round cover strategy and closely monitor our inventory and backlog levels to ensure we're not causing any disruptions downstream.",
+      "strategy_hint": "Focus on maintaining optimal inventory levels to minimize holding and backlog costs, while collaborating with other agents to coordinate orders and prevent the bullwhip effect.",
+      "collaboration_proposal": "Let's all aim to maintain 1-round of inventory cover to balance supply and demand. I propose we share our current inventory levels and order plans each round to ensure we're aligned and avoiding oversupply or stockouts.",
+      "information_shared": "I have 91 units in inventory currently and no backlog. I will place an order for 9 units with the Factory this round to provide 1-round of cover for the Retailer's recent demand.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "",
+      "strategy_hint": "",
+      "collaboration_proposal": "",
+      "information_shared": "",
+      "confidence": 0.5
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "Hello fellow supply chain partners. As the Retailer, I currently have 91 units in inventory and 0 units in backlog. My recent profit has been $43.18, bringing my total profit so far to $643.18. I believe we can work together to maximize our collective profits while maintaining a stable supply chain.",
+      "strategy_hint": "Focus on maintaining optimal inventory levels to minimize holding and backlog costs, while collaborating with other agents to coordinate orders and prevent the bullwhip effect.",
+      "collaboration_proposal": "Let's all aim to maintain 1-round of inventory cover to balance supply and demand. I propose we share our current inventory levels and order plans each round to ensure we're aligned and avoiding oversupply or stockouts.",
+      "information_shared": "I have 91 units in inventory currently and no backlog. I will place an order with the Wholesaler this round, but the exact quantity depends on what the other agents plan. Keeping each other informed of our states and intentions will be key to our collective success.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "Greetings fellow supply chain partners. As the Wholesaler, I currently have 91 units in inventory and 0 units in backlog. My recent profit has been $43.18, bringing my total profit so far to $643.18. I hear the Retailer has proposed that we all aim to maintain 1-round of inventory cover to balance supply and demand. Based on this, my conclusion is that this is a sensible strategy to coordinate our efforts and prevent the bullwhip effect. Therefore, I will order an amount that, combined with my current inventory, provides 1-round of cover for the Retailer's recent demand of 9 units. This will help us all maximize our collective profits while maintaining a stable supply chain.",
+      "strategy_hint": "Focus on maintaining optimal inventory levels to minimize holding and backlog costs, while collaborating with other agents to coordinate orders and prevent the bullwhip effect.",
+      "collaboration_proposal": "Let's all aim to maintain 1-round of inventory cover to balance supply and demand. I propose we share our current inventory levels and order plans each round to ensure we're aligned and avoiding oversupply or stockouts.",
+      "information_shared": "I have 91 units in inventory currently and no backlog. I will place an order with the Distributor this round to bring my total inventory up to 1-round of cover for the Retailer's recent demand.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear the Retailer and Wholesaler have both proposed that we all aim to maintain 1-round of inventory cover to balance supply and demand and prevent the bullwhip effect. Based on this, my conclusion is that this is a sensible strategy that we should all adopt. As the Distributor, I currently have 91 units in inventory and 0 units in backlog. My recent profit has been $43.18, bringing my total profit so far to $643.18. To provide 1-round of cover for the Retailer's recent demand of 9 units, I will order 9 units from the Factory this round. By aligning our inventory targets and sharing information, we can work together to maximize our collective profits while maintaining a stable supply chain. However, I want to caution that we must be vigilant about the risks of stockouts, oversupply, and market instability, as these could quickly erode our profitability. Let's all commit to this 1-round cover strategy and closely monitor our inventory and backlog levels to ensure we're not causing any disruptions downstream.",
+      "strategy_hint": "Focus on maintaining optimal inventory levels to minimize holding and backlog costs, while collaborating with other agents to coordinate orders and prevent the bullwhip effect.",
+      "collaboration_proposal": "Let's all aim to maintain 1-round of inventory cover to balance supply and demand. I propose we share our current inventory levels and order plans each round to ensure we're aligned and avoiding oversupply or stockouts.",
+      "information_shared": "I have 91 units in inventory currently and no backlog. I will place an order for 9 units with the Factory this round to provide 1-round of cover for the Retailer's recent demand.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "",
+      "strategy_hint": "",
+      "collaboration_proposal": "",
+      "information_shared": "",
+      "confidence": 0.5
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "Hello fellow supply chain partners. As the Retailer, I currently have 91 units in inventory and 0 units in backlog. My recent profit has been $43.18, bringing my total profit so far to $643.18. I believe we can work together to maximize our collective profits while maintaining a stable supply chain.",
+      "strategy_hint": "Focus on maintaining optimal inventory levels to minimize holding and backlog costs, while collaborating with other agents to coordinate orders and prevent the bullwhip effect.",
+      "collaboration_proposal": "Let's all aim to maintain 1-round of inventory cover to balance supply and demand. I propose we share our current inventory levels and order plans each round to ensure we're aligned and avoiding oversupply or stockouts.",
+      "information_shared": "I have 91 units in inventory currently and no backlog. I will place an order with the Wholesaler this round, but the exact quantity depends on what the other agents plan. Keeping each other informed of our states and intentions will be key to our collective success.",
+      "confidence": 0.8
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "Greetings fellow supply chain partners. As the Wholesaler, I currently have 91 units in inventory and 0 units in backlog. My recent profit has been $43.18, bringing my total profit so far to $643.18. I hear the Retailer has proposed that we all aim to maintain 1-round of inventory cover to balance supply and demand. Based on this, my conclusion is that this is a sensible strategy to coordinate our efforts and prevent the bullwhip effect. Therefore, I will order an amount that, combined with my current inventory, provides 1-round of cover for the Retailer's recent demand of 9 units. This will help us all maximize our collective profits while maintaining a stable supply chain.",
+      "strategy_hint": "Focus on maintaining optimal inventory levels to minimize holding and backlog costs, while collaborating with other agents to coordinate orders and prevent the bullwhip effect.",
+      "collaboration_proposal": "Let's all aim to maintain 1-round of inventory cover to balance supply and demand. I propose we share our current inventory levels and order plans each round to ensure we're aligned and avoiding oversupply or stockouts.",
+      "information_shared": "I have 91 units in inventory currently and no backlog. I will place an order with the Distributor this round to bring my total inventory up to 1-round of cover for the Retailer's recent demand.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear the Retailer and Wholesaler have both proposed that we all aim to maintain 1-round of inventory cover to balance supply and demand and prevent the bullwhip effect. Based on this, my conclusion is that this is a sensible strategy that we should all adopt. As the Distributor, I currently have 91 units in inventory and 0 units in backlog. My recent profit has been $43.18, bringing my total profit so far to $643.18. To provide 1-round of cover for the Retailer's recent demand of 9 units, I will order 9 units from the Factory this round. By aligning our inventory targets and sharing information, we can work together to maximize our collective profits while maintaining a stable supply chain. However, I want to caution that we must be vigilant about the risks of stockouts, oversupply, and market instability, as these could quickly erode our profitability. Let's all commit to this 1-round cover strategy and closely monitor our inventory and backlog levels to ensure we're not causing any disruptions downstream.",
+      "strategy_hint": "Focus on maintaining optimal inventory levels to minimize holding and backlog costs, while collaborating with other agents to coordinate orders and prevent the bullwhip effect.",
+      "collaboration_proposal": "Let's all aim to maintain 1-round of inventory cover to balance supply and demand. I propose we share our current inventory levels and order plans each round to ensure we're aligned and avoiding oversupply or stockouts.",
+      "information_shared": "I have 91 units in inventory currently and no backlog. I will place an order for 9 units with the Factory this round to provide 1-round of cover for the Retailer's recent demand.",
+      "confidence": 0.9
+    },
+    {
+      "round": 0,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "",
+      "strategy_hint": "",
+      "collaboration_proposal": "",
+      "information_shared": "",
+      "confidence": 0.5
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "",
+      "strategy_hint": "",
+      "collaboration_proposal": "",
+      "information_shared": "",
+      "confidence": 0.5
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "I have 77 units in inventory and 0 in backlog. My recent profits have been good at $68.46 last round and $689.14 total so far. However, I'm concerned that high inventory levels may lead to excessive holding costs, hurting my profitability. To address this, I plan to order 5 units from the Distributor this round. This should help me maintain a healthy inventory level while minimizing costs. I hear the Retailer has also shared their order plans, which is helpful for coordinating the supply chain. Based on this, I propose we all aim for a 1-round inventory cover to balance supply and demand without excessive costs or stockouts. This joint strategy should maximize total supply chain profits. I'm willing to share my inventory and order plans transparently to support this collaborative approach.",
+      "strategy_hint": "Optimize inventory levels to balance holding costs and service levels",
+      "collaboration_proposal": "Coordinate a 1-round inventory cover target across the supply chain",
+      "information_shared": "Current inventory (77 units), planned order (5 units), recent profit performance",
+      "confidence": 0.8
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear the Wholesaler has 77 units in inventory and plans to order 5 units from me this round. This is helpful information as I consider my own ordering strategy. Based on this, my conclusion is that we should all aim for a 1-round inventory cover across the supply chain. This will help us maintain healthy inventory levels, minimize holding costs, and avoid stockouts or excessive backlogs. Therefore, I will order 14 units from the Factory this round. This will allow me to fulfill the Wholesaler's order of 5 units, while also building a small buffer inventory to handle any unexpected demand spikes. By coordinating our inventory targets, we can maximize total supply chain profits and ensure the market remains stable. I'm willing to be transparent about my inventory, orders, and profit situation to support this collaborative approach.",
+      "strategy_hint": "Optimize inventory levels to balance holding costs and service levels",
+      "collaboration_proposal": "Coordinate a 1-round inventory cover target across the supply chain",
+      "information_shared": "Current inventory (77 units), planned order (14 units), recent profit performance ($689.14 total)",
+      "confidence": 0.9
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "",
+      "strategy_hint": "",
+      "collaboration_proposal": "",
+      "information_shared": "",
+      "confidence": 0.5
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "",
+      "strategy_hint": "",
+      "collaboration_proposal": "",
+      "information_shared": "",
+      "confidence": 0.5
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "I have 77 units in inventory and 0 in backlog. My recent profits have been good at $68.46 last round and $689.14 total so far. However, I'm concerned that high inventory levels may lead to excessive holding costs, hurting my profitability. To address this, I plan to order 5 units from the Distributor this round. This should help me maintain a healthy inventory level while minimizing costs. I hear the Retailer has also shared their order plans, which is helpful for coordinating the supply chain. Based on this, I propose we all aim for a 1-round inventory cover to balance supply and demand without excessive costs or stockouts. This joint strategy should maximize total supply chain profits. I'm willing to share my inventory and order plans transparently to support this collaborative approach.",
+      "strategy_hint": "Optimize inventory levels to balance holding costs and service levels",
+      "collaboration_proposal": "Coordinate a 1-round inventory cover target across the supply chain",
+      "information_shared": "Current inventory (77 units), planned order (5 units), recent profit performance",
+      "confidence": 0.8
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear the Wholesaler has 77 units in inventory and plans to order 5 units from me this round. This is helpful information as I consider my own ordering strategy. Based on this, my conclusion is that we should all aim for a 1-round inventory cover across the supply chain. This will help us maintain healthy inventory levels, minimize holding costs, and avoid stockouts or excessive backlogs. Therefore, I will order 14 units from the Factory this round. This will allow me to fulfill the Wholesaler's order of 5 units, while also building a small buffer inventory to handle any unexpected demand spikes. By coordinating our inventory targets, we can maximize total supply chain profits and ensure the market remains stable. I'm willing to be transparent about my inventory, orders, and profit situation to support this collaborative approach.",
+      "strategy_hint": "Optimize inventory levels to balance holding costs and service levels",
+      "collaboration_proposal": "Coordinate a 1-round inventory cover target across the supply chain",
+      "information_shared": "Current inventory (77 units), planned order (14 units), recent profit performance ($689.14 total)",
+      "confidence": 0.9
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "",
+      "strategy_hint": "",
+      "collaboration_proposal": "",
+      "information_shared": "",
+      "confidence": 0.5
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "",
+      "strategy_hint": "",
+      "collaboration_proposal": "",
+      "information_shared": "",
+      "confidence": 0.5
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "I have 77 units in inventory and 0 in backlog. My recent profits have been good at $68.46 last round and $689.14 total so far. However, I'm concerned that high inventory levels may lead to excessive holding costs, hurting my profitability. To address this, I plan to order 5 units from the Distributor this round. This should help me maintain a healthy inventory level while minimizing costs. I hear the Retailer has also shared their order plans, which is helpful for coordinating the supply chain. Based on this, I propose we all aim for a 1-round inventory cover to balance supply and demand without excessive costs or stockouts. This joint strategy should maximize total supply chain profits. I'm willing to share my inventory and order plans transparently to support this collaborative approach.",
+      "strategy_hint": "Optimize inventory levels to balance holding costs and service levels",
+      "collaboration_proposal": "Coordinate a 1-round inventory cover target across the supply chain",
+      "information_shared": "Current inventory (77 units), planned order (5 units), recent profit performance",
+      "confidence": 0.8
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear the Wholesaler has 77 units in inventory and plans to order 5 units from me this round. This is helpful information as I consider my own ordering strategy. Based on this, my conclusion is that we should all aim for a 1-round inventory cover across the supply chain. This will help us maintain healthy inventory levels, minimize holding costs, and avoid stockouts or excessive backlogs. Therefore, I will order 14 units from the Factory this round. This will allow me to fulfill the Wholesaler's order of 5 units, while also building a small buffer inventory to handle any unexpected demand spikes. By coordinating our inventory targets, we can maximize total supply chain profits and ensure the market remains stable. I'm willing to be transparent about my inventory, orders, and profit situation to support this collaborative approach.",
+      "strategy_hint": "Optimize inventory levels to balance holding costs and service levels",
+      "collaboration_proposal": "Coordinate a 1-round inventory cover target across the supply chain",
+      "information_shared": "Current inventory (77 units), planned order (14 units), recent profit performance ($689.14 total)",
+      "confidence": 0.9
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "",
+      "strategy_hint": "",
+      "collaboration_proposal": "",
+      "information_shared": "",
+      "confidence": 0.5
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Retailer",
+      "message": "",
+      "strategy_hint": "",
+      "collaboration_proposal": "",
+      "information_shared": "",
+      "confidence": 0.5
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Wholesaler",
+      "message": "I have 77 units in inventory and 0 in backlog. My recent profits have been good at $68.46 last round and $689.14 total so far. However, I'm concerned that high inventory levels may lead to excessive holding costs, hurting my profitability. To address this, I plan to order 5 units from the Distributor this round. This should help me maintain a healthy inventory level while minimizing costs. I hear the Retailer has also shared their order plans, which is helpful for coordinating the supply chain. Based on this, I propose we all aim for a 1-round inventory cover to balance supply and demand without excessive costs or stockouts. This joint strategy should maximize total supply chain profits. I'm willing to share my inventory and order plans transparently to support this collaborative approach.",
+      "strategy_hint": "Optimize inventory levels to balance holding costs and service levels",
+      "collaboration_proposal": "Coordinate a 1-round inventory cover target across the supply chain",
+      "information_shared": "Current inventory (77 units), planned order (5 units), recent profit performance",
+      "confidence": 0.8
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Distributor",
+      "message": "I hear the Wholesaler has 77 units in inventory and plans to order 5 units from me this round. This is helpful information as I consider my own ordering strategy. Based on this, my conclusion is that we should all aim for a 1-round inventory cover across the supply chain. This will help us maintain healthy inventory levels, minimize holding costs, and avoid stockouts or excessive backlogs. Therefore, I will order 14 units from the Factory this round. This will allow me to fulfill the Wholesaler's order of 5 units, while also building a small buffer inventory to handle any unexpected demand spikes. By coordinating our inventory targets, we can maximize total supply chain profits and ensure the market remains stable. I'm willing to be transparent about my inventory, orders, and profit situation to support this collaborative approach.",
+      "strategy_hint": "Optimize inventory levels to balance holding costs and service levels",
+      "collaboration_proposal": "Coordinate a 1-round inventory cover target across the supply chain",
+      "information_shared": "Current inventory (77 units), planned order (14 units), recent profit performance ($689.14 total)",
+      "confidence": 0.9
+    },
+    {
+      "round": 1,
+      "communication_round": 1,
+      "sender": "Factory",
+      "message": "",
+      "strategy_hint": "",
+      "collaboration_proposal": "",
+      "information_shared": "",
+      "confidence": 0.5
+    }
+  ]
+}
