@@ -35,6 +35,16 @@ class RoundData:
     orders_in_transit_1: int = 0  # Orders arriving next round
     production_queue_0: int = 0   # Production completing this round (Factory only)
     production_queue_1: int = 0   # Production completing next round (Factory only)
+    # LLM decision snapshot for this round
+    llm_reported_inventory: Optional[int] = None
+    llm_reported_backlog: Optional[int] = None
+    llm_recent_demand_or_orders: Optional[List[int]] = None
+    llm_incoming_shipments: Optional[List[int]] = None
+    llm_last_order_placed: Optional[int] = None
+    llm_confidence: Optional[float] = None
+    llm_rationale: str = ""
+    llm_risk_assessment: str = ""
+    llm_expected_demand_next_round: Optional[int] = None
 
 @dataclass
 class SimulationData:
@@ -123,7 +133,7 @@ class BeerGameAgent(BaseModel):
             inventory=initial_inventory,
             backlog=initial_backlog,
             balance=initial_balance,
-            shipments_in_transit={0: 0, 1: 0},  # Start with no shipments in transit
+            shipments_in_transit={0: 10, 1: 10},  # Start with 10 units arriving this round and next
             orders_in_transit={0: 0, 1: 0},    # NEW: Start with no orders in transit
             production_queue={0: 0, 1: 0},     # NEW: Start with no production in queue
             logger=logger,

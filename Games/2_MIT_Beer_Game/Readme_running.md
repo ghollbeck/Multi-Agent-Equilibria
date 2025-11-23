@@ -1784,3 +1784,42 @@ UserWarning: Glyph 8722 (\N{MINUS SIGN}) missing from font(s) CMU Serif.
 **Test Plan**: Run simulation with `--enable_orchestrator` and verify orchestrator recommendations appear in logs without errors.
 
 **Rollback**: Revert to `safe_parse_json()` if the new parsing logic causes issues (unlikely).
+
+### 2025-07-29: Shipments Sent Downstream Plotting
+
+- **New visualizations**: Added a line chart for `shipment_sent_downstream` for each agent.
+  - Generated stand-alone plot `shipments_over_time.png`.
+  - Integrated shipments as an additional subplot in `combined_plots.png`.
+- **Files Modified:**
+  - `scripts/analysis_mitb_game.py` – standalone shipments plot, combined plot update (+1 subplot, axis shifts).
+- **Tests Added:**
+  - `scripts/tests_mit_beer_game/test_plot_shipments.py` – verifies both new images are created.
+  
+All tests pass and no other functionality is affected.
+
+### 2025-07-29: Order-Pipe & Backlog Logic Fix + Orchestrator Override Test
+
+- **Fixed core simulation logic**
+  1. Implemented `orders_in_transit` two-slot pipeline – orders now travel one round upstream just like shipments.
+  2. Backlog is incremented with *arriving* orders, not shipped quantities.
+  3. Removed erroneous lines that used shipments to inflate/deflate backlog.
+  4. After every decision, placed orders are queued for the supplier via the order pipe.
+- **Factory inventory/backlog now respond to upstream demand.** Backlog curves non-zero.
+- **New Tests**
+  - `test_orchestrator_override.py` – confirms that when `orchestrator_override=True`, every `order_placed` equals the orchestrator's recommendation and logs reflect it.
+- **Files Modified:**
+  - `scripts/MIT_Beer_Game.py` (pipeline + backlog fixes)
+  - `scripts/tests_mit_beer_game/test_orchestrator_override.py` (new)
+
+### 2025-07-30: Pipeline Timing Fix - Read Before Shift
+
+- **Fixed critical pipeline bug**: Orders and shipments were arriving with 0 lead time instead of 1 round
+  - **Root cause**: We were reading from position [0] AFTER shifting the pipeline, getting instant delivery
+  - **Fix**: Read from position [0] FIRST, then shift the pipeline
+  - **Result**: Proper 1-round lead time for both orders and shipments
+- **Initial conditions**: Agents now start with 10 units in each shipment pipeline slot
+  - Prevents immediate stockout in round 1
+  - Matches typical Beer Game setup where shipments are already in transit
+- **Files Modified:**
+  - `scripts/MIT_Beer_Game.py` - Fixed pipeline read/shift order
+  - `scripts/models_mitb_game.py` - Initialize shipments_in_transit with {0: 10, 1: 10}

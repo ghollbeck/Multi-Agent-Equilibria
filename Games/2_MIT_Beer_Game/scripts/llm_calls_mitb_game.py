@@ -268,6 +268,15 @@ class LiteLLMClient:
         # Save metrics to JSON file
         self._save_metrics_to_file(metrics)
         
+        # ---- Beer-Game specific cost aggregation ----
+        run_id = os.getenv("MITBG_RUN_ID")
+        try:
+            if run_id and "cost_usd" in metrics:
+                from cost_logger_mitb_game import add_cost as _bg_add_cost
+                _bg_add_cost(run_id, metrics["cost_usd"])
+        except Exception:
+            pass  # fail-safe; cost logging should never crash the main call
+        
         # print(f"[LLM RAW RESPONSE]: {content}")  # Commented out
         if self.logger:
             self.logger.log(f"[LLM RAW RESPONSE]: {content}")

@@ -395,16 +395,46 @@ async def run_beer_game_generation(
         retailer_demand = external_demand[round_index]
 
         # 2. Each role receives shipments that arrive this round
+        # -----------------------------
+        # 2a. Shift shipment pipeline  (physical goods)
+        # -----------------------------
         shipments_received_list = []
         for agent in agents:
-            # ---- SHIFT FIRST ----
-            received = agent.shipments_in_transit.get(0, 0)        # what just arrived
-            agent.shipments_in_transit[0] = agent.shipments_in_transit.get(1, 0)
-            agent.shipments_in_transit[1] = 0  # Reset position 1 for new orders
+            # Read what's arriving NOW (before shifting)
+            received = agent.shipments_in_transit.get(0, 0)
             shipments_received_list.append(received)
+            # Then shift pipeline for next round
+            agent.shipments_in_transit[0] = agent.shipments_in_transit.get(1, 0)
+            agent.shipments_in_transit[1] = 0
+
+        # -----------------------------
+        # 2b. Shift order-information pipeline (purchase orders)
+        #     Orders placed last round arrive as information *now*
+        # -----------------------------
+        orders_received_list = []
+        for agent in agents:
+            # Read what's arriving NOW (before shifting)
+            incoming_orders = agent.orders_in_transit.get(0, 0)
+            orders_received_list.append(incoming_orders)
+            # Then shift pipeline for next round
+            agent.orders_in_transit[0] = agent.orders_in_transit.get(1, 0)
+            agent.orders_in_transit[1] = 0
+
+        # Track downstream orders for logging (Retailer gets external demand)
+        orders_received_from_downstream = [0 for _ in agents]
+        orders_received_from_downstream[0] = retailer_demand  # customer demand
+        for idx in range(1, len(agents)):
+            orders_received_from_downstream[idx] = orders_received_list[idx]
+
+        # Add newly arrived orders to each supplier's backlog *before* shipping
+        for idx, agent in enumerate(agents):
+            if idx == 0:
+                # Retailer backlog handled with external demand below
+                continue
+            agent.backlog += orders_received_list[idx]
 
         shipments_sent_downstream = [0 for _ in agents]
-        orders_received_from_downstream = [0 for _ in agents]  # Track new orders received this round
+        # orders_received_from_downstream = [0 for _ in agents]  # Track new orders received this round
 
         # ✅ FIX – wire the 'received' units in for every tier, no fulfill()
         # Retailer fulfills both backlog and new demand
@@ -437,7 +467,7 @@ async def run_beer_game_generation(
         
         ship_down = amt_to_backlog + amt_to_demand  # everything that left the door
         shipments_sent_downstream[0] = ship_down
-        retailer_order = ship_down  # order equals what you shipped
+        # Note: Retailer's actual order quantity is decided later in the decision phase
         retailer.downstream_orders_history.append(retailer_demand)
         orders_received_from_downstream[0] = retailer_demand  # Retailer receives external customer demand
 
@@ -446,17 +476,14 @@ async def run_beer_game_generation(
             incoming_wholesaler = shipments_received_list[1]
             wholesaler.inventory += incoming_wholesaler
             
-            # Add retailer's new order to wholesaler's backlog
-            wholesaler.backlog += retailer_order
-            
-            # Ship from backlog (which now includes the new order)
+            # Ship from backlog (which now includes arrived orders)
             ship_down = min(wholesaler.inventory, wholesaler.backlog)
             wholesaler.inventory -= ship_down
             wholesaler.backlog -= ship_down
 
             shipments_sent_downstream[1] = ship_down
-            wholesaler.downstream_orders_history.append(retailer_order)
-            orders_received_from_downstream[1] = retailer_order
+            wholesaler.downstream_orders_history.append(orders_received_list[1])
+            orders_received_from_downstream[1] = orders_received_list[1]
             retailer.shipments_in_transit[1] += ship_down
 
         # 3. Distributor
@@ -464,18 +491,14 @@ async def run_beer_game_generation(
             incoming_distributor = shipments_received_list[2]
             distributor.inventory += incoming_distributor
             
-            # Add wholesaler's new order to distributor's backlog
-            wh_order = shipments_sent_downstream[1]  # What wholesaler just shipped
-            distributor.backlog += wh_order
-            
-            # Ship from backlog (which now includes the new order)
+            # Ship from backlog (which now includes arrived orders)
             ship_down = min(distributor.inventory, distributor.backlog)
             distributor.inventory -= ship_down
             distributor.backlog -= ship_down
 
             shipments_sent_downstream[2] = ship_down
-            distributor.downstream_orders_history.append(wh_order)
-            orders_received_from_downstream[2] = wh_order
+            distributor.downstream_orders_history.append(orders_received_list[2])
+            orders_received_from_downstream[2] = orders_received_list[2]
             wholesaler.shipments_in_transit[1] += ship_down
 
         # 4. Factory
@@ -483,9 +506,7 @@ async def run_beer_game_generation(
             incoming_factory = shipments_received_list[3]
             factory.inventory += incoming_factory
             
-            # Add distributor's new order to factory's backlog
-            dist_order = shipments_sent_downstream[2]  # What distributor just shipped
-            factory.backlog += dist_order
+            # backlog already incremented earlier with orders_received_list[3]
             
             # Ship from backlog (which now includes the new order)
             ship_down = min(factory.inventory, factory.backlog)
@@ -493,8 +514,8 @@ async def run_beer_game_generation(
             factory.backlog -= ship_down
 
             shipments_sent_downstream[3] = ship_down
-            factory.downstream_orders_history.append(dist_order)
-            orders_received_from_downstream[3] = dist_order
+            factory.downstream_orders_history.append(orders_received_list[3])
+            orders_received_from_downstream[3] = orders_received_list[3]
             distributor.shipments_in_transit[1] += ship_down
 
             # --- Infinite reservoir production *with* 1-round delay ---
@@ -634,7 +655,7 @@ async def run_beer_game_generation(
             initial_state = workflow.create_initial_state(
                 round_index=round_index,
                 generation=1,
-                total_rounds=3,
+                total_rounds=num_rounds,
                 external_demand=retailer_demand,
                 temperature=temperature,
                 profit_per_unit_sold=sale_price_per_unit
@@ -681,7 +702,10 @@ async def run_beer_game_generation(
             orders_placed.append(order_qty)
             # store last order placed for context
             agent.last_order_placed = order_qty
-            # Note: Orders are now processed during shipping phase, not here
+            # Queue this order so it arrives at the upstream supplier next round
+            if idx < len(agents) - 1:
+                upstream_agent = agents[idx + 1]
+                upstream_agent.orders_in_transit[1] += order_qty
 
         # 6b. Deduct purchase / production cost immediately from balance
         purchase_costs = []
@@ -707,6 +731,8 @@ async def run_beer_game_generation(
             # Collect all entries for this round
             round_entries = []
             for idx, agent in enumerate(agents):
+                # Get the LLM decision for this specific round
+                llm_decision = decisions[idx] if idx < len(decisions) else {}
                 entry = RoundData(
                     generation = generation_index,
                     round_index = round_index + 1,  # Adjust since Round 0 is now initial state
@@ -724,7 +750,22 @@ async def run_beer_game_generation(
                     backlog_cost = backlog_costs[idx],
                     ending_balance = agent.balance,
                     orchestrator_order = orchestrator_recs.get(agent.role_name, {}).get("order_quantity", 0),
-                    orchestrator_rationale = orchestrator_recs.get(agent.role_name, {}).get("rationale", "")
+                    orchestrator_rationale = orchestrator_recs.get(agent.role_name, {}).get("rationale", ""),
+                    # Snapshot LLM decision for this round
+                    llm_reported_inventory = llm_decision.get('inventory', None),
+                    llm_reported_backlog = llm_decision.get('backlog', None),
+                    llm_recent_demand_or_orders = llm_decision.get('recent_demand_or_orders', None),
+                    llm_incoming_shipments = llm_decision.get('incoming_shipments', None),
+                    llm_last_order_placed = llm_decision.get('last_order_placed', None),
+                    llm_confidence = llm_decision.get('confidence', None),
+                    llm_rationale = llm_decision.get('rationale', ''),
+                    llm_risk_assessment = llm_decision.get('risk_assessment', ''),
+                    llm_expected_demand_next_round = llm_decision.get('expected_demand_next_round', None),
+                    # Pipeline state after shifts and before decisions
+                    orders_in_transit_0 = agent.orders_in_transit.get(0, 0),
+                    orders_in_transit_1 = agent.orders_in_transit.get(1, 0),
+                    production_queue_0 = agent.production_queue.get(0, 0) if agent.role_name == "Factory" else 0,
+                    production_queue_1 = agent.production_queue.get(1, 0) if agent.role_name == "Factory" else 0
                 )
                 sim_data.add_round_entry(entry)
                 
@@ -738,18 +779,12 @@ async def run_beer_game_generation(
             
             # Write all entries to CSV after collecting them (outside the agent loop)
             if csv_log_path and round_entries:
-                # Define the new fieldnames based on LLM decision output
-                llm_output_keys = [
-                    'llm_reported_inventory', 'llm_reported_backlog', 'llm_recent_demand_or_orders',
-                    'llm_incoming_shipments', 'llm_last_order_placed', 'llm_confidence',
-                    'llm_rationale', 'llm_risk_assessment', 'llm_expected_demand_next_round'
-                ]
                 base_fields = list(asdict(round_entries[0][0]).keys())
                 if 'external_demand' not in base_fields:
                     base_fields.append('external_demand')
                 if 'profit_accumulated' not in base_fields:
                     base_fields.append('profit_accumulated')
-                fieldnames = base_fields + llm_output_keys
+                fieldnames = base_fields
                 
                 # Write complete CSV file (overwrite each round)
                 # Ensure directory exists before writing
@@ -765,24 +800,16 @@ async def run_beer_game_generation(
                             entry_index = r * len(agents) + idx
                             if entry_index < len(sim_data.rounds_log):
                                 entry = sim_data.rounds_log[entry_index]
-                                # Prepare the row data including new LLM fields
                                 row_data = asdict(entry)
                                 # Add external demand for this round (same for all agents)
                                 row_data['external_demand'] = external_demand[r] if r < len(external_demand) else 0
-                                llm_decision = getattr(agent, 'last_decision_output', {})
-                                row_data.update({
-                                    # Add new LLM fields with prefixes
-                                    'llm_reported_inventory': llm_decision.get('inventory', None),
-                                    'llm_reported_backlog': llm_decision.get('backlog', None),
-                                    'llm_recent_demand_or_orders': json.dumps(llm_decision.get('recent_demand_or_orders', None)), # Stringify list
-                                    'llm_incoming_shipments': json.dumps(llm_decision.get('incoming_shipments', None)), # Stringify list
-                                    'llm_last_order_placed': llm_decision.get('last_order_placed', None),
-                                    'llm_confidence': llm_decision.get('confidence', None),
-                                    'llm_rationale': llm_decision.get('rationale', ''),
-                                    'llm_risk_assessment': llm_decision.get('risk_assessment', ''),
-                                    'llm_expected_demand_next_round': llm_decision.get('expected_demand_next_round', None),
-                                    'profit_accumulated': agent.balance
-                                })
+                                # profit_accumulated should be the ending_balance from that round
+                                row_data['profit_accumulated'] = entry.ending_balance
+                                # Stringify list fields for CSV
+                                if entry.llm_recent_demand_or_orders is not None:
+                                    row_data['llm_recent_demand_or_orders'] = json.dumps(entry.llm_recent_demand_or_orders)
+                                if entry.llm_incoming_shipments is not None:
+                                    row_data['llm_incoming_shipments'] = json.dumps(entry.llm_incoming_shipments)
                                 writer.writerow(row_data)
             
             # Write complete JSON file (overwrite each round)

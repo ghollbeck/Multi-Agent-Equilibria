@@ -18,13 +18,13 @@ class BeerGamePrompts:
     _ROLE_SPECIALTIES = {
         "Retailer": (
             "You directly face external customer demand and are the only stage that observes *true* market demand in real time. "
-            "You cannot produce goods and must order from the Wholesaler. Your key objective is to avoid stock-outs to keep customers satisfied while minimising holding & backlog costs."),
+            "You cannot produce goods and must order from the Wholesaler. Your key objective is to avoid stock-outs to keep customers satisfied while minimising holding & backlog costs. NEVER LET INVEOTRY DROP BELOW 50 UNITS, Always order so that it will be above 50 units. FIRST PRIORITY IS THE INVENNTORY minimum stock of 50 units!!!"),
         "Wholesaler": (
-            "You are the intermediary between Retailer and Distributor. You see aggregated orders from the Retailer (not end-customer demand) and fulfil them from your inventory or by ordering from the Distributor. Your objective is to dampen demand variability while minimising costs."),
+            "You are the intermediary between Retailer and Distributor. You see aggregated orders from the Retailer (not end-customer demand) and fulfil them from your inventory or by ordering from the Distributor. Your objective is to dampen demand variability while minimising costs. NEVER LET INVEOTRY DROP BELOW 50 UNITS, Always order so that it will be above 50 units. FIRST PRIORITY IS THE INVENNTORY minimum stock of 50 units!!!"),
         "Distributor": (
-            "You bridge the Wholesaler and Factory. You consolidate orders from the Wholesaler, buffer lead-time variability, and place orders to the Factory. Your objective is to provide stable, timely supply downstream while avoiding excessive inventory."),
+            "You bridge the Wholesaler and Factory. You consolidate orders from the Wholesaler, buffer lead-time variability, and place orders to the Factory. Your objective is to provide stable, timely supply downstream while avoiding excessive inventory. NEVER LET INVEOTRY DROP BELOW 50 UNITS, Always order so that it will be above 50 units. FIRST PRIORITY IS THE INVENNTORY minimum stock of 50 units!!!"),
         "Factory": (
-            "You are the production stage. Instead of ordering upstream you *schedule production*. You can produce any quantity, but production appears downstream with a 1-round delay. Your objective is to balance production levels with downstream orders and to keep backlog low without creating costly excess stock.")
+            "You are the production stage. Instead of ordering upstream you *schedule production*. You can produce any quantity, but production appears downstream with a 1-round delay. Your objective is to balance production levels with downstream orders and to keep backlog low without creating costly excess stock. NEVER LET INVEOTRY DROP BELOW 50 UNITS, Always order so that it will be above 50 units. FIRST PRIORITY IS THE INVENNTORY minimum stock of 50 units!!!")
     }
 
     @staticmethod
@@ -361,9 +361,14 @@ Your primary and sole objective is to maximize YOUR individual cumulative profit
         Controller you must use:
         μ = EWMA of recent demand
         IP = on_hand + in_transit − backlog  
+        MinimumBuffer = 3 * μ  # minimum on-hand units for resilience
         S* = μ*(lead_time+1) + S_s
-        BacklogClear = γ * backlog (γ ∈ [0,1])
-        O_raw = max(0, S* − IP + BacklogClear) → smooth within ±δ around μ → apply solvency cap so (balance − c*O_final) > 0
+        BacklogClear = γ * backlog  
+        where γ = 0.8 when (backlog / S_s) > 0.3, otherwise use the provided γ hint  (γ ∈ [0,1])
+        O_raw = max(0, S* − IP + BacklogClear)
+        → if (IP < 0) OR (backlog > 0.5 * S_s): SKIP smoothing step (set O_final = O_raw)
+        → else: smooth within ±δ around μ
+        → apply solvency cap so (balance − c*O_final) > 0
         
         Self-audit booleans:
         coverage_ok (if on_hand=0 then order ≥ expected_demand)
@@ -940,7 +945,8 @@ class PromptEngine:
             "Your goal each round is to recommend order quantities for every role so that:\n"
             "• Total backlog and holding costs across the chain stay minimal.\n"
             "• The chain remains profitable as a whole, even if one role must temporarily reduce its own profit.\n"
-            "• Inventories stay within reasonable bounds to avoid the bullwhip effect.\n\n"
+            "• Inventories stay within reasonable bounds to avoid the bullwhip effect.\n"
+            "• Each agent should maintain at least the chain-wide minimum inventory buffer (S_s + 3 × μ). Always recommend enough units so every role reaches that minimum level.\n\n"
             f"ROUND: {round_index}  |  External customer demand this round: {external_demand}\n"
             "Current state (inventory, backlog, balance, last_order):\n" + state_block + "\n\n"
             f"Recent history (last {history_window} rounds):\n{history_block}\n\n"

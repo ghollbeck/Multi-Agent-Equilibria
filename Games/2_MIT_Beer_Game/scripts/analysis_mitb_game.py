@@ -108,10 +108,25 @@ def plot_beer_game_results(rounds_df: pd.DataFrame, results_folder: str, externa
     plt.savefig(os.path.join(results_folder, "orders_over_time.png"))
     plt.close()
 
-    # Combined plot with subplots for Inventory, Backlog, Profit, Orders, Orchestrator Advice, and External Demand
-    num_subplots = 5 + (1 if external_demand else 0)
+    # Shipments sent downstream by role (stand-alone)
+    plt.figure(figsize=(10, 6))
+    for role in rounds_df["role_name"].unique():
+        subset = rounds_df[rounds_df["role_name"] == role]
+        style = role_styles.get(role, {'linestyle': '-', 'marker': 'o', 'markersize': 4, 'alpha': 0.8, 'linewidth': 2})
+        if "shipment_sent_downstream" in subset.columns:
+            plt.plot(subset["global_round"], subset["shipment_sent_downstream"], label=role, **style)
+    plt.title("Shipments Sent Downstream Over Rounds")
+    plt.xlabel("Round")
+    plt.ylabel("Units Shipped Downstream")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(os.path.join(results_folder, "shipments_over_time.png"))
+    plt.close()
+
+    # Combined plot with subplots for Inventory, Backlog, Profit, Orders, Shipments, Orchestrator Advice, and External Demand
+    num_subplots = 6 + (1 if external_demand else 0)
     fig, axes = plt.subplots(num_subplots, 1, figsize=(12, 6 * num_subplots))
-    fig.subplots_adjust(hspace=0.65)  # Increased vertical spacing between subplots for better readability
+    fig.subplots_adjust(hspace=2.0)  # Increased vertical spacing between subplots for better readability
 
     title_fontsize = 14  # 10% larger than default (usually 12)
     label_fontsize = 12  # 10% larger than default (usually 10-11)
@@ -160,23 +175,35 @@ def plot_beer_game_results(rounds_df: pd.DataFrame, results_folder: str, externa
     axes[3].legend()
     axes[3].grid(True)
 
-    # Subplot 5: Orchestrator Recommended Orders
+    # Subplot 5: Shipments Sent Downstream
+    for role in rounds_df["role_name"].unique():
+        subset = rounds_df[rounds_df["role_name"] == role]
+        style = role_styles.get(role, {'linestyle': '-', 'marker': 'o', 'markersize': 4, 'alpha': 0.8, 'linewidth': 2})
+        if "shipment_sent_downstream" in subset.columns:
+            axes[4].plot(subset["global_round"], subset["shipment_sent_downstream"], label=role, **style)
+    axes[4].set_title("Shipments Sent Downstream Over Rounds", fontsize=title_fontsize, fontweight='bold')
+    axes[4].set_xlabel("Round", fontsize=label_fontsize)
+    axes[4].set_ylabel("Units Shipped Downstream", fontsize=label_fontsize)
+    axes[4].legend()
+    axes[4].grid(True)
+
+    # Subplot 6: Orchestrator Recommended Orders (if present)
     if "orchestrator_order" in rounds_df.columns:
         for role in rounds_df["role_name"].unique():
             subset = rounds_df[rounds_df["role_name"] == role]
             style = role_styles.get(role, {'linestyle': '-', 'marker': 'o', 'markersize': 4, 'alpha': 0.8, 'linewidth': 2}).copy()
             style['linestyle'] = '--'  # Override to dashed for orchestrator
             style['alpha'] = 0.6  # Make slightly more transparent
-            axes[4].plot(subset["global_round"], subset["orchestrator_order"], label=role, **style)
-        axes[4].set_title("Orchestrator Recommended Orders", fontsize=title_fontsize, fontweight='bold')
-        axes[4].set_xlabel("Round", fontsize=label_fontsize)
-        axes[4].set_ylabel("Units", fontsize=label_fontsize)
-        axes[4].legend()
-        axes[4].grid(True)
+            axes[5].plot(subset["global_round"], subset["orchestrator_order"], label=role, **style)
+        axes[5].set_title("Orchestrator Recommended Orders", fontsize=title_fontsize, fontweight='bold')
+        axes[5].set_xlabel("Round", fontsize=label_fontsize)
+        axes[5].set_ylabel("Units", fontsize=label_fontsize)
+        axes[5].legend()
+        axes[5].grid(True)
 
-    # Subplot 6: External Demand (if provided)
+    # Subplot 7: External Demand (if provided)
     if external_demand:
-        ext_ax = axes[5] if "orchestrator_order" in rounds_df.columns else axes[4]
+        ext_ax = axes[6] if "orchestrator_order" in rounds_df.columns else axes[5]
         rounds = list(range(len(external_demand)))
         ext_ax.plot(rounds, external_demand, 'ko-', linewidth=2, markersize=6, label="External Demand")
         ext_ax.set_title("External Customer Demand", fontsize=title_fontsize, fontweight='bold')

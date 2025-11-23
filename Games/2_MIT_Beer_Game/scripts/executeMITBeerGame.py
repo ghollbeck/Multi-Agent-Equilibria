@@ -36,10 +36,6 @@ def parse_args():
         help="Backlog cost per unit per round"
     )
     parser.add_argument(
-        "--profit_per_unit_sold", type=float, default=2.5,
-        help="Profit earned per unit sold"
-    )
-    parser.add_argument(
         "--temperature", type=float, default=0,
         help="Sampling temperature for the LLM"
     )
@@ -56,7 +52,7 @@ def parse_args():
         help="Claude model name to use when --provider anthropic (default: claude-3-5-sonnet-latest)"
     )
     parser.add_argument(
-        "--enable_communication", action="store_true", default=True,
+        "--enable_communication", action="store_true", default=False,
         help="Enable agent communication before each round"
     )
     parser.add_argument(
